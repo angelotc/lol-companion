@@ -29,6 +29,7 @@ from config import load_config
 from draft.controller import Controller
 from data.store import Store
 from data.lcu import DraftState, LcuClient, Slot, read_lockfile, watch_session
+from data.live import LiveGame
 from paths import DATA_DIR, RESOURCES, config_path
 from draft.scoring import LANES
 from draft.state import DRAFT_STAGES, PRE_DRAFT_STAGES, Stage
@@ -205,7 +206,14 @@ class App:
             bans=set(ids(self.args.bans)), picked={s.champion_id for s in allies} | set(enemies),
         )
         with ctl.lock:
-            ctl.session.draft = draft
+            if self.args.items:  # a game in progress: the in-game panel, as after Ctrl+X
+                lanes = ["bottom", "support", "middle", "jungle", "top"]
+                names = [ctl.rec.champs.name(c) for c in enemies]
+                ctl.live = LiveGame(self.args.champion, self.args.role, self.args.level, self.args.gold,
+                                    self.args.items, self.args.level * 120.0, {}, dict(zip(lanes, names)))
+                ctl.session.phase, ctl.ingame_shown = "InProgress", True
+            else:
+                ctl.session.draft = draft
             ctl.render()
 
     # -- window placement -------------------------------------------------
@@ -308,6 +316,8 @@ class App:
     def boot(self) -> None:
         self.window.events.loaded.wait(15)
         for target in (self.track, self.hotkey, self.toggle_keys, self.ctl.live_loop):
+            if target == self.ctl.live_loop and self.args.items:
+                continue  # simulated game: polling would replace it with "no game"
             threading.Thread(target=target, daemon=True).start()
         self.tray.start()
         if not self.always_show:
@@ -363,6 +373,11 @@ def main() -> None:
     ap.add_argument("--allies", default="")
     ap.add_argument("--enemies", default="")
     ap.add_argument("--bans", default="")
+    ap.add_argument("--items", type=lambda s: [int(i) for i in s.split(",")],
+                    help="simulate: item ids you hold; shows the in-game panel instead of the draft")
+    ap.add_argument("--champion", default="Leona", help="simulate in game: your champion")
+    ap.add_argument("--level", type=int, default=9)
+    ap.add_argument("--gold", type=float, default=650)
     args = ap.parse_args()
     if args.simulate and not args.role:
         ap.error("--simulate needs --role")

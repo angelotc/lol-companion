@@ -36,7 +36,10 @@ LOCK = "leona"
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=ROOT / "docs" / "views")
-    out_dir = ap.parse_args().out
+    ap.add_argument("--items", type=lambda s: [int(i) for i in s.split(",")], default=[3158, 3109, 3190],
+                    help="in-game item ids you hold (default: Ionian Boots, Knight's Vow, Locket)")
+    args = ap.parse_args()
+    out_dir = args.out
     out_dir.mkdir(parents=True, exist_ok=True)
     states: list[dict] = []
     ctl = Controller(load_config(), states.append)
@@ -76,7 +79,7 @@ def main() -> None:
     ctl.session.draft = ctl.session.frozen = None
     ctl.session.phase, ctl.ingame_shown = "InProgress", True
     enemies = dict(zip(["bottom", "support", "middle", "jungle"], ["Caitlyn", "Nautilus", "Hwei", "Viego"]))
-    ctl.live = LiveGame("Leona", ROLE, 13, 400, [3158, 3109, 3190], 1500, {}, enemies)
+    ctl.live = LiveGame("Leona", ROLE, 13, 400, args.items, 1500, {}, enemies)
     ctl.render()
     shots["ingame"] = (states[-1], [], 806, "ingame", ".ig-opt.yours .ig-vs b[title]")
 
