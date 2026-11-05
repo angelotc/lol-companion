@@ -1,0 +1,95 @@
+{
+ "_me": "p13",
+ "phase": "InProgress",
+ "gameData": {
+  "gameId": 5123456789,
+  "queue": {
+   "id": 420
+  },
+  "teamOne": [
+   {
+    "puuid": "p10",
+    "gameName": "Mundo Goes",
+    "tagLine": "NA1",
+    "championId": 36,
+    "selectedPosition": "TOP",
+    "summonerId": 1000
+   },
+   {
+    "puuid": "p11",
+    "gameName": "Lee Sin Fan",
+    "tagLine": "NA1",
+    "championId": 64,
+    "selectedPosition": "JUNGLE",
+    "summonerId": 1001
+   },
+   {
+    "puuid": "p12",
+    "gameName": "Foxfire",
+    "tagLine": "777",
+    "championId": 103,
+    "selectedPosition": "MIDDLE",
+    "summonerId": 1002
+   },
+   {
+    "puuid": "p13",
+    "gameName": "Me",
+    "tagLine": "NA1",
+    "championId": 222,
+    "selectedPosition": "BOTTOM",
+    "summonerId": 1003
+   },
+   {
+    "puuid": "p14",
+    "gameName": "Hook City",
+    "tagLine": "NA1",
+    "championId": 412,
+    "selectedPosition": "UTILITY",
+    "summonerId": 1004
+   }
+  ],
+  "teamTwo": [
+   {
+    "puuid": "p20",
+    "gameName": "Demacia",
+    "tagLine": "NA1",
+    "championId": 86,
+    "selectedPosition": "TOP",
+    "summonerId": 2000
+   },
+   {
+    "puuid": "p21",
+    "gameName": "Bugs",
+    "tagLine": "KHZ",
+    "championId": 121,
+    "selectedPosition": "JUNGLE",
+    "summonerId": 2001
+   },
+   {
+    "puuid": "p22",
+    "gameName": "Orbs",
+    "tagLine": "NA1",
+    "championId": 134,
+    "selectedPosition": "MIDDLE",
+    "summonerId": 2002
+   },
+   {
+    "puuid": "p23",
+    "gameName": "Moon",
+    "tagLine": "NA1",
+    "championId": 523,
+    "selectedPosition": "BOTTOM",
+    "summonerId": 2003
+   },
+   {
+    "puuid": "p24",
+    "gameName": "Windy",
+    "tagLine": "NA1",
+    "championId": 40,
+    "selectedPosition": "UTILITY",
+    "summonerId": 2004
+   }
+  ],
+  "playerChampionSelections": []
+ }
+}

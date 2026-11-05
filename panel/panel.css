@@ -219,6 +219,35 @@ body[data-mode=ingame] .hdr,body[data-mode=ingame] .tiers,body[data-mode=ingame]
 .skillord span.done{opacity:.4}
 .ig-key{margin-top:auto;padding-top:.25rem;text-align:center;font-size:.625rem;color:var(--dim)}
 .ig-key b,.foot b{color:var(--muted);font-weight:600}
+/* players view (in game, Ctrl+Shift+X) */
+.plbody{gap:.25rem;padding:.375rem .4375rem}
+.pl-team{flex:none;display:flex;flex-direction:column;gap:.1875rem}
+.pl-tl{font-size:.625rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;padding-left:.25rem;border-left:2px solid #4fa3ff;color:#4fa3ff}
+.pl-team.enemy .pl-tl{border-color:var(--neg);color:var(--neg)}
+.pl-row{display:flex;align-items:flex-start;gap:.3125rem;padding:.1875rem .25rem;border-radius:4px;background:rgba(9,20,40,.6);border-left:2px solid #2a4a7a}
+.pl-team.enemy .pl-row{border-left-color:#7a2a36;background:rgba(40,14,20,.5)}
+.pl-row.me{background:rgba(200,170,110,.12);border-left-color:var(--gold)}
+.pl-row:hover{background:rgba(255,255,255,.08)}
+.pl-row .pl-ico{width:2rem;height:2rem;border-radius:5px;border:1px solid var(--line2);margin-top:1px}
+.pl-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.pl-l1,.pl-l2{display:flex;align-items:baseline;gap:.3125rem;white-space:nowrap;overflow:hidden;font-size:.6875rem}
+.pl-n{font-weight:500;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.pl-row.me .pl-n{font-weight:700}
+.pl-rk{font-weight:700;flex:none;font-size:.625rem}
+.pl-wr{margin-left:auto;flex:none;color:var(--muted);font-size:.625rem}
+.pl-wr.pos{color:var(--pos)}.pl-wr.neg{color:var(--neg)}
+.pl-rec{color:var(--muted);font-size:.625rem;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pl-dots{margin-left:auto;display:flex;gap:2px;flex:none;align-self:center}
+.pl-dots i{width:.3125rem;height:.3125rem;border-radius:50%;background:var(--neg)}
+.pl-dots i.w{background:var(--pos)}
+.pl-tags{display:flex;gap:.1875rem;flex-wrap:wrap;margin-top:1px}
+.pl-tag{font-size:.5rem;line-height:1.25;padding:0 .25rem;border-radius:7px;font-weight:600;white-space:nowrap}
+.pl-tag.good{background:rgba(10,200,185,.18);color:var(--pos)}
+.pl-tag.bad{background:rgba(232,64,87,.18);color:var(--neg)}
+.pl-row.err .pl-n::after{content:" ?";color:var(--dim)}
+.t-iron{color:#8a8077}.t-bronze{color:#b0774a}.t-silver{color:#a9b4bd}.t-gold{color:#e0b84a}
+.t-platinum{color:#4fc4b0}.t-emerald{color:#2fbf71}.t-diamond{color:#6aa6ff}.t-master{color:#c77dff}
+.t-grandmaster{color:#ff6b6b}.t-challenger{color:#7fe3ff}.t-none{color:var(--dim)}
 /* draft win estimate */
 .odds{padding:.375rem .625rem .3125rem;border-bottom:1px solid var(--line);flex:none}
 .odds .ol{display:flex;justify-content:space-between;align-items:baseline;gap:.375rem;font-size:.6875rem;font-weight:700;margin-bottom:.1875rem;white-space:nowrap}

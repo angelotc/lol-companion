@@ -6,6 +6,7 @@ from data.builds import Option
 from data.champions import Champions
 from data.ddragon import Assets
 from data.live import LiveGame
+from data.players import PlayerStats
 from draft.engine import BanEvaluation, BuildEvaluation, Evaluation
 from draft.scoring import LANES, DraftOdds, OddsTerm
 from draft.state import Stage
@@ -299,6 +300,47 @@ def ingame(head: dict, live: LiveGame, bev: BuildEvaluation | None, champs: Cham
         "skill_order": "".join(SKILLS.get(ch, "?") for ch in order.key) if order else "",
         "keystone": assets.rune(page.primary[0]) if page and page.primary else None,
     }
+
+
+LANE_ORDER = {lane: i for i, lane in enumerate(LANES)}
+TIER_SHORT = {"IRON": "I", "BRONZE": "B", "SILVER": "S", "GOLD": "G", "PLATINUM": "P", "EMERALD": "E",
+              "DIAMOND": "D", "MASTER": "M", "GRANDMASTER": "GM", "CHALLENGER": "C"}
+ROMAN = {"I": 1, "II": 2, "III": 3, "IV": 4}
+
+
+def _player(s: PlayerStats, champs: Champions) -> dict:
+    r = s.ref
+    rank = ""
+    if s.tier:
+        rank = TIER_SHORT.get(s.tier, s.tier[:1]) + str(ROMAN.get(s.division, "")) + f" {s.lp} LP"
+    season = s.wins + s.losses
+    kda = s.kda
+    return {
+        "name": r.name, "tag": r.tag, "me": r.is_me, "lane": r.position,
+        "champ": {"name": champs.name(r.champion_id), "icon": champs.icon_url(r.champion_id)} if r.champion_id else None,
+        "rank": rank, "tier": s.tier.lower(), "queue": s.queue,
+        "rank_full": f"{s.tier.title()} {s.division} {s.lp} LP".replace("  ", " ") if s.tier else "Unranked",
+        "wr": round(100 * s.wins / season) if season else None, "season_games": season,
+        "champ_games": s.champ_games, "champ_wr": round(100 * s.champ_wins / s.champ_games) if s.champ_games else None,
+        "kda": round(kda, 1) if kda is not None else None,
+        "kills": round(s.kills / s.champ_games, 1) if s.champ_games else None,
+        "deaths": round(s.deaths / s.champ_games, 1) if s.champ_games else None,
+        "assists": round(s.assists / s.champ_games, 1) if s.champ_games else None,
+        "games": s.games, "recent": "".join("W" if w else "L" for w in s.recent[:10]),
+        "mastery": s.mastery, "tags": s.tags, "error": s.error,
+    }
+
+
+def players(head: dict, stats: list[PlayerStats], champs: Champions) -> dict:
+    """In game (Ctrl+Shift+X): every player's rank, season record and recent form on their
+    champion. Your team first, each team in lane order."""
+    mine = next((s.ref.team for s in stats if s.ref.is_me), 100)
+    order = lambda s: (LANE_ORDER.get(s.ref.position, len(LANES)), s.ref.name.lower())
+    teams = []
+    for side, label in (("ally", "Your team"), ("enemy", "Enemy team")):
+        group = sorted((s for s in stats if (s.ref.team == mine) == (side == "ally")), key=order)
+        teams.append({"side": side, "label": label, "players": [_player(s, champs) for s in group]})
+    return head | {"view": "players", "status": "active", "message": "", "teams": teams}
 
 
 def odds(o: DraftOdds | None, champs: Champions, top: int = 4) -> dict | None:

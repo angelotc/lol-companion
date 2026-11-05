@@ -35,6 +35,14 @@
         opponents:[{name:"Nautilus",icon:I("Nautilus"),lane:"support"},{name:"Caitlyn",icon:I("Caitlyn"),lane:"bottom"}]});
       return;
     }
+    if(view==="players"){
+      var P=function(n,ch,lane,rank,tier,wr,sg,cg,cw,kda,rec,tags,me){return{name:n,tag:"EUW",me:!!me,lane:lane,champ:{name:ch,icon:I(ch)},rank:rank,tier:tier,queue:"solo",rank_full:rank,wr:wr,season_games:sg,champ_games:cg,champ_wr:cw,kda:kda,kills:5,deaths:4,assists:6,games:cg,recent:rec,mastery:42000,tags:tags||[],error:false}};
+      window.setMode("ingame");
+      window.updateState({view:"players",status:"active",message:"",role:"support",tier:"Master+",days:14,tiers:[],teams:[
+        {side:"ally",label:"Your team",players:[P("Me","Leona","support","G1 67 LP","gold",64,170,9,56,2.7,"WWLWLWWLWW",["Main"],1),P("Foxfire","Ahri","middle","E1 88 LP","emerald",43,202,7,71,5.3,"LLWWWLLWLL",["3 wins in a row"])]},
+        {side:"enemy",label:"Enemy team",players:[P("Bugs","Zed","middle","D4 0 LP","diamond",19,109,0,null,null,"LLLLWLLLLL",["First time"])]}]});
+      return;
+    }
     if(view==="status"){window.updateState({view:"status",status:"waiting",message:"In queue - waiting for a match...",days:14,tier_id:"master_plus",tiers:[]});return}
     window.updateState({view:"picks",
       status:"active",role:"support",tier:"Master+",days:14,tier_id:q.get("tier")||"master_plus",note:q.get("tier")==="challenger"?"Few matchups at this tier: scores lean on overall win rate.":"",tiers:[{id:"master_plus",label:"Master+"},{id:"grandmaster_plus",label:"GM+"},{id:"challenger",label:"Challenger"}],

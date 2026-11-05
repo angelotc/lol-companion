@@ -1,0 +1,62 @@
+{
+ "p10": [
+  {
+   "championId": 1,
+   "championPoints": 5000
+  }
+ ],
+ "p11": [
+  {
+   "championId": 64,
+   "championPoints": 40000
+  }
+ ],
+ "p12": [
+  {
+   "championId": 103,
+   "championPoints": 250000
+  }
+ ],
+ "p13": [
+  {
+   "championId": 222,
+   "championPoints": 90000
+  }
+ ],
+ "p14": [
+  {
+   "championId": 412,
+   "championPoints": 3000
+  }
+ ],
+ "p20": [
+  {
+   "championId": 86,
+   "championPoints": 600000
+  }
+ ],
+ "p21": [
+  {
+   "championId": 1,
+   "championPoints": 5000
+  }
+ ],
+ "p22": [
+  {
+   "championId": 134,
+   "championPoints": 120000
+  }
+ ],
+ "p23": [
+  {
+   "championId": 523,
+   "championPoints": 15000
+  }
+ ],
+ "p24": [
+  {
+   "championId": 40,
+   "championPoints": 70000
+  }
+ ]
+}

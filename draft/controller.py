@@ -13,7 +13,7 @@ from typing import Callable
 
 from draft import views
 from config import Config
-from data import lcu_data
+from data import lcu_data, players
 from data.live import GameRecorder, LiveClient, LiveGame, parse as parse_live
 from data.store import Store
 from draft.engine import BuildEvaluation, Evaluation, Recommender
@@ -25,6 +25,7 @@ from draft.state import DRAFT_STAGES, PRE_DRAFT_STAGES, Event, Session, Stage
 SETTINGS = DATA_DIR / "settings.json"
 SYNC_EVERY = 20.0  # seconds; history/mastery sync is cheap but not free
 LIVE_POLL = 2.0  # seconds between game data reads while the in-game panel is shown
+PLAYERS_RETRY = 30.0  # seconds before trying again when player stats could not be read
 STATS_RETRY = 30.0  # seconds before refetching draft-odds stats that failed to load
 STAGE_TABS = {Stage.BAN: ["bans", "picks"], Stage.LOCKED: ["build", "picks"]}  # first is the default
 log = logging.getLogger("controller")
@@ -69,6 +70,10 @@ class Controller:
         self.preload: str = ""             # progress line while preloading in lobby/queue
         self._preloaded: set[tuple[str, str]] = set()
         self.ingame_shown = False          # Ctrl+X in game; stays as you left it for the next game
+        self.ingame_view = "build"         # "build" (Ctrl+X) | "players" (Ctrl+Shift+X)
+        self.players: tuple[int, list[players.PlayerStats]] | None = None  # (game id, stats) this game
+        self._players_loading = False
+        self._players_retry_at = 0.0
         self.live: LiveGame | None = None
         self.last_role: str = ""           # role from your last draft (games without positions)
         self._live_client: LiveClient | None = None
@@ -130,7 +135,10 @@ class Controller:
             s = self.session
             stage = s.stage
             if stage == Stage.INGAME and self.ingame_shown:
-                self._render_ingame()
+                if self.ingame_view == "players":
+                    self._render_players()
+                else:
+                    self._render_ingame()
                 return
             if stage not in DRAFT_STAGES or not s.draft:
                 msg = self.idle_message if stage == Stage.IDLE else views.STAGE_MESSAGES.get(stage, "")
@@ -245,6 +253,54 @@ class Controller:
             log.exception("in-game build failed")
             self.show_status("Error loading build (see app.log)", "error")
 
+    def _render_players(self) -> None:
+        if self.players is None:
+            self.start_players()
+            msg = "Loading players..." if self._players_loading else "Player stats unavailable (League client not reachable)."
+            self.show_status(msg)
+            return
+        champs = self.rec.champs if self.rec else None
+        if not champs or not self.players[1]:
+            self.show_status("No player data for this game.")
+            return
+        self.push(views.players(self.header(), self.players[1], champs))
+
+    def start_players(self) -> None:
+        """Read every player's stats once per game, in the background (from the loading screen on)."""
+        if self._players_loading or self.players is not None or not self.lcu:
+            return
+        if time.monotonic() < self._players_retry_at:
+            return
+        self._players_loading = True
+        threading.Thread(target=self._load_players, daemon=True, name="players").start()
+
+    def _load_players(self) -> None:
+        result = None
+        try:
+            if self._live_client is None:
+                self._live_client = LiveClient()
+            live = self._live_client.raw()
+            id_from = self.rec.champs.id_from_slug if self.rec else (lambda _: None)
+            client = self.lcu()
+            try:
+                gid, refs = players.game_refs(client, live, id_from)
+                stats = players.load_all(client, refs) if refs else []
+            finally:
+                client.close()
+            log.info("player stats: %d players (%d partial)", len(stats), sum(s.error for s in stats))
+            result = (gid, stats) if stats else None
+        except Exception:
+            log.exception("player stats")
+        with self.lock:
+            self._players_loading = False
+            if self.session.stage != Stage.INGAME:
+                return  # the game ended while loading
+            self.players = result
+            if result is None:
+                self._players_retry_at = time.monotonic() + PLAYERS_RETRY
+            if self.ingame_shown and self.ingame_view == "players":
+                self.render()
+
     def _build(self, ev: Evaluation) -> BuildEvaluation:
         """Build for your locked champion vs the enemies' lanes, memoized per draft state."""
         enemies = {lane: cid for cid, lane in ev.lanes.items() if cid in ev.draft.enemies}
@@ -288,6 +344,11 @@ class Controller:
                 self.draft_id = self._record(lambda: self.store.start_draft(role, self.tier))
                 if session and self.draft_id is not None:
                     self._record(lambda: self.store.snapshot(self.draft_id, session))
+        if Event.PHASE in events:
+            if s.stage == Stage.INGAME:
+                self.start_players()  # ready by the time you press Ctrl+Shift+X
+            else:
+                self.players, self._players_retry_at = None, 0.0
         if Event.LOCKED_IN in events:
             self.tab = None  # show the build first, whatever tab you had in the ban phase
         self.render()
@@ -398,15 +459,25 @@ class Controller:
                 self.render()
 
     # -- in game -----------------------------------------------------------
-    def toggle_ingame(self) -> None:
+    def toggle_ingame(self, view: str = "build") -> None:
+        """Ctrl+X (build) / Ctrl+Shift+X (players): show that view, or hide the panel if it's
+        already showing it."""
         with self.lock:
-            self.ingame_shown = not self.ingame_shown
-        log.info("in-game panel %s", "on" if self.ingame_shown else "off")
+            if self.ingame_shown and self.ingame_view == view:
+                self.ingame_shown = False
+            else:
+                self.ingame_shown, self.ingame_view = True, view
+        log.info("in-game panel %s", view if self.ingame_shown else "off")
         if self.ingame_shown:
             try:
                 log.info("game data: %s", "found" if self.poll_live() else "not available")
+                with self.lock:
+                    self.render()  # the view may have changed even if the game data didn't
             except Exception:
                 log.exception("in-game panel")
+
+    def toggle_players(self) -> None:
+        self.toggle_ingame("players")
 
     def poll_live(self, data: dict | None = None) -> bool:
         """Read the game's local data once (or use `data` already read); re-render if your state

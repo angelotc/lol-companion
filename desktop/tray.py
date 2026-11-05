@@ -69,7 +69,7 @@ class Tray:
         u = self.updater
         item = pystray.MenuItem
         label = lambda _: (update_item(u.state) or ("", False))[0]
-        yield item("Show / hide panel (Ctrl+X)", lambda: toggle(), default=True)
+        yield item("Show / hide panel (Ctrl+X; in game Ctrl+Shift+X for players)", lambda: toggle(), default=True)
         yield item(
             label, lambda: self.restart() if u.state == "ready" else u.check_async(),
             enabled=lambda _: (update_item(u.state) or ("", False))[1],

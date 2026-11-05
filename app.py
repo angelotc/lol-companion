@@ -5,7 +5,10 @@
   uv run app.py --replay drafts/x.jsonl  replay a recorded draft (panel always shown)
   uv run app.py --simulate --role middle --allies jinx --enemies syndra,leesin
 
+  uv run app.py --simulate --players     the in-game players view, from tests/fixtures/players
+
 Ctrl+X (with League in front) toggles the panel; in game it toggles the in-game build panel.
+Ctrl+Shift+X in game toggles the players view (every player's rank and recent form).
 """
 from __future__ import annotations
 
@@ -206,7 +209,13 @@ class App:
             bans=set(ids(self.args.bans)), picked={s.champion_id for s in allies} | set(enemies),
         )
         with ctl.lock:
-            if self.args.items:  # a game in progress: the in-game panel, as after Ctrl+X
+            if self.args.players:  # a game in progress: the players view, as after Ctrl+Shift+X
+                from data.players import FixtureClient, game_refs, load_all
+                client = FixtureClient(RESOURCES / "tests" / "fixtures" / "players")
+                _, refs = game_refs(client)
+                ctl.players = (1, load_all(client, refs))
+                ctl.session.phase, ctl.ingame_shown, ctl.ingame_view = "InProgress", True, "players"
+            elif self.args.items:  # a game in progress: the in-game panel, as after Ctrl+X
                 lanes = ["bottom", "support", "middle", "jungle", "top"]
                 names = [ctl.rec.champs.name(c) for c in enemies]
                 ctl.live = LiveGame(self.args.champion, self.args.role, self.args.level, self.args.gold,
@@ -292,20 +301,23 @@ class App:
         window, so Ctrl+X stays cut everywhere else."""
         state = ctypes.windll.user32.GetAsyncKeyState
         down = lambda vk: bool(state(vk) & 0x8000)
-        was = False
+        was = None  # the combo held at the last check: "build", "players" or None
         while True:
             time.sleep(KEY_POLL)
             try:
                 game, front = tracker.find_game(), tracker.foreground_root()
                 if not front or front not in (game, tracker.find_client(), tracker.find_window(TITLE)):
-                    was = False
+                    was = None
                     continue
-                now = down(VK_CONTROL) and not down(VK_SHIFT) and not down(VK_MENU) and down(ord(TOGGLE_KEY))
-                if now and not was:
-                    log.info("key Ctrl+%s (stage %s)", TOGGLE_KEY, self.ctl.session.stage.value)
+                now = None
+                if down(VK_CONTROL) and not down(VK_MENU) and down(ord(TOGGLE_KEY)):
+                    now = "players" if down(VK_SHIFT) else "build"
+                if now and now != was:
+                    log.info("key Ctrl+%s%s (stage %s)", "Shift+" if now == "players" else "", TOGGLE_KEY,
+                             self.ctl.session.stage.value)
                     if game:
-                        threading.Thread(target=self.ctl.toggle_ingame, daemon=True).start()
-                    else:
+                        threading.Thread(target=self.ctl.toggle_ingame, args=(now,), daemon=True).start()
+                    elif now == "build":
                         self.ctl.user_hidden = not self.ctl.user_hidden
                 was = now
             except Exception:
@@ -316,7 +328,7 @@ class App:
     def boot(self) -> None:
         self.window.events.loaded.wait(15)
         for target in (self.track, self.hotkey, self.toggle_keys, self.ctl.live_loop):
-            if target == self.ctl.live_loop and self.args.items:
+            if target == self.ctl.live_loop and (self.args.items or self.args.players):
                 continue  # simulated game: polling would replace it with "no game"
             threading.Thread(target=target, daemon=True).start()
         self.tray.start()
@@ -375,6 +387,7 @@ def main() -> None:
     ap.add_argument("--bans", default="")
     ap.add_argument("--items", type=lambda s: [int(i) for i in s.split(",")],
                     help="simulate: item ids you hold; shows the in-game panel instead of the draft")
+    ap.add_argument("--players", action="store_true", help="simulate in game: the players view (Ctrl+Shift+X)")
     ap.add_argument("--champion", default="Leona", help="simulate in game: your champion")
     ap.add_argument("--level", type=int, default=9)
     ap.add_argument("--gold", type=float, default=650)

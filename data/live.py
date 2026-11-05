@@ -3,6 +3,7 @@
 Only your own state (champion, items, gold, level) and every player's champion and position are
 used. Enemy items and timers are deliberately ignored: in-game suggestions stay limited to the
 build worked out before the game (Riot policy: no dictating decisions, no hidden information).
+Player stats (rank, recent games) come from the League client's public profiles, see data/players.py.
 
 GameRecorder (off unless `record_games` is set) saves the full raw data to disk now and then, so
 the fields and event names can be studied after a game. It changes nothing on screen.

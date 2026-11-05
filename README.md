@@ -21,6 +21,7 @@ The panel appears on its own while the League client is in front and hides in ga
 | Key | Does |
 |---|---|
 | **Ctrl+X** | Toggle the panel (client in front) or the in-game panel (in game) |
+| **Ctrl+Shift+X** | In game: toggle the players view (all 10 players' rank, season win rate, recent games on their champion) |
 | **Ctrl+Shift+L** | Toggle the panel from any window |
 
 The **tray icon** (bottom-right) shows/hides the panel, checks for updates, opens settings, turns
@@ -45,6 +46,7 @@ on Start with Windows, and quits.
 - **Their damage** (build view and in game): the enemy team's split of physical, magic and true damage, from each enemy's average damage to champions in its lane. Hover for each enemy's own split.
 - **Picks tab after lock-in** shows the recommendations as they were when you locked in.
 - **In game** shows each item's win rate and its Δ vs each enemy, one column per lane (enemy icons on top). Needs borderless or windowed mode. Boots and item slots you've already filled are hidden. It never takes focus from the game: hover an item or row for details, Ctrl+X hides it.
+- **Players** (in game, Ctrl+Shift+X): rank and season win rate, games/win rate/KDA on the champion they're playing (from their last ~20 games), last 10 results, and tags like "First time" or "3 losses in a row". Read from the League client when the game starts.
 
 ## Settings
 Tray → Settings (or the gear in the panel header). Saved changes apply immediately. They live in `config.toml` (installed copy in `%LOCALAPPDATA%\league-analysis\`), which also holds what the window doesn't cover:
@@ -95,7 +97,7 @@ your games are weighted 0.5^(age / half_life), half_life = 90 days
 ## APIs
 | API | Used for |
 |---|---|
-| [League Client API](https://developer.riotgames.com/docs/lol#league-client-api) (local, read-only) | Champ select (`/lol-champ-select/v1/session`, pickable champions), game phase, lobby, match history, mastery, patch version |
+| [League Client API](https://developer.riotgames.com/docs/lol#league-client-api) (local, read-only) | Champ select (`/lol-champ-select/v1/session`, pickable champions), game phase, lobby, match history, mastery, patch version. In game (Ctrl+Shift+X): every player's rank, recent games and mastery, the same public profile data the client shows |
 | [Live Client Data API](https://developer.riotgames.com/docs/lol#game-client-api) (`127.0.0.1:2999`) | In game: your champion, items, gold, level, and each player's champion/position. No enemy items or timers. |
 | [lolalytics](https://lolalytics.com) (unofficial, may change) | Win rates, matchups, synergies, builds. Cached 24h. |
 | [Data Dragon](https://ddragon.leagueoflegends.com) + [CommunityDragon](https://raw.communitydragon.org) | Champion, item and rune data and images |
@@ -110,6 +112,8 @@ uv run app.py                                  # live
 uv run app.py --record drafts/x.jsonl          # live + record
 uv run app.py --replay drafts/x.jsonl          # replay
 uv run app.py --simulate --role support --allies jinx --enemies nautilus
+uv run app.py --simulate --players               # in-game players view, from tests/fixtures/players
+uv run scripts/dump_players.py                 # in a game: save the client's raw player data
 uv run pytest
 uv run --group build pyinstaller league_helper.spec --noconfirm   # → dist/LoLCompanion/
 ```

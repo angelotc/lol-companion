@@ -1,0 +1,119 @@
+{
+ "p10": {
+  "queueMap": {
+   "RANKED_SOLO_5x5": {
+    "tier": "GOLD",
+    "division": "II",
+    "leaguePoints": 45,
+    "wins": 61,
+    "losses": 39
+   }
+  }
+ },
+ "p11": {
+  "queueMap": {
+   "RANKED_SOLO_5x5": {
+    "tier": "PLATINUM",
+    "division": "IV",
+    "leaguePoints": 12,
+    "wins": 108,
+    "losses": 85
+   }
+  }
+ },
+ "p12": {
+  "queueMap": {
+   "RANKED_SOLO_5x5": {
+    "tier": "EMERALD",
+    "division": "I",
+    "leaguePoints": 88,
+    "wins": 87,
+    "losses": 115
+   }
+  }
+ },
+ "p13": {
+  "queueMap": {
+   "RANKED_SOLO_5x5": {
+    "tier": "GOLD",
+    "division": "I",
+    "leaguePoints": 67,
+    "wins": 109,
+    "losses": 61
+   }
+  }
+ },
+ "p14": {
+  "queueMap": {
+   "RANKED_SOLO_5x5": {
+    "tier": "NONE",
+    "division": "NA",
+    "leaguePoints": 0,
+    "wins": 0,
+    "losses": 0
+   },
+   "RANKED_FLEX_SR": {
+    "tier": "BRONZE",
+    "division": "I",
+    "leaguePoints": 70,
+    "wins": 6,
+    "losses": 4
+   }
+  }
+ },
+ "p20": {
+  "queueMap": {
+   "RANKED_SOLO_5x5": {
+    "tier": "SILVER",
+    "division": "III",
+    "leaguePoints": 30,
+    "wins": 85,
+    "losses": 60
+   }
+  }
+ },
+ "p21": {
+  "queueMap": {
+   "RANKED_SOLO_5x5": {
+    "tier": "DIAMOND",
+    "division": "IV",
+    "leaguePoints": 0,
+    "wins": 21,
+    "losses": 88
+   }
+  }
+ },
+ "p22": {
+  "queueMap": {
+   "RANKED_SOLO_5x5": {
+    "tier": "MASTER",
+    "division": "I",
+    "leaguePoints": 120,
+    "wins": 43,
+    "losses": 21
+   }
+  }
+ },
+ "p23": {
+  "queueMap": {
+   "RANKED_SOLO_5x5": {
+    "tier": "GOLD",
+    "division": "III",
+    "leaguePoints": 5,
+    "wins": 73,
+    "losses": 73
+   }
+  }
+ },
+ "p24": {
+  "queueMap": {
+   "RANKED_SOLO_5x5": {
+    "tier": "PLATINUM",
+    "division": "II",
+    "leaguePoints": 50,
+    "wins": 98,
+    "losses": 84
+   }
+  }
+ }
+}

@@ -1,0 +1,3116 @@
+{
+ "p10": {
+  "games": {
+   "games": [
+    {
+     "gameId": 9000,
+     "queueId": 450,
+     "gameCreation": 1760000000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 1,
+       "stats": {
+        "win": true,
+        "kills": 1,
+        "deaths": 5,
+        "assists": 1
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9001,
+     "queueId": 440,
+     "gameCreation": 1759913600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": true,
+        "kills": 6,
+        "deaths": 1,
+        "assists": 7
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9002,
+     "queueId": 450,
+     "gameCreation": 1759827200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": true,
+        "kills": 1,
+        "deaths": 3,
+        "assists": 1
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9003,
+     "queueId": 420,
+     "gameCreation": 1759740800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": true,
+        "kills": 0,
+        "deaths": 8,
+        "assists": 4
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9004,
+     "queueId": 450,
+     "gameCreation": 1759654400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 51,
+       "stats": {
+        "win": false,
+        "kills": 4,
+        "deaths": 8,
+        "assists": 5
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9005,
+     "queueId": 450,
+     "gameCreation": 1759568000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": true,
+        "kills": 11,
+        "deaths": 1,
+        "assists": 1
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9006,
+     "queueId": 440,
+     "gameCreation": 1759481600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": false,
+        "kills": 12,
+        "deaths": 5,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9007,
+     "queueId": 420,
+     "gameCreation": 1759395200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": true,
+        "kills": 12,
+        "deaths": 2,
+        "assists": 7
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9008,
+     "queueId": 420,
+     "gameCreation": 1759308800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": false,
+        "kills": 11,
+        "deaths": 7,
+        "assists": 9
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9009,
+     "queueId": 440,
+     "gameCreation": 1759222400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": true,
+        "kills": 2,
+        "deaths": 5,
+        "assists": 4
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9010,
+     "queueId": 420,
+     "gameCreation": 1759136000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": true,
+        "kills": 12,
+        "deaths": 8,
+        "assists": 10
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9011,
+     "queueId": 450,
+     "gameCreation": 1759049600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 238,
+       "stats": {
+        "win": false,
+        "kills": 12,
+        "deaths": 7,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9012,
+     "queueId": 420,
+     "gameCreation": 1758963200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": true,
+        "kills": 0,
+        "deaths": 4,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9013,
+     "queueId": 420,
+     "gameCreation": 1758876800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": false,
+        "kills": 0,
+        "deaths": 7,
+        "assists": 11
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9014,
+     "queueId": 420,
+     "gameCreation": 1758790400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": true,
+        "kills": 12,
+        "deaths": 4,
+        "assists": 4
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9015,
+     "queueId": 440,
+     "gameCreation": 1758704000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": true,
+        "kills": 1,
+        "deaths": 2,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9016,
+     "queueId": 440,
+     "gameCreation": 1758617600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": false,
+        "kills": 8,
+        "deaths": 4,
+        "assists": 13
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9017,
+     "queueId": 420,
+     "gameCreation": 1758531200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": false,
+        "kills": 1,
+        "deaths": 2,
+        "assists": 4
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9018,
+     "queueId": 450,
+     "gameCreation": 1758444800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": true,
+        "kills": 2,
+        "deaths": 4,
+        "assists": 9
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9019,
+     "queueId": 450,
+     "gameCreation": 1758358400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": false,
+        "kills": 9,
+        "deaths": 5,
+        "assists": 4
+       }
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "p11": {
+  "games": {
+   "games": [
+    {
+     "gameId": 9100,
+     "queueId": 450,
+     "gameCreation": 1760000000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 1,
+       "stats": {
+        "win": true,
+        "kills": 6,
+        "deaths": 6,
+        "assists": 12
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9101,
+     "queueId": 420,
+     "gameCreation": 1759913600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": false,
+        "kills": 3,
+        "deaths": 1,
+        "assists": 6
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9102,
+     "queueId": 420,
+     "gameCreation": 1759827200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": true,
+        "kills": 1,
+        "deaths": 0,
+        "assists": 4
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9103,
+     "queueId": 420,
+     "gameCreation": 1759740800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 238,
+       "stats": {
+        "win": false,
+        "kills": 3,
+        "deaths": 9,
+        "assists": 12
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9104,
+     "queueId": 420,
+     "gameCreation": 1759654400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 64,
+       "stats": {
+        "win": true,
+        "kills": 9,
+        "deaths": 5,
+        "assists": 15
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9105,
+     "queueId": 440,
+     "gameCreation": 1759568000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 64,
+       "stats": {
+        "win": false,
+        "kills": 7,
+        "deaths": 7,
+        "assists": 9
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9106,
+     "queueId": 420,
+     "gameCreation": 1759481600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 64,
+       "stats": {
+        "win": true,
+        "kills": 11,
+        "deaths": 4,
+        "assists": 15
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9107,
+     "queueId": 420,
+     "gameCreation": 1759395200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 51,
+       "stats": {
+        "win": false,
+        "kills": 8,
+        "deaths": 5,
+        "assists": 4
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9108,
+     "queueId": 420,
+     "gameCreation": 1759308800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 1,
+       "stats": {
+        "win": false,
+        "kills": 10,
+        "deaths": 1,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9109,
+     "queueId": 420,
+     "gameCreation": 1759222400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 51,
+       "stats": {
+        "win": true,
+        "kills": 8,
+        "deaths": 8,
+        "assists": 10
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9110,
+     "queueId": 440,
+     "gameCreation": 1759136000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": false,
+        "kills": 11,
+        "deaths": 3,
+        "assists": 6
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9111,
+     "queueId": 420,
+     "gameCreation": 1759049600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 238,
+       "stats": {
+        "win": false,
+        "kills": 12,
+        "deaths": 4,
+        "assists": 15
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9112,
+     "queueId": 420,
+     "gameCreation": 1758963200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 238,
+       "stats": {
+        "win": true,
+        "kills": 5,
+        "deaths": 1,
+        "assists": 7
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9113,
+     "queueId": 420,
+     "gameCreation": 1758876800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 64,
+       "stats": {
+        "win": true,
+        "kills": 3,
+        "deaths": 7,
+        "assists": 0
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9114,
+     "queueId": 420,
+     "gameCreation": 1758790400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 238,
+       "stats": {
+        "win": false,
+        "kills": 10,
+        "deaths": 1,
+        "assists": 12
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9115,
+     "queueId": 420,
+     "gameCreation": 1758704000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": true,
+        "kills": 6,
+        "deaths": 10,
+        "assists": 10
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9116,
+     "queueId": 440,
+     "gameCreation": 1758617600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 64,
+       "stats": {
+        "win": false,
+        "kills": 7,
+        "deaths": 6,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9117,
+     "queueId": 420,
+     "gameCreation": 1758531200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 51,
+       "stats": {
+        "win": false,
+        "kills": 2,
+        "deaths": 9,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9118,
+     "queueId": 450,
+     "gameCreation": 1758444800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 51,
+       "stats": {
+        "win": false,
+        "kills": 7,
+        "deaths": 10,
+        "assists": 11
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9119,
+     "queueId": 420,
+     "gameCreation": 1758358400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 64,
+       "stats": {
+        "win": false,
+        "kills": 0,
+        "deaths": 10,
+        "assists": 3
+       }
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "p12": {
+  "games": {
+   "games": [
+    {
+     "gameId": 9200,
+     "queueId": 420,
+     "gameCreation": 1760000000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": true,
+        "kills": 3,
+        "deaths": 0,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9201,
+     "queueId": 450,
+     "gameCreation": 1759913600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 103,
+       "stats": {
+        "win": true,
+        "kills": 5,
+        "deaths": 4,
+        "assists": 13
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9202,
+     "queueId": 420,
+     "gameCreation": 1759827200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 1,
+       "stats": {
+        "win": true,
+        "kills": 7,
+        "deaths": 10,
+        "assists": 13
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9203,
+     "queueId": 420,
+     "gameCreation": 1759740800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 875,
+       "stats": {
+        "win": true,
+        "kills": 8,
+        "deaths": 8,
+        "assists": 0
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9204,
+     "queueId": 420,
+     "gameCreation": 1759654400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 51,
+       "stats": {
+        "win": false,
+        "kills": 2,
+        "deaths": 2,
+        "assists": 15
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9205,
+     "queueId": 420,
+     "gameCreation": 1759568000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": false,
+        "kills": 10,
+        "deaths": 8,
+        "assists": 15
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9206,
+     "queueId": 420,
+     "gameCreation": 1759481600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": false,
+        "kills": 3,
+        "deaths": 3,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9207,
+     "queueId": 440,
+     "gameCreation": 1759395200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 103,
+       "stats": {
+        "win": true,
+        "kills": 8,
+        "deaths": 0,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9208,
+     "queueId": 450,
+     "gameCreation": 1759308800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 103,
+       "stats": {
+        "win": false,
+        "kills": 9,
+        "deaths": 8,
+        "assists": 6
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9209,
+     "queueId": 440,
+     "gameCreation": 1759222400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": false,
+        "kills": 8,
+        "deaths": 3,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9210,
+     "queueId": 420,
+     "gameCreation": 1759136000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": false,
+        "kills": 6,
+        "deaths": 1,
+        "assists": 12
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9211,
+     "queueId": 420,
+     "gameCreation": 1759049600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 103,
+       "stats": {
+        "win": true,
+        "kills": 6,
+        "deaths": 1,
+        "assists": 6
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9212,
+     "queueId": 420,
+     "gameCreation": 1758963200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": false,
+        "kills": 11,
+        "deaths": 10,
+        "assists": 11
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9213,
+     "queueId": 440,
+     "gameCreation": 1758876800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 103,
+       "stats": {
+        "win": false,
+        "kills": 3,
+        "deaths": 1,
+        "assists": 12
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9214,
+     "queueId": 420,
+     "gameCreation": 1758790400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 51,
+       "stats": {
+        "win": false,
+        "kills": 2,
+        "deaths": 6,
+        "assists": 12
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9215,
+     "queueId": 420,
+     "gameCreation": 1758704000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 103,
+       "stats": {
+        "win": true,
+        "kills": 1,
+        "deaths": 5,
+        "assists": 0
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9216,
+     "queueId": 420,
+     "gameCreation": 1758617600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 103,
+       "stats": {
+        "win": true,
+        "kills": 6,
+        "deaths": 5,
+        "assists": 9
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9217,
+     "queueId": 420,
+     "gameCreation": 1758531200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 103,
+       "stats": {
+        "win": true,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9218,
+     "queueId": 420,
+     "gameCreation": 1758444800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 103,
+       "stats": {
+        "win": false,
+        "kills": 4,
+        "deaths": 2,
+        "assists": 13
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9219,
+     "queueId": 450,
+     "gameCreation": 1758358400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": true,
+        "kills": 8,
+        "deaths": 9,
+        "assists": 15
+       }
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "p13": {
+  "games": {
+   "games": [
+    {
+     "gameId": 9300,
+     "queueId": 420,
+     "gameCreation": 1760000000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 222,
+       "stats": {
+        "win": true,
+        "kills": 6,
+        "deaths": 1,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9301,
+     "queueId": 420,
+     "gameCreation": 1759913600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": false,
+        "kills": 9,
+        "deaths": 3,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9302,
+     "queueId": 420,
+     "gameCreation": 1759827200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 222,
+       "stats": {
+        "win": true,
+        "kills": 5,
+        "deaths": 8,
+        "assists": 13
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9303,
+     "queueId": 420,
+     "gameCreation": 1759740800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": false,
+        "kills": 8,
+        "deaths": 3,
+        "assists": 3
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9304,
+     "queueId": 420,
+     "gameCreation": 1759654400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": true,
+        "kills": 4,
+        "deaths": 10,
+        "assists": 9
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9305,
+     "queueId": 450,
+     "gameCreation": 1759568000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": true,
+        "kills": 10,
+        "deaths": 2,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9306,
+     "queueId": 420,
+     "gameCreation": 1759481600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 222,
+       "stats": {
+        "win": true,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9307,
+     "queueId": 450,
+     "gameCreation": 1759395200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 875,
+       "stats": {
+        "win": false,
+        "kills": 7,
+        "deaths": 3,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9308,
+     "queueId": 440,
+     "gameCreation": 1759308800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 222,
+       "stats": {
+        "win": false,
+        "kills": 10,
+        "deaths": 7,
+        "assists": 12
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9309,
+     "queueId": 420,
+     "gameCreation": 1759222400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": false,
+        "kills": 5,
+        "deaths": 3,
+        "assists": 4
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9310,
+     "queueId": 420,
+     "gameCreation": 1759136000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 238,
+       "stats": {
+        "win": false,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9311,
+     "queueId": 440,
+     "gameCreation": 1759049600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 1,
+       "stats": {
+        "win": true,
+        "kills": 8,
+        "deaths": 10,
+        "assists": 9
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9312,
+     "queueId": 420,
+     "gameCreation": 1758963200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": true,
+        "kills": 2,
+        "deaths": 4,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9313,
+     "queueId": 420,
+     "gameCreation": 1758876800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 222,
+       "stats": {
+        "win": true,
+        "kills": 8,
+        "deaths": 5,
+        "assists": 7
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9314,
+     "queueId": 420,
+     "gameCreation": 1758790400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 222,
+       "stats": {
+        "win": false,
+        "kills": 5,
+        "deaths": 2,
+        "assists": 0
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9315,
+     "queueId": 420,
+     "gameCreation": 1758704000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 222,
+       "stats": {
+        "win": true,
+        "kills": 8,
+        "deaths": 10,
+        "assists": 6
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9316,
+     "queueId": 420,
+     "gameCreation": 1758617600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 222,
+       "stats": {
+        "win": false,
+        "kills": 4,
+        "deaths": 1,
+        "assists": 4
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9317,
+     "queueId": 420,
+     "gameCreation": 1758531200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 1,
+       "stats": {
+        "win": true,
+        "kills": 4,
+        "deaths": 10,
+        "assists": 7
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9318,
+     "queueId": 420,
+     "gameCreation": 1758444800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 222,
+       "stats": {
+        "win": false,
+        "kills": 10,
+        "deaths": 9,
+        "assists": 12
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9319,
+     "queueId": 450,
+     "gameCreation": 1758358400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": true,
+        "kills": 10,
+        "deaths": 2,
+        "assists": 1
+       }
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "p14": {
+  "games": {
+   "games": [
+    {
+     "gameId": 9400,
+     "queueId": 450,
+     "gameCreation": 1760000000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 875,
+       "stats": {
+        "win": true,
+        "kills": 12,
+        "deaths": 8,
+        "assists": 0
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9401,
+     "queueId": 420,
+     "gameCreation": 1759913600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": true,
+        "kills": 2,
+        "deaths": 10,
+        "assists": 11
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9402,
+     "queueId": 450,
+     "gameCreation": 1759827200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": false,
+        "kills": 0,
+        "deaths": 10,
+        "assists": 0
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9403,
+     "queueId": 420,
+     "gameCreation": 1759740800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": true,
+        "kills": 7,
+        "deaths": 1,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9404,
+     "queueId": 440,
+     "gameCreation": 1759654400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": false,
+        "kills": 4,
+        "deaths": 1,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9405,
+     "queueId": 440,
+     "gameCreation": 1759568000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": true,
+        "kills": 7,
+        "deaths": 6,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9406,
+     "queueId": 450,
+     "gameCreation": 1759481600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": false,
+        "kills": 10,
+        "deaths": 10,
+        "assists": 6
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9407,
+     "queueId": 420,
+     "gameCreation": 1759395200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 412,
+       "stats": {
+        "win": true,
+        "kills": 10,
+        "deaths": 4,
+        "assists": 4
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9408,
+     "queueId": 420,
+     "gameCreation": 1759308800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 412,
+       "stats": {
+        "win": true,
+        "kills": 10,
+        "deaths": 1,
+        "assists": 6
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9409,
+     "queueId": 420,
+     "gameCreation": 1759222400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": false,
+        "kills": 7,
+        "deaths": 7,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9410,
+     "queueId": 420,
+     "gameCreation": 1759136000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 875,
+       "stats": {
+        "win": true,
+        "kills": 7,
+        "deaths": 0,
+        "assists": 9
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9411,
+     "queueId": 440,
+     "gameCreation": 1759049600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 875,
+       "stats": {
+        "win": false,
+        "kills": 4,
+        "deaths": 6,
+        "assists": 6
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9412,
+     "queueId": 420,
+     "gameCreation": 1758963200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": true,
+        "kills": 2,
+        "deaths": 8,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9413,
+     "queueId": 450,
+     "gameCreation": 1758876800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 51,
+       "stats": {
+        "win": false,
+        "kills": 4,
+        "deaths": 1,
+        "assists": 11
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9414,
+     "queueId": 420,
+     "gameCreation": 1758790400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": true,
+        "kills": 0,
+        "deaths": 7,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9415,
+     "queueId": 440,
+     "gameCreation": 1758704000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 51,
+       "stats": {
+        "win": true,
+        "kills": 5,
+        "deaths": 1,
+        "assists": 10
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9416,
+     "queueId": 440,
+     "gameCreation": 1758617600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 412,
+       "stats": {
+        "win": false,
+        "kills": 1,
+        "deaths": 3,
+        "assists": 0
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9417,
+     "queueId": 420,
+     "gameCreation": 1758531200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": true,
+        "kills": 6,
+        "deaths": 6,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9418,
+     "queueId": 420,
+     "gameCreation": 1758444800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": false,
+        "kills": 4,
+        "deaths": 1,
+        "assists": 1
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9419,
+     "queueId": 420,
+     "gameCreation": 1758358400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": false,
+        "kills": 3,
+        "deaths": 4,
+        "assists": 13
+       }
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "p20": {
+  "games": {
+   "games": [
+    {
+     "gameId": 9500,
+     "queueId": 440,
+     "gameCreation": 1760000000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": true,
+        "kills": 0,
+        "deaths": 10,
+        "assists": 12
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9501,
+     "queueId": 420,
+     "gameCreation": 1759913600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 875,
+       "stats": {
+        "win": false,
+        "kills": 0,
+        "deaths": 6,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9502,
+     "queueId": 420,
+     "gameCreation": 1759827200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": true,
+        "kills": 7,
+        "deaths": 0,
+        "assists": 4
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9503,
+     "queueId": 420,
+     "gameCreation": 1759740800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": true,
+        "kills": 4,
+        "deaths": 4,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9504,
+     "queueId": 440,
+     "gameCreation": 1759654400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": true,
+        "kills": 8,
+        "deaths": 10,
+        "assists": 12
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9505,
+     "queueId": 420,
+     "gameCreation": 1759568000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": false,
+        "kills": 3,
+        "deaths": 8,
+        "assists": 15
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9506,
+     "queueId": 420,
+     "gameCreation": 1759481600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": true,
+        "kills": 12,
+        "deaths": 7,
+        "assists": 13
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9507,
+     "queueId": 420,
+     "gameCreation": 1759395200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": true,
+        "kills": 2,
+        "deaths": 5,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9508,
+     "queueId": 450,
+     "gameCreation": 1759308800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": true,
+        "kills": 3,
+        "deaths": 0,
+        "assists": 13
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9509,
+     "queueId": 420,
+     "gameCreation": 1759222400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": false,
+        "kills": 6,
+        "deaths": 4,
+        "assists": 10
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9510,
+     "queueId": 450,
+     "gameCreation": 1759136000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": true,
+        "kills": 5,
+        "deaths": 2,
+        "assists": 6
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9511,
+     "queueId": 440,
+     "gameCreation": 1759049600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": false,
+        "kills": 6,
+        "deaths": 10,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9512,
+     "queueId": 420,
+     "gameCreation": 1758963200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": true,
+        "kills": 2,
+        "deaths": 0,
+        "assists": 13
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9513,
+     "queueId": 440,
+     "gameCreation": 1758876800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": false,
+        "kills": 9,
+        "deaths": 7,
+        "assists": 0
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9514,
+     "queueId": 450,
+     "gameCreation": 1758790400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": false,
+        "kills": 7,
+        "deaths": 7,
+        "assists": 7
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9515,
+     "queueId": 420,
+     "gameCreation": 1758704000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": true,
+        "kills": 8,
+        "deaths": 10,
+        "assists": 3
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9516,
+     "queueId": 420,
+     "gameCreation": 1758617600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": true,
+        "kills": 0,
+        "deaths": 2,
+        "assists": 7
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9517,
+     "queueId": 420,
+     "gameCreation": 1758531200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": true,
+        "kills": 2,
+        "deaths": 10,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9518,
+     "queueId": 420,
+     "gameCreation": 1758444800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": true,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 9
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9519,
+     "queueId": 440,
+     "gameCreation": 1758358400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 86,
+       "stats": {
+        "win": false,
+        "kills": 4,
+        "deaths": 3,
+        "assists": 0
+       }
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "p21": {
+  "games": {
+   "games": [
+    {
+     "gameId": 9600,
+     "queueId": 420,
+     "gameCreation": 1760000000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": true,
+        "kills": 10,
+        "deaths": 3,
+        "assists": 15
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9601,
+     "queueId": 440,
+     "gameCreation": 1759913600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 875,
+       "stats": {
+        "win": true,
+        "kills": 11,
+        "deaths": 10,
+        "assists": 9
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9602,
+     "queueId": 440,
+     "gameCreation": 1759827200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": true,
+        "kills": 1,
+        "deaths": 4,
+        "assists": 7
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9603,
+     "queueId": 420,
+     "gameCreation": 1759740800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 238,
+       "stats": {
+        "win": true,
+        "kills": 11,
+        "deaths": 5,
+        "assists": 13
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9604,
+     "queueId": 420,
+     "gameCreation": 1759654400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": true,
+        "kills": 11,
+        "deaths": 8,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9605,
+     "queueId": 420,
+     "gameCreation": 1759568000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": true,
+        "kills": 3,
+        "deaths": 7,
+        "assists": 7
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9606,
+     "queueId": 450,
+     "gameCreation": 1759481600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": true,
+        "kills": 7,
+        "deaths": 9,
+        "assists": 5
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9607,
+     "queueId": 420,
+     "gameCreation": 1759395200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": true,
+        "kills": 9,
+        "deaths": 2,
+        "assists": 12
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9608,
+     "queueId": 420,
+     "gameCreation": 1759308800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 1,
+       "stats": {
+        "win": false,
+        "kills": 6,
+        "deaths": 0,
+        "assists": 1
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9609,
+     "queueId": 420,
+     "gameCreation": 1759222400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": false,
+        "kills": 11,
+        "deaths": 1,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9610,
+     "queueId": 450,
+     "gameCreation": 1759136000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 238,
+       "stats": {
+        "win": true,
+        "kills": 11,
+        "deaths": 7,
+        "assists": 1
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9611,
+     "queueId": 420,
+     "gameCreation": 1759049600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": false,
+        "kills": 7,
+        "deaths": 2,
+        "assists": 3
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9612,
+     "queueId": 440,
+     "gameCreation": 1758963200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": true,
+        "kills": 1,
+        "deaths": 8,
+        "assists": 6
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9613,
+     "queueId": 440,
+     "gameCreation": 1758876800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": false,
+        "kills": 1,
+        "deaths": 0,
+        "assists": 15
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9614,
+     "queueId": 420,
+     "gameCreation": 1758790400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 875,
+       "stats": {
+        "win": false,
+        "kills": 5,
+        "deaths": 5,
+        "assists": 15
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9615,
+     "queueId": 440,
+     "gameCreation": 1758704000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": true,
+        "kills": 0,
+        "deaths": 6,
+        "assists": 1
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9616,
+     "queueId": 420,
+     "gameCreation": 1758617600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 1,
+       "stats": {
+        "win": true,
+        "kills": 9,
+        "deaths": 5,
+        "assists": 11
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9617,
+     "queueId": 420,
+     "gameCreation": 1758531200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 1,
+       "stats": {
+        "win": true,
+        "kills": 4,
+        "deaths": 4,
+        "assists": 0
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9618,
+     "queueId": 420,
+     "gameCreation": 1758444800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": true,
+        "kills": 1,
+        "deaths": 7,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9619,
+     "queueId": 440,
+     "gameCreation": 1758358400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": false,
+        "kills": 7,
+        "deaths": 2,
+        "assists": 15
+       }
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "p22": {
+  "games": {
+   "games": [
+    {
+     "gameId": 9700,
+     "queueId": 420,
+     "gameCreation": 1760000000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": false,
+        "kills": 9,
+        "deaths": 3,
+        "assists": 10
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9701,
+     "queueId": 450,
+     "gameCreation": 1759913600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": true,
+        "kills": 1,
+        "deaths": 8,
+        "assists": 6
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9702,
+     "queueId": 440,
+     "gameCreation": 1759827200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 134,
+       "stats": {
+        "win": true,
+        "kills": 1,
+        "deaths": 10,
+        "assists": 1
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9703,
+     "queueId": 420,
+     "gameCreation": 1759740800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 134,
+       "stats": {
+        "win": false,
+        "kills": 6,
+        "deaths": 1,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9704,
+     "queueId": 420,
+     "gameCreation": 1759654400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 134,
+       "stats": {
+        "win": true,
+        "kills": 6,
+        "deaths": 7,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9705,
+     "queueId": 440,
+     "gameCreation": 1759568000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 134,
+       "stats": {
+        "win": true,
+        "kills": 9,
+        "deaths": 10,
+        "assists": 7
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9706,
+     "queueId": 420,
+     "gameCreation": 1759481600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": false,
+        "kills": 4,
+        "deaths": 4,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9707,
+     "queueId": 420,
+     "gameCreation": 1759395200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 134,
+       "stats": {
+        "win": false,
+        "kills": 7,
+        "deaths": 3,
+        "assists": 5
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9708,
+     "queueId": 450,
+     "gameCreation": 1759308800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 134,
+       "stats": {
+        "win": true,
+        "kills": 3,
+        "deaths": 5,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9709,
+     "queueId": 450,
+     "gameCreation": 1759222400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 134,
+       "stats": {
+        "win": false,
+        "kills": 8,
+        "deaths": 3,
+        "assists": 3
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9710,
+     "queueId": 440,
+     "gameCreation": 1759136000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 1,
+       "stats": {
+        "win": true,
+        "kills": 3,
+        "deaths": 7,
+        "assists": 11
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9711,
+     "queueId": 420,
+     "gameCreation": 1759049600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 134,
+       "stats": {
+        "win": true,
+        "kills": 0,
+        "deaths": 3,
+        "assists": 6
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9712,
+     "queueId": 420,
+     "gameCreation": 1758963200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 238,
+       "stats": {
+        "win": false,
+        "kills": 7,
+        "deaths": 9,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9713,
+     "queueId": 450,
+     "gameCreation": 1758876800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 1,
+       "stats": {
+        "win": true,
+        "kills": 11,
+        "deaths": 9,
+        "assists": 11
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9714,
+     "queueId": 420,
+     "gameCreation": 1758790400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 134,
+       "stats": {
+        "win": true,
+        "kills": 0,
+        "deaths": 3,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9715,
+     "queueId": 420,
+     "gameCreation": 1758704000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 134,
+       "stats": {
+        "win": false,
+        "kills": 0,
+        "deaths": 5,
+        "assists": 13
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9716,
+     "queueId": 420,
+     "gameCreation": 1758617600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 51,
+       "stats": {
+        "win": false,
+        "kills": 3,
+        "deaths": 0,
+        "assists": 15
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9717,
+     "queueId": 440,
+     "gameCreation": 1758531200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": true,
+        "kills": 10,
+        "deaths": 8,
+        "assists": 4
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9718,
+     "queueId": 440,
+     "gameCreation": 1758444800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": false,
+        "kills": 11,
+        "deaths": 4,
+        "assists": 13
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9719,
+     "queueId": 420,
+     "gameCreation": 1758358400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": true,
+        "kills": 4,
+        "deaths": 9,
+        "assists": 11
+       }
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "p23": {
+  "games": {
+   "games": [
+    {
+     "gameId": 9800,
+     "queueId": 420,
+     "gameCreation": 1760000000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 523,
+       "stats": {
+        "win": false,
+        "kills": 10,
+        "deaths": 3,
+        "assists": 12
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9801,
+     "queueId": 440,
+     "gameCreation": 1759913600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 99,
+       "stats": {
+        "win": false,
+        "kills": 2,
+        "deaths": 6,
+        "assists": 3
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9802,
+     "queueId": 420,
+     "gameCreation": 1759827200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 266,
+       "stats": {
+        "win": false,
+        "kills": 7,
+        "deaths": 2,
+        "assists": 4
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9803,
+     "queueId": 440,
+     "gameCreation": 1759740800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 523,
+       "stats": {
+        "win": false,
+        "kills": 1,
+        "deaths": 9,
+        "assists": 11
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9804,
+     "queueId": 420,
+     "gameCreation": 1759654400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 51,
+       "stats": {
+        "win": true,
+        "kills": 2,
+        "deaths": 8,
+        "assists": 5
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9805,
+     "queueId": 420,
+     "gameCreation": 1759568000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": true,
+        "kills": 4,
+        "deaths": 2,
+        "assists": 1
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9806,
+     "queueId": 450,
+     "gameCreation": 1759481600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": true,
+        "kills": 10,
+        "deaths": 6,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9807,
+     "queueId": 420,
+     "gameCreation": 1759395200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 51,
+       "stats": {
+        "win": false,
+        "kills": 9,
+        "deaths": 6,
+        "assists": 6
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9808,
+     "queueId": 420,
+     "gameCreation": 1759308800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 51,
+       "stats": {
+        "win": false,
+        "kills": 6,
+        "deaths": 8,
+        "assists": 5
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9809,
+     "queueId": 420,
+     "gameCreation": 1759222400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": true,
+        "kills": 0,
+        "deaths": 8,
+        "assists": 1
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9810,
+     "queueId": 450,
+     "gameCreation": 1759136000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 238,
+       "stats": {
+        "win": true,
+        "kills": 7,
+        "deaths": 8,
+        "assists": 9
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9811,
+     "queueId": 440,
+     "gameCreation": 1759049600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 157,
+       "stats": {
+        "win": false,
+        "kills": 6,
+        "deaths": 10,
+        "assists": 11
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9812,
+     "queueId": 420,
+     "gameCreation": 1758963200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": true,
+        "kills": 9,
+        "deaths": 7,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9813,
+     "queueId": 440,
+     "gameCreation": 1758876800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 523,
+       "stats": {
+        "win": false,
+        "kills": 2,
+        "deaths": 7,
+        "assists": 12
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9814,
+     "queueId": 440,
+     "gameCreation": 1758790400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 523,
+       "stats": {
+        "win": true,
+        "kills": 5,
+        "deaths": 1,
+        "assists": 14
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9815,
+     "queueId": 420,
+     "gameCreation": 1758704000000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 1,
+       "stats": {
+        "win": true,
+        "kills": 1,
+        "deaths": 5,
+        "assists": 2
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9816,
+     "queueId": 440,
+     "gameCreation": 1758617600000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 523,
+       "stats": {
+        "win": false,
+        "kills": 10,
+        "deaths": 2,
+        "assists": 0
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9817,
+     "queueId": 440,
+     "gameCreation": 1758531200000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 22,
+       "stats": {
+        "win": true,
+        "kills": 4,
+        "deaths": 2,
+        "assists": 7
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9818,
+     "queueId": 420,
+     "gameCreation": 1758444800000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 523,
+       "stats": {
+        "win": true,
+        "kills": 2,
+        "deaths": 5,
+        "assists": 8
+       }
+      }
+     ]
+    },
+    {
+     "gameId": 9819,
+     "queueId": 450,
+     "gameCreation": 1758358400000,
+     "participants": [
+      {
+       "participantId": 1,
+       "championId": 777,
+       "stats": {
+        "win": true,
+        "kills": 7,
+        "deaths": 3,
+        "assists": 8
+       }
+      }
+     ]
+    }
+   ]
+  }
+ }
+}
