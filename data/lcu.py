@@ -88,8 +88,8 @@ class LcuClient:
             timeout=5.0,
         )
 
-    def get(self, path: str) -> httpx.Response:
-        return self.client.get(path)
+    def get(self, path: str, timeout: float | None = None) -> httpx.Response:
+        return self.client.get(path, timeout=timeout if timeout is not None else httpx.USE_CLIENT_DEFAULT)
 
     def get_session(self) -> dict | None:
         r = self.get("/lol-champ-select/v1/session")

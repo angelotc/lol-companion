@@ -19,10 +19,11 @@
     l1.appendChild(nm);
     if(p.rank)l1.appendChild(el("span","pl-rk t-"+(p.tier||"none"),p.rank));
     if(p.wr!=null)l1.appendChild(el("span","pl-wr"+(p.wr>=55?" pos":p.wr<=45?" neg":""),p.wr+"%"+(p.season_games?" ("+p.season_games+")":"")));
+    else if(p.wins)l1.appendChild(el("span","pl-wr",p.wins+"W"));  // losses unknown below Master
     b.appendChild(l1);
     var l2=el("div","pl-l2");
     var rec=p.champ_games?p.champ_games+" games"+(p.champ_wr!=null?" · "+p.champ_wr+"%":"")+(p.kda!=null?" · "+p.kda+" KDA":"")
-      :"no recent games";
+      :(p.games?"not in last "+p.games+" games":"no recent games");
     l2.appendChild(el("span","pl-rec",rec));
     var dots=el("span","pl-dots");
     String(p.recent||"").split("").forEach(function(c){dots.appendChild(el("i",c==="W"?"w":"l"))});

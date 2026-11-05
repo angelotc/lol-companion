@@ -16,13 +16,18 @@ from data.lcu import LcuClient
 from data.live import POSITIONS
 
 log = logging.getLogger(__name__)
-# Summoner's Rift queues (normals, ranked, quickplay, clash); ARAM and modes don't count
-SR_QUEUES = {400, 420, 430, 440, 480, 490, 700}
+# recent games that count: matched games on Summoner's Rift (map 11, classic mode). Queues come and
+# go (710, ...), so the map decides; this list is only for entries without a map id
+SR_MAP = 11
+SR_QUEUES = {400, 420, 430, 440, 480, 490, 700, 710}
 RANKED = ("RANKED_SOLO_5x5", "RANKED_FLEX_SR")
 TIER_ORDER = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER"]
 APEX = {"MASTER", "GRANDMASTER", "CHALLENGER"}  # no divisions
 STREAK = 3  # this many wins or losses in a row is a streak
 MAIN = 5    # this many of the recent games on the champion makes it their main
+# the client fetches another player's history from Riot the first time (~2s each, one at a time),
+# so with several in flight the later ones wait well past the client's usual 5s timeout
+LOOKUP_TIMEOUT = 30.0
 FIRST_TIME = 1_500  # fewer mastery points than this, and no recent games on it: a first-timer
 
 
@@ -44,7 +49,7 @@ class PlayerStats:
     division: str = ""   # "II", "" for Master+
     lp: int = 0
     wins: int = 0        # this season, in the queue `queue`
-    losses: int = 0
+    losses: int | None = 0  # None: the client didn't say (it reports 0 for others below Master)
     queue: str = ""      # "solo" | "flex" | ""
     games: int = 0       # recent Summoner's Rift games read
     champ_games: int = 0
@@ -118,15 +123,27 @@ def parse_ranked(data: dict) -> dict:
             div = str(q.get("division") or "").upper()
             return {"tier": tier, "division": "" if tier in APEX or div in ("NA", "NONE") else div,
                     "lp": int(q.get("leaguePoints") or 0), "wins": int(q.get("wins") or 0),
-                    "losses": int(q.get("losses") or 0), "queue": label}
+                    "losses": _losses(q, tier), "queue": label}
     return {}
+
+
+def _losses(q: dict, tier: str) -> int | None:
+    """Other players' losses read 0 below Master even after hundreds of games: unknown, not zero."""
+    losses = int(q.get("losses") or 0)
+    return None if losses == 0 and tier not in APEX and int(q.get("wins") or 0) > 0 else losses
+
+
+def _counts(g: dict) -> bool:
+    if g.get("mapId") is None:
+        return g.get("queueId") in SR_QUEUES
+    return g.get("mapId") == SR_MAP and g.get("gameMode", "CLASSIC") == "CLASSIC" and g.get("gameType", "MATCHED_GAME") == "MATCHED_GAME"
 
 
 def summarize_history(data: dict, champion_id: int) -> dict:
     """Recent Summoner's Rift games from GET /lol-match-history/v1/products/lol/{puuid}/matches:
     the win/loss run (newest first) and the record and K/D/A on `champion_id`."""
     games = ((data or {}).get("games") or {}).get("games") or []
-    games = sorted((g for g in games if isinstance(g, dict) and g.get("queueId") in SR_QUEUES),
+    games = sorted((g for g in games if isinstance(g, dict) and _counts(g)),
                    key=lambda g: -(g.get("gameCreation") or 0))
     out = {"games": 0, "recent": [], "champ_games": 0, "champ_wins": 0, "kills": 0, "deaths": 0, "assists": 0}
     for g in games:
@@ -173,7 +190,7 @@ def tags(s: PlayerStats) -> list[str]:
 
 
 def _json(client: LcuClient, path: str):
-    r = client.get(path)
+    r = client.get(path, timeout=LOOKUP_TIMEOUT)
     if r.status_code != 200:
         raise LookupError(f"{path}: HTTP {r.status_code}")
     return r.json()
@@ -250,7 +267,7 @@ class FixtureClient:
         self.session = load("session.json")
         self.by = {k: load(f"{k}.json") for k in ("ranked", "history", "mastery")}
 
-    def get(self, path: str):
+    def get(self, path: str, timeout: float | None = None):
         import httpx
         from urllib.parse import unquote
         if path == "/lol-gameflow/v1/session":

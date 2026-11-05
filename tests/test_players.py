@@ -260,12 +260,12 @@ def test_views_players_empty_stats_render():
 # --- load() failure paths ------------------------------------------------
 
 class NotFoundClient:
-    def get(self, path):
+    def get(self, path, timeout=None):
         return httpx.Response(404)
 
 
 class RaisingClient:
-    def get(self, path):
+    def get(self, path, timeout=None):
         raise httpx.ConnectError("client gone")
 
 
@@ -284,3 +284,25 @@ def test_load_raising_client_sets_error_without_raising():
     assert s.error is True
     s = load(RaisingClient(), ref(puuid="pz"))
     assert s.error is True
+
+
+def test_parse_ranked_losses_unknown_below_master():
+    # the client reports 0 losses for other players below Master
+    q = lambda tier, w, l: {"queueMap": {"RANKED_SOLO_5x5": {"tier": tier, "division": "II", "leaguePoints": 9, "wins": w, "losses": l}}}
+    assert parse_ranked(q("DIAMOND", 289, 0))["losses"] is None
+    assert parse_ranked(q("DIAMOND", 30, 25))["losses"] == 25
+    assert parse_ranked(q("MASTER", 50, 0))["losses"] == 0
+
+
+def test_view_without_losses_shows_wins_only():
+    s = PlayerStats(PlayerRef("p", "A", "1", 1, 100, "top"), tier="DIAMOND", division="II", wins=289, losses=None)
+    row = views.players({}, [s], Champs())["teams"][0]["players"][0]
+    assert row["wr"] is None and row["wins"] == 289 and row["season_games"] == 0
+
+
+def test_history_counts_rift_matched_games_by_map():
+    game = lambda q, m, mode, champ=7: {"queueId": q, "mapId": m, "gameMode": mode, "gameType": "MATCHED_GAME",
+                                        "gameCreation": 1, "participants": [{"championId": champ, "stats": {"win": True}}]}
+    data = {"games": {"games": [game(710, 11, "CLASSIC"), game(2400, 12, "KIWI"), game(450, 12, "ARAM"), game(1750, 30, "CHERRY")]}}
+    out = summarize_history(data, 7)
+    assert out["games"] == 1 and out["champ_games"] == 1

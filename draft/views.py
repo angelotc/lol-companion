@@ -313,14 +313,14 @@ def _player(s: PlayerStats, champs: Champions) -> dict:
     rank = ""
     if s.tier:
         rank = TIER_SHORT.get(s.tier, s.tier[:1]) + str(ROMAN.get(s.division, "")) + f" {s.lp} LP"
-    season = s.wins + s.losses
+    season = s.wins + s.losses if s.losses is not None else 0
     kda = s.kda
     return {
         "name": r.name, "tag": r.tag, "me": r.is_me, "lane": r.position,
         "champ": {"name": champs.name(r.champion_id), "icon": champs.icon_url(r.champion_id)} if r.champion_id else None,
         "rank": rank, "tier": s.tier.lower(), "queue": s.queue,
         "rank_full": f"{s.tier.title()} {s.division} {s.lp} LP".replace("  ", " ") if s.tier else "Unranked",
-        "wr": round(100 * s.wins / season) if season else None, "season_games": season,
+        "wr": round(100 * s.wins / season) if season else None, "season_games": season, "wins": s.wins,
         "champ_games": s.champ_games, "champ_wr": round(100 * s.champ_wins / s.champ_games) if s.champ_games else None,
         "kda": round(kda, 1) if kda is not None else None,
         "kills": round(s.kills / s.champ_games, 1) if s.champ_games else None,
