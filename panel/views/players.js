@@ -21,8 +21,17 @@
     if(p.wr!=null)l1.appendChild(el("span","pl-wr"+(p.wr>=55?" pos":p.wr<=45?" neg":""),p.wr+"%"+(p.season_games?" ("+p.season_games+")":"")));
     else if(p.wins)l1.appendChild(el("span","pl-wr",p.wins+"W"));  // losses unknown below Master
     b.appendChild(l1);
+    if(p.champ_season_games!=null){  // season record on this champion (op.gg)
+      var ls=el("div","pl-ls");
+      ls.appendChild(el("span",null,"Season: "));
+      if(p.champ_season_games){
+        ls.appendChild(el("b",null,p.champ_season_games+" games"));
+        ls.appendChild(el("span","pl-wr"+(p.champ_season_wr>=55?" pos":p.champ_season_wr<=45?" neg":"")," "+p.champ_season_wr+"%"));
+      }else ls.appendChild(el("span",null,"no ranked games"));
+      b.appendChild(ls);
+    }
     var l2=el("div","pl-l2");
-    var rec=p.champ_games?p.champ_games+" games"+(p.champ_wr!=null?" · "+p.champ_wr+"%":"")+(p.kda!=null?" · "+p.kda+" KDA":"")
+    var rec=p.champ_games?(p.champ_season_games!=null?"Recent: ":"")+p.champ_games+" games"+(p.champ_wr!=null?" · "+p.champ_wr+"%":"")+(p.kda!=null?" · "+p.kda+" KDA":"")
       :(p.games?"not in last "+p.games+" games":"no recent games");
     l2.appendChild(el("span","pl-rec",rec));
     var dots=el("span","pl-dots");

@@ -70,6 +70,7 @@ class Config:
     odds: dict = field(default_factory=dict)  # draft win estimate weights, see scoring.DEFAULT_ODDS
     record_games: bool = False  # save raw in-game data to recordings/ (for research; nothing shown)
     record_every: float = 15.0  # seconds between saved snapshots
+    opgg: bool = True  # players view: each player's season record on their champion, from op.gg
 
     def weights_for(self, role: str) -> dict:
         w = default_weights(role)

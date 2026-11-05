@@ -326,6 +326,8 @@ def _player(s: PlayerStats, champs: Champions) -> dict:
         "kills": round(s.kills / s.champ_games, 1) if s.champ_games else None,
         "deaths": round(s.deaths / s.champ_games, 1) if s.champ_games else None,
         "assists": round(s.assists / s.champ_games, 1) if s.champ_games else None,
+        "champ_season_games": s.season_games,  # op.gg; None if unknown
+        "champ_season_wr": round(100 * s.season_wins / s.season_games) if s.season_games else None,
         "games": s.games, "recent": "".join("W" if w else "L" for w in s.recent[:10]),
         "mastery": s.mastery, "tags": s.tags, "error": s.error,
     }

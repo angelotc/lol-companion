@@ -100,6 +100,7 @@ your games are weighted 0.5^(age / half_life), half_life = 90 days
 | [League Client API](https://developer.riotgames.com/docs/lol#league-client-api) (local, read-only) | Champ select (`/lol-champ-select/v1/session`, pickable champions), game phase, lobby, match history, mastery, patch version. In game (Ctrl+Shift+X): every player's rank, recent games and mastery, the same public profile data the client shows |
 | [Live Client Data API](https://developer.riotgames.com/docs/lol#game-client-api) (`127.0.0.1:2999`) | In game: your champion, items, gold, level, and each player's champion/position. No enemy items or timers. |
 | [lolalytics](https://lolalytics.com) (unofficial, may change) | Win rates, matchups, synergies, builds. Cached 24h. |
+| [op.gg](https://op.gg) (unofficial, may change) | Players view: each player's season solo queue record on their champion. Cached 6h; `opgg = false` in config turns it off. |
 | [Data Dragon](https://ddragon.leagueoflegends.com) + [CommunityDragon](https://raw.communitydragon.org) | Champion, item and rune data and images |
 | GitHub Releases (via [Velopack](https://velopack.io)) | Auto-updates |
 

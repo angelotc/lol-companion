@@ -9,11 +9,14 @@ from __future__ import annotations
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 from urllib.parse import quote
 
 from data.lcu import LcuClient
 from data.live import POSITIONS
+
+if TYPE_CHECKING:
+    from data.opgg import OpGG
 
 log = logging.getLogger(__name__)
 # recent games that count: matched games on Summoner's Rift (map 11, classic mode). Queues come and
@@ -25,6 +28,7 @@ TIER_ORDER = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMON
 APEX = {"MASTER", "GRANDMASTER", "CHALLENGER"}  # no divisions
 STREAK = 3  # this many wins or losses in a row is a streak
 MAIN = 5    # this many of the recent games on the champion makes it their main
+SEASON_MAIN = 30  # ...or this many ranked games on it this season
 # the client fetches another player's history from Riot the first time (~2s each, one at a time),
 # so with several in flight the later ones wait well past the client's usual 5s timeout
 LOOKUP_TIMEOUT = 30.0
@@ -59,6 +63,8 @@ class PlayerStats:
     assists: int = 0
     recent: list[bool] = field(default_factory=list)  # newest first, all champions
     mastery: int | None = None  # points on this champion, None if the client didn't say
+    season_games: int | None = None  # solo queue games on this champion this season (op.gg), None if unknown
+    season_wins: int | None = None
     tags: list[str] = field(default_factory=list)
     error: bool = False  # some lookups failed: numbers may be partial
 
@@ -175,9 +181,9 @@ def parse_mastery(data, champion_id: int) -> int | None:
 
 def tags(s: PlayerStats) -> list[str]:
     out = []
-    if s.champ_games == 0 and s.mastery is not None and s.mastery < FIRST_TIME:
+    if s.champ_games == 0 and not s.season_games and s.mastery is not None and s.mastery < FIRST_TIME:
         out.append("First time")
-    elif s.champ_games >= MAIN:
+    elif s.champ_games >= MAIN or (s.season_games or 0) >= SEASON_MAIN:
         out.append("Main")
     run = 0
     for w in s.recent:
@@ -204,7 +210,7 @@ def resolve(client: LcuClient, ref: PlayerRef) -> None:
     ref.puuid = str((data or {}).get("puuid") or "")
 
 
-def load(client: LcuClient, ref: PlayerRef) -> PlayerStats:
+def load(client: LcuClient, ref: PlayerRef, opgg: OpGG | None = None, region: str = "") -> PlayerStats:
     """One player's stats; each lookup that fails leaves its numbers empty and sets `error`."""
     s = PlayerStats(ref)
     try:
@@ -229,8 +235,23 @@ def load(client: LcuClient, ref: PlayerRef) -> PlayerStats:
             log.debug("player lookup failed: %s", path, exc_info=True)
             if "mastery" not in path:  # other players' mastery may simply not be served
                 s.error = True
+    if opgg and ref.champion_id:
+        try:
+            season = opgg.season(ref.name, ref.tag, region)
+            if season is not None:
+                s.season_games, s.season_wins = season.get(ref.champion_id, [0, 0])
+        except Exception:
+            log.debug("op.gg lookup failed for %s#%s", ref.name, ref.tag, exc_info=True)
     s.tags = tags(s)
     return s
+
+
+def region(client: LcuClient) -> str:
+    """Your server as op.gg names it ("na", "euw", ...), "" if the client doesn't say."""
+    try:
+        return str((_json(client, "/riotclient/region-locale") or {}).get("region") or "").lower()
+    except Exception:
+        return ""
 
 
 def game_refs(client: LcuClient, live: dict | None = None,
@@ -248,9 +269,10 @@ def game_refs(client: LcuClient, live: dict | None = None,
     return game_id, refs
 
 
-def load_all(client: LcuClient, refs: list[PlayerRef], workers: int = 4) -> list[PlayerStats]:
+def load_all(client: LcuClient, refs: list[PlayerRef], workers: int = 4,
+             opgg: OpGG | None = None, region: str = "") -> list[PlayerStats]:
     with ThreadPoolExecutor(workers) as pool:
-        return list(pool.map(lambda r: load(client, r), refs))
+        return list(pool.map(lambda r: load(client, r, opgg, region), refs))
 
 
 class FixtureClient:

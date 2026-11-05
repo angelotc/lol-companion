@@ -237,6 +237,7 @@ body[data-mode=ingame] .hdr,body[data-mode=ingame] .tiers,body[data-mode=ingame]
 .pl-wr{margin-left:auto;flex:none;color:var(--muted);font-size:.625rem}
 .pl-wr.pos{color:var(--pos)}.pl-wr.neg{color:var(--neg)}
 .pl-rec{color:var(--muted);font-size:.625rem;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pl-ls{font-size:.625rem;color:var(--muted);white-space:nowrap}.pl-ls b{color:var(--gold2);font-weight:600}
 .pl-dots{margin-left:auto;display:flex;gap:2px;flex:none;align-self:center}
 .pl-dots i{width:.3125rem;height:.3125rem;border-radius:50%;background:var(--neg)}
 .pl-dots i.w{background:var(--pos)}

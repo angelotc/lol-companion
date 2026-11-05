@@ -14,6 +14,7 @@ from typing import Callable
 from draft import views
 from config import Config
 from data import lcu_data, players
+from data.opgg import OpGG
 from data.live import GameRecorder, LiveClient, LiveGame, parse as parse_live
 from data.store import Store
 from draft.engine import BuildEvaluation, Evaluation, Recommender
@@ -284,7 +285,12 @@ class Controller:
             client = self.lcu()
             try:
                 gid, refs = players.game_refs(client, live, id_from)
-                stats = players.load_all(client, refs) if refs else []
+                opgg = OpGG() if self.cfg.opgg else None
+                try:
+                    stats = players.load_all(client, refs, opgg=opgg, region=players.region(client)) if refs else []
+                finally:
+                    if opgg:
+                        opgg.close()
             finally:
                 client.close()
             log.info("player stats: %d players (%d partial)", len(stats), sum(s.error for s in stats))

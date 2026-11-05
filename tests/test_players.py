@@ -306,3 +306,30 @@ def test_history_counts_rift_matched_games_by_map():
     data = {"games": {"games": [game(710, 11, "CLASSIC"), game(2400, 12, "KIWI"), game(450, 12, "ARAM"), game(1750, 30, "CHERRY")]}}
     out = summarize_history(data, 7)
     assert out["games"] == 1 and out["champ_games"] == 1
+
+
+def test_opgg_parse_champions():
+    from data.opgg import parse_champions
+    # the page embeds its data as an escaped JSON string; entries nest arrays (match_up_stats)
+    entries = [{"id": 0, "play": 50, "win": 25}, {"id": 112, "champion_id": 112, "play": 49, "win": 27,
+               "match_up_stats": [[1, "x]"]], "name": "Viktor"}, {"champion_id": 134, "play": 3, "win": 1}]
+    html = '<script>self.__next_f.push([1,"{\\"my_champion_stats\\":' + json.dumps(entries).replace('"', '\\"') + '}"])</script>'
+    assert parse_champions(html) == {112: [49, 27], 134: [3, 1]}
+    assert parse_champions("<html>nothing</html>") is None
+
+
+def test_load_with_season_from_opgg():
+    class Season:
+        def __init__(self, data): self.data = data
+        def season(self, name, tag, region): return self.data
+    c = FixtureClient(FIXTURES / "players")
+    _, refs = game_refs(c)
+    me = next(r for r in refs if r.is_me)
+    s = load(c, me, Season({me.champion_id: [40, 22]}), "na")
+    assert (s.season_games, s.season_wins) == (40, 22) and "Main" in s.tags
+    row = views.players({}, [s], Champs())["teams"][0]["players"][0]
+    assert row["champ_season_games"] == 40 and row["champ_season_wr"] == 55
+    s = load(c, me, Season({}), "na")  # op.gg knows the player, no games on this champion
+    assert (s.season_games, s.season_wins) == (0, 0)
+    s = load(c, me, Season(None), "na")  # op.gg couldn't say
+    assert s.season_games is None
