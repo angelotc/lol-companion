@@ -23,11 +23,9 @@
     b.appendChild(l1);
     if(p.champ_season_games!=null){  // season record on this champion (op.gg)
       var ls=el("div","pl-ls");
-      ls.appendChild(el("span",null,"Season: "));
-      if(p.champ_season_games){
-        ls.appendChild(el("b",null,p.champ_season_games+" games"));
-        ls.appendChild(el("span","pl-wr"+(p.champ_season_wr>=55?" pos":p.champ_season_wr<=45?" neg":"")," "+p.champ_season_wr+"%"));
-      }else ls.appendChild(el("span",null,"no ranked games"));
+      ls.appendChild(el("b",null,p.champ_season_games+" games"));
+      if(p.champ_season_games)
+        ls.appendChild(el("span","pl-wr"+(p.champ_season_wr>=55?" pos":p.champ_season_wr<=45?" neg":"")," "+p.champ_season_wr+"% WR"));
       b.appendChild(ls);
     }
     var l2=el("div","pl-l2");
