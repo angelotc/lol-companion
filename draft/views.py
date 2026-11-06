@@ -11,7 +11,7 @@ from draft.engine import BanEvaluation, BuildEvaluation, Evaluation
 from draft.scoring import LANES, DraftOdds, OddsTerm
 from draft.state import Stage
 
-TIERS = {"grandmaster_plus": "GM+"}  # the only tier offered (Master+ and Challenger were dropped)
+TIERS = {"master_plus": "Master+"}  # the only tier offered (GM+ and Challenger were dropped)
 LOW_DATA = 0.25  # below this share of possible matchups found, warn that the tier is thin
 FLEX = 10.0  # an enemy whose second most played lane is at least this % is marked as a flex pick
 STAGE_MESSAGES = {

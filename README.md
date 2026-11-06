@@ -49,7 +49,7 @@ under `[blind]`.
 - **Before champ select** stats preload in the background for your usual roles (your lobby roles once you queue).
 
 - **Picks** start at the first locked pick. Hover a pick to see every term behind its score.
-- **Rank tier**: stats are from GM+ games.
+- **Rank tier**: stats are from Master+ games.
 - **Enemy lanes** are guessed from play rates; flex picks get a gold dot. Click an enemy to set their lane.
 - **Build:** each option shows its Δ: how much better it does against these enemies than usual, in win-rate points, discounted for small samples. Bot lane is measured vs the enemy duo, top/mid vs their laner, jungler (and mid vs the roaming support), jungle vs everyone. The best is tagged **BEST VS LANE**. Hover for each enemy's share.
 - **Their damage** (build view and in game): the enemy team's split of physical, magic and true damage, from each enemy's average damage to champions in its lane. Hover for each enemy's own split.

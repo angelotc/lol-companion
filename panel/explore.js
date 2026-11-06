@@ -2,7 +2,7 @@
 (function(){
   var NS="http://www.w3.org/2000/svg",$=function(id){return document.getElementById(id)};
   var ROLE={top:"Top",jungle:"Jungle",middle:"Mid",bottom:"Bot",support:"Support"};
-  var state={role:"support",tier:"grandmaster_plus",data:null};
+  var state={role:"support",tier:"master_plus",data:null};
   var f=function(v,d){d=d==null?1:d;return(v>0?"+":"")+Number(v).toFixed(d)};
   var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})};
 

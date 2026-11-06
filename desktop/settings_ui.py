@@ -113,7 +113,7 @@ class SettingsApi:
     def __init__(self, path: Path | str, on_saved: Callable[[Config], None] | None = None,
                  version: Callable[[], str] = lambda: "dev"):
         self._path, self._on_saved, self._version = Path(path), on_saved, version
-        self.window = None  # set by the app once the window exists
+        self._window = None  # set by the app; private so pywebview doesn't walk it into the page
 
     def get(self) -> dict:
         return {"values": read_values(self._path), "defaults": defaults(), "version": self._version()}
@@ -131,5 +131,5 @@ class SettingsApi:
         os.startfile(self._path)
 
     def close(self) -> None:
-        if self.window:
-            self.window.destroy()
+        if self._window:
+            self._window.destroy()

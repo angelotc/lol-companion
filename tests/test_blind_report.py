@@ -37,14 +37,14 @@ def test_role_report_ranks_safe_over_risky_at_equal_strength():
 def test_explore_api_validates_and_reports_errors():
     def boom(role, tier):
         raise TimeoutError
-    api = ExploreApi(lambda r, t: {"role": r, "champs": []}, lambda: "grandmaster_plus", lambda: "middle")
+    api = ExploreApi(lambda r, t: {"role": r, "champs": []}, lambda: "master_plus", lambda: "middle")
     assert api.start()["role"] == "middle"
-    assert [x["id"] for x in api.start()["tiers"]] == ["grandmaster_plus"]
-    assert ExploreApi(boom, lambda: "grandmaster_plus").start()["role"] == "support"
-    assert "error" in api.get("mid", "grandmaster_plus")
-    assert "error" in api.get("top", "master_plus")  # dropped tier
-    assert api.get("top", "grandmaster_plus")["tier_label"] == "GM+"
-    assert "TimeoutError" in ExploreApi(boom, lambda: "grandmaster_plus").get("top", "grandmaster_plus")["error"]
+    assert [x["id"] for x in api.start()["tiers"]] == ["master_plus"]
+    assert ExploreApi(boom, lambda: "master_plus").start()["role"] == "support"
+    assert "error" in api.get("mid", "master_plus")
+    assert "error" in api.get("top", "grandmaster_plus")  # dropped tier
+    assert api.get("top", "master_plus")["tier_label"] == "Master+"
+    assert "TimeoutError" in ExploreApi(boom, lambda: "master_plus").get("top", "master_plus")["error"]
 
 
 def test_no_matchup_data_is_not_safe():

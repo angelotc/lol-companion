@@ -139,7 +139,7 @@ class App:
                 SETTINGS_TITLE, url=str(RESOURCES / "panel" / "settings.html"), js_api=api,
                 width=480, height=480, min_size=(420, 360), resizable=True, background_color="#010a13",
             )
-            api.window = win
+            api._window = win
             win.events.closed += lambda: setattr(self, "settings_window", None)
             self.settings_window = win
 
@@ -166,12 +166,12 @@ class App:
                 ev = self.ctl.last_eval
                 return ev.role if ev else self.ctl.last_role or None
 
-            api = explore_ui.ExploreApi(report, lambda: self.ctl.rec.tier if self.ctl.rec else "grandmaster_plus", main_role)
+            api = explore_ui.ExploreApi(report, lambda: self.ctl.rec.tier if self.ctl.rec else "master_plus", main_role)
             win = webview.create_window(
                 EXPLORE_TITLE, url=str(RESOURCES / "panel" / "explore.html"), js_api=api,
                 width=1000, height=820, min_size=(760, 520), resizable=True, background_color="#010a13",
             )
-            api.window = win
+            api._window = win
             win.events.closed += lambda: setattr(self, "explore_window", None)
             self.explore_window = win
 

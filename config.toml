@@ -1,10 +1,10 @@
 # League champ-select pick recommender config
 
 # Picks are scored for the role you're assigned in champ select. Candidates are every champion on
-# lolalytics' tier list for that role with at least `min_pick_rate` % pick rate (GM+, 14 days),
+# lolalytics' tier list for that role with at least `min_pick_rate` % pick rate (Master+, 14 days),
 # narrowed to the champions you own.
 min_pick_rate = 1.0
-tier = "grandmaster_plus"
+tier = "master_plus"
 # Rolling window in days (not a specific patch)
 days = 14
 queue = "ranked"
@@ -51,3 +51,4 @@ lockfile = 'C:\Riot Games\League of Legends\lockfile'
 # p = 0.5        # chance the enemy laner gets to counter you
 # tail = 0.15    # they pick from the worst 15% of your matchups (weighted by pick rate)
 # weight = 1.0   # how much the counter risk counts against champion strength
+comfort_only = false

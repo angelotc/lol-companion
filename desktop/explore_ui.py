@@ -17,7 +17,7 @@ class ExploreApi:
     def __init__(self, report: Callable[[str, str], dict], tier: Callable[[], str],
                  role: Callable[[], str | None] = lambda: None):
         self._report, self._tier, self._role = report, tier, role
-        self.window = None  # set by the app once the window exists
+        self._window = None  # set by the app; private so pywebview doesn't walk it into the page
 
     def start(self) -> dict:
         """What to show first: your most played role (else support) at the panel's tier."""
@@ -35,5 +35,5 @@ class ExploreApi:
             return {"error": f"Couldn't load stats ({type(e).__name__}). Try again in a moment."}
 
     def close(self) -> None:
-        if self.window:
-            self.window.destroy()
+        if self._window:
+            self._window.destroy()

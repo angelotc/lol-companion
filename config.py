@@ -50,7 +50,7 @@ DEFAULT_BUILD_WEIGHTS = {
 @dataclass
 class Config:
     min_pick_rate: float = 1.0  # % of games in the role; who counts as a candidate
-    tier: str = "grandmaster_plus"
+    tier: str = "master_plus"
     days: int = 14
     queue: str = "ranked"
     region: str = "all"
