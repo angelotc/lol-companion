@@ -122,6 +122,74 @@
     });
   }
 
+  var mode="blind";
+  function renderMode(s){
+    var box=$("recMode");clear(box);
+    var has=!!(s.blind&&s.blind.length)&&!s.locked;
+    box.classList.toggle("hidden",!has);
+    if(!has)return false;
+    box.appendChild(el("span",null,"Enemy "+(s.role||"laner")+" unknown"));
+    var pill=el("div","pill");
+    [["blind","Blind-safe"],["best","Best now"]].forEach(function(m){
+      var b=el("button",mode===m[0]?"on":null,m[1]);
+      b.title=m[0]==="blind"?"Ranked by strength, your team, and how each pick holds up if the enemy "+(s.role||"laner")+" counters it":
+        "Ranked by strength, the enemies already picked and your team, without counter risk";
+      b.addEventListener("click",function(){mode=m[0];render(s)});
+      pill.appendChild(b);
+    });
+    box.appendChild(pill);
+    return mode==="blind";
+  }
+  function blindDetail(r){
+    var box=el("div","detail"),t=document.createElement("table");
+    var h=document.createElement("tr");
+    ["Worst vs","Δ","Games"].forEach(function(x){h.appendChild(el("th",null,x))});
+    t.appendChild(h);
+    (r.counters||[]).forEach(function(c){
+      var tr=document.createElement("tr"),td=el("td","ch");
+      td.appendChild(icon(c.name,c.icon));td.appendChild(el("span","n",c.name));tr.appendChild(td);
+      tr.appendChild(el("td",cls(c.delta),fmt(c.delta)));
+      tr.appendChild(el("td",null,String(c.games)));
+      t.appendChild(tr);
+    });
+    box.appendChild(t);
+    [["Random opponent",fmt(r.mean,2)],["If countered",fmt(r.tail,2)],["Blind risk",fmt(r.value,2)],
+     ["Strength",fmt(r.score-r.value-r.synergy,2)],["Team fit",fmt(r.synergy,2)],["Matchup data",r.coverage+"% of picks"]]
+    .forEach(function(x){var b=el("div","base");b.appendChild(el("span",null,x[0]));b.appendChild(el("span",null,x[1]));box.appendChild(b)});
+    return box;
+  }
+  function renderBlind(list){
+    var box=$("recs");clear(box);
+    (list||[]).forEach(function(r,i){
+      var key="b:"+r.name;
+      var d=el("div","rec"+(i===0?" top":"")+(openSet[key]?" open":""));
+      var m=el("div","main");
+      m.appendChild(el("div","rank",String(i+1)));
+      m.appendChild(icon(r.name,r.icon,"big"));
+      var mid=el("div","mid");mid.appendChild(el("div","name",r.name));
+      var sub=el("div","sub"),c=el("div","c");
+      var tl=Math.abs(r.tail)<0.05?0:r.tail;
+      c.appendChild(el("span","d "+cls(tl),fmt(tl)));
+      c.appendChild(el("span",null,(r.counters&&r.counters.length)?"if countered by":"if countered"));
+      (r.counters||[]).forEach(function(x){var ic=icon(x.name,x.icon);ic.title=x.name+" "+fmt(x.delta);c.appendChild(ic)});
+      sub.appendChild(c);
+      if(r.coverage<50){var w=el("div","c thin","only "+r.coverage+"% of matchups known");w.title="Few games at this tier: the counter risk is partly a typical value";sub.appendChild(w)}
+      mid.appendChild(sub);m.appendChild(mid);
+      var side=el("div","side");
+      side.appendChild(el("div","score "+cls(r.score),fmt(r.score,2)));
+      var tm=el("div","fit");tm.appendChild(document.createTextNode("team "));
+      tm.appendChild(el("span",cls(r.synergy),fmt(r.synergy)));
+      tm.title="Fit with your team's picks so far (included in the score)";
+      side.appendChild(tm);m.appendChild(side);
+      d.appendChild(m);d.appendChild(blindDetail(r));
+      d.addEventListener("click",function(){
+        if(openSet[key]){delete openSet[key];d.classList.remove("open")}
+        else{openSet[key]=1;d.classList.add("open")}
+      });
+      box.appendChild(d);
+    });
+  }
+
   var KINDS={strength:"strong pick",matchup:"",synergy:"synergy"};
   function renderOdds(o){
     var box=$("odds");clear(box);box.classList.toggle("hidden",!o);
@@ -144,7 +212,7 @@
       "Uncalibrated until backtesting has enough of your games.";
   }
 
-  L.register("picks",{render:function(s){
+  function render(s){
     renderOdds(s.odds);
     chipRow($("allies"),s.allies,"ally");
     renderEnemies(s.enemies);
@@ -152,6 +220,9 @@
     clear($("bans"));$("bansBox").classList.toggle("hidden",!(s.bans&&s.bans.length));
     (s.bans||[]).forEach(function(b){var i=icon(b.name,b.icon);i.title=b.name;$("bans").appendChild(i)});
     renderLocked(s.locked);
-    var keep=$("recs").scrollTop;renderRecs(s.recs,s.locked);$("recs").scrollTop=keep;
-  }});
+    var keep=$("recs").scrollTop;
+    if(renderMode(s))renderBlind(s.blind);else renderRecs(s.recs,s.locked);
+    $("recs").scrollTop=keep;
+  }
+  L.register("picks",{render:render});
 })(window.LPH);

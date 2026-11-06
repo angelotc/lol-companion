@@ -27,10 +27,19 @@ The panel appears on its own while the League client is in front and hides in ga
 The **tray icon** (bottom-right) shows/hides the panel, checks for updates, opens settings, turns
 on Start with Windows, and quits.
 
+**Blind picks.** While your lane opponent isn't picked yet, the picks view has a **Blind-safe**
+switch: picks ranked by strength, fit with your team, and how much they lose if the enemy laner
+counters them. It switches to the normal ranking once your lane opponent is picked. Between games, the chart button in the panel header (or the tray's **Blind-pick
+explorer**) opens a window for any role (your most played by default): every champion's strength vs how
+much it loses if countered. Hover a portrait for its worst counters. Tune it in `config.toml`
+under `[blind]`.
+
+<img src="docs/views/explore.png" width="640" alt="Blind-pick explorer: support champions by strength vs counter risk">
+
 | Bans | Picks |
 |---|---|
 | <img src="docs/views/bans.png" width="280"> | <img src="docs/views/picks.png" width="280"> |
-| Ban suggestions vs your likely picks and your team's hovers. | Draft win estimate, then ranked picks. |
+| Ban suggestions from the moment champ select opens (planning included) until bans end: vs your likely picks and your team's hovers. | Right after bans: draft win estimate and ranked picks, with **Blind-safe / Best now** while your lane opponent is unknown. |
 
 | Build (after lock-in) | In game |
 |---|---|
@@ -40,7 +49,7 @@ on Start with Windows, and quits.
 - **Before champ select** stats preload in the background for your usual roles (your lobby roles once you queue).
 
 - **Picks** start at the first locked pick. Hover a pick to see every term behind its score.
-- **Rank tier** (pill at the top): Master+, GM+ or Challenger. Higher tiers have fewer games.
+- **Rank tier**: stats are from GM+ games.
 - **Enemy lanes** are guessed from play rates; flex picks get a gold dot. Click an enemy to set their lane.
 - **Build:** each option shows its Δ: how much better it does against these enemies than usual, in win-rate points, discounted for small samples. Bot lane is measured vs the enemy duo, top/mid vs their laner, jungler (and mid vs the roaming support), jungle vs everyone. The best is tagged **BEST VS LANE**. Hover for each enemy's share.
 - **Their damage** (build view and in game): the enemy team's split of physical, magic and true damage, from each enemy's average damage to champions in its lane. Hover for each enemy's own split.

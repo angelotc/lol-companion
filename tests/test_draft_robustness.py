@@ -165,3 +165,42 @@ def test_callback_error_does_not_end_the_session(monkeypatch):
         asyncio.run(lcu.watch_session(SimpleNamespace(port=1, password="x"), callback))
     assert connects == [1]
     assert seen == [None, {"n": 0}, {"n": 1}, {"n": 2}]  # no None ("client gone") after the error
+
+
+def test_blind_list_only_while_lane_enemy_unknown():
+    from draft.scoring import Pair
+    tiers = {9: {"pr": 20.0}, 8: {"pr": 20.0}}
+    r = bare_recommender(SimpleNamespace(tier="master_plus", fetch=SimpleNamespace(failures=0),
+                                         tier_list=lambda lane: tiers))
+    safe = ChampStats(1, "support", 51, 10000, matchups={"support": {9: Pair(50, 9000, 0.0), 8: Pair(50, 9000, 0.0)}})
+    risky = ChampStats(2, "support", 51, 10000, matchups={"support": {9: Pair(50, 9000, -8.0), 8: Pair(50, 9000, 2.0)}})
+    r.pool = lambda role, *a, **k: {1: safe, 2: risky}
+    me = Slot(0, "support", False, True)
+    ev = r.evaluate(DraftState(my_position="support", allies=[me]))
+    assert [b.champion_id for b in ev.blind] == [1, 2]
+    assert ev.blind[1].counters[0][0] == 9
+    r._lane_rates = lambda ids: {9: {"support": 95.0}}
+    ev = r.evaluate(DraftState(my_position="support", allies=[me], enemies=[9], picked={9}))
+    assert ev.blind == []
+
+
+def test_blind_list_failure_keeps_picks():
+    r = bare_recommender()  # stub source has no tier list: blind ranking fails
+    r.pool = lambda role, *a, **k: {1: stats(1, 55)}
+    ev = r.evaluate(DraftState(my_position="support", allies=[Slot(0, "support", False, True)]))
+    assert ev.recs and ev.blind == []
+
+
+def test_blind_list_counts_team_fit():
+    from draft.scoring import Pair
+    tiers = {9: {"pr": 20.0}, 8: {"pr": 20.0}}
+    r = bare_recommender(SimpleNamespace(tier="master_plus", fetch=SimpleNamespace(failures=0),
+                                         tier_list=lambda lane: tiers))
+    even = {"support": {9: Pair(50, 9000, 0.0), 8: Pair(50, 9000, 0.0)}}
+    loner = ChampStats(1, "support", 52, 10000, matchups=even)
+    duo = ChampStats(2, "support", 51, 10000, matchups=even, synergies={"bottom": {7: Pair(56, 9000, 6.0)}})
+    r.pool = lambda role, *a, **k: {1: loner, 2: duo}
+    ally = Slot(7, "bottom", False, False)
+    ev = r.evaluate(DraftState(my_position="support", allies=[ally, Slot(0, "support", False, True)], picked={7}))
+    assert [b.champion_id for b in ev.blind] == [2, 1]  # team fit outweighs a bit more strength
+    assert ev.blind[0].synergy > 0

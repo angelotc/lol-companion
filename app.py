@@ -18,6 +18,7 @@ import ctypes
 import json
 import logging
 import os
+import shutil
 import threading
 import time
 from ctypes import wintypes as w
@@ -25,6 +26,7 @@ from pathlib import Path
 
 import webview
 
+from desktop import explore_ui
 from desktop import settings_ui
 from desktop import tracker
 from desktop import updater
@@ -40,6 +42,7 @@ from desktop.tray import Tray
 
 TITLE = "LoL Companion"
 SETTINGS_TITLE = "LoL Companion — Settings"
+EXPLORE_TITLE = "LoL Companion — Blind picks"
 VISIBLE_STAGES = DRAFT_STAGES | PRE_DRAFT_STAGES  # never in game, loading or post-game
 MOD_CONTROL, MOD_SHIFT, MOD_NOREPEAT, WM_HOTKEY = 0x2, 0x4, 0x4000, 0x0312
 HOTKEYS = {1: "L"}  # Ctrl+Shift+L panel, from anywhere (fallback; Ctrl+X is polled, see toggle_keys)
@@ -77,6 +80,22 @@ class Api:
     def open_settings(self) -> None:
         self._app.open_settings()
 
+    def open_explore(self) -> None:
+        self._app.open_explore()
+
+
+def raise_window(win: webview.Window) -> bool:
+    """Bring an open window to the front; False if it's gone (make a new one)."""
+    try:
+        win.restore()
+        win.show()
+        win.on_top = True  # raise above other windows, then back to normal
+        win.on_top = False
+        return True
+    except Exception:
+        log.exception("raise window")
+        return False
+
 
 class App:
     def __init__(self, args):
@@ -88,7 +107,8 @@ class App:
         self.ctl = Controller(load_config(args.config), self.push, Store() if live else None)
         self.updater = updater.Updater(on_change=lambda: self.tray.on_update())
         self.settings_window: webview.Window | None = None
-        self.tray = Tray(self.toggle_panel, self.quit, self.updater, self.restart, self.open_settings)
+        self.explore_window: webview.Window | None = None
+        self.tray = Tray(self.toggle_panel, self.quit, self.updater, self.restart, self.open_settings, self.open_explore)
 
     def toggle_panel(self) -> None:
         self.ctl.user_hidden = not self.ctl.user_hidden
@@ -104,22 +124,15 @@ class App:
         self.tray.stop()  # the new version adds its own icon
         self.updater.apply_and_restart()
         if self.updater.state == "error":  # still running: the update failed, bring the tray back
-            self.tray = Tray(self.toggle_panel, self.quit, self.updater, self.restart, self.open_settings)
+            self.tray = Tray(self.toggle_panel, self.quit, self.updater, self.restart, self.open_settings,
+                             self.open_explore)
             self.tray.start()
 
     def open_settings(self) -> None:
         """The settings window: one at a time, brought to front if already open."""
         with self._settings_lock:
-            win = self.settings_window
-            if win:
-                try:
-                    win.restore()
-                    win.show()
-                    win.on_top = True  # raise above other windows, then back to normal
-                    win.on_top = False
-                    return
-                except Exception:
-                    log.exception("raise settings")  # window is gone: make a new one
+            if self.settings_window and raise_window(self.settings_window):
+                return
             api = settings_ui.SettingsApi(Path(self.args.config) if self.args.config else config_path(),
                                           self.ctl.reload_config, self.version_text)
             win = webview.create_window(
@@ -129,6 +142,38 @@ class App:
             api.window = win
             win.events.closed += lambda: setattr(self, "settings_window", None)
             self.settings_window = win
+
+    def open_explore(self) -> None:
+        """The blind-pick explorer: one at a time, brought to front if already open."""
+        with self._settings_lock:
+            if self.explore_window and raise_window(self.explore_window):
+                return
+
+            def report(role: str, tier: str) -> dict:
+                if not self.ctl.rec:
+                    raise RuntimeError("stats not ready")
+                return self.ctl.rec.blind_report(role, tier)
+
+            def main_role() -> str | None:
+                """Your most played role in recent games, else your last draft's role."""
+                if self.ctl.store:
+                    try:
+                        top = self.ctl.store.top_roles(limit=1)
+                        if top:
+                            return top[0]
+                    except Exception:
+                        log.exception("most played role")
+                ev = self.ctl.last_eval
+                return ev.role if ev else self.ctl.last_role or None
+
+            api = explore_ui.ExploreApi(report, lambda: self.ctl.rec.tier if self.ctl.rec else "grandmaster_plus", main_role)
+            win = webview.create_window(
+                EXPLORE_TITLE, url=str(RESOURCES / "panel" / "explore.html"), js_api=api,
+                width=1000, height=820, min_size=(760, 520), resizable=True, background_color="#010a13",
+            )
+            api.window = win
+            win.events.closed += lambda: setattr(self, "explore_window", None)
+            self.explore_window = win
 
     def version_text(self) -> str:
         """For the settings window: "Version 0.1.4", plus a downloaded update if there is one."""
@@ -355,7 +400,10 @@ class App:
             easy_drag=False,  # position is owned by the tracker; pywebview's drag also crashes here
         )
         self._install_quit_handler()
-        # persistent storage so the settings page can remember things (e.g. the comfort weight)
+        # persistent storage so the settings page can remember things (e.g. the comfort weight);
+        # its page cache is dropped first, or an updated app could keep showing old panel files
+        for cache in ("Cache", "Code Cache"):
+            shutil.rmtree(DATA_DIR / "webview" / "EBWebView" / "Default" / cache, ignore_errors=True)
         webview.start(self.boot, private_mode=False, storage_path=str(DATA_DIR / "webview"))
         os._exit(0)  # worker threads may be blocked in network/GetMessage calls
 

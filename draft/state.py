@@ -43,12 +43,18 @@ class Event(str, Enum):
 
 
 def in_ban_phase(session: dict) -> bool:
-    """True while any ban action is in progress (the whole lobby bans at once in ranked)."""
-    for group in session.get("actions") or []:
-        for a in group if isinstance(group, list) else [group]:
-            if isinstance(a, dict) and a.get("type") == "ban" and a.get("isInProgress") and not a.get("completed"):
-                return True
-    return False
+    """True from the start of champ select until the bans are done: the planning phase (showing
+    pick intent) and while any ban is in progress (the whole lobby bans at once in ranked)."""
+    if (session.get("timer") or {}).get("phase") == "PLANNING":
+        return True
+    actions = [a for group in session.get("actions") or []
+               for a in (group if isinstance(group, list) else [group]) if isinstance(a, dict)]
+    bans = [a for a in actions if a.get("type") == "ban"]
+    if any(a.get("isInProgress") and not a.get("completed") for a in bans):
+        return True
+    # planning without a timer reading: bans to come, and nobody has banned or picked yet
+    started = any(a.get("completed") or a.get("isInProgress") for a in actions)
+    return bool(bans) and not started
 
 
 @dataclass

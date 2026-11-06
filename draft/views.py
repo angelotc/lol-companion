@@ -11,10 +11,9 @@ from draft.engine import BanEvaluation, BuildEvaluation, Evaluation
 from draft.scoring import LANES, DraftOdds, OddsTerm
 from draft.state import Stage
 
-TIERS = {"master_plus": "Master+", "grandmaster_plus": "GM+", "challenger": "Challenger"}
+TIERS = {"grandmaster_plus": "GM+"}  # the only tier offered (Master+ and Challenger were dropped)
 LOW_DATA = 0.25  # below this share of possible matchups found, warn that the tier is thin
 FLEX = 10.0  # an enemy whose second most played lane is at least this % is marked as a flex pick
-FIRST_PICK_MESSAGE = "Waiting for the first pick..."
 STAGE_MESSAGES = {
     Stage.IDLE: "Waiting for champ select...",
     Stage.LOBBY: "In lobby - waiting for you to queue...",
@@ -71,6 +70,15 @@ def picks(head: dict, ev: Evaluation, champs: Champions, enemy_lanes: dict[int, 
         ],
         "enemies": [enemy(c) for c in d.enemies],
         "bans": [champ(c) for c in sorted(d.bans)],
+        "blind": [
+            champ(b.champion_id) | {
+                "id": b.champion_id, "score": round(b.score, 2), "value": round(b.value, 2),
+                "mean": round(b.mean, 2), "tail": round(b.tail, 2), "synergy": round(b.synergy, 2),
+                "coverage": round(b.coverage * 100),
+                "counters": [champ(c) | {"delta": round(dl, 2), "games": g} for c, dl, g in b.counters],
+            }
+            for b in ev.blind
+        ],
         "recs": [
             champ(r.champion_id) | {
                 "id": r.champion_id, "score": round(r.score, 2), "base": round(r.base, 2),

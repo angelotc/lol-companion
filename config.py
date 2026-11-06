@@ -50,7 +50,7 @@ DEFAULT_BUILD_WEIGHTS = {
 @dataclass
 class Config:
     min_pick_rate: float = 1.0  # % of games in the role; who counts as a candidate
-    tier: str = "master_plus"
+    tier: str = "grandmaster_plus"
     days: int = 14
     queue: str = "ranked"
     region: str = "all"
@@ -68,6 +68,7 @@ class Config:
     comfort: dict = field(default_factory=dict)  # overrides for DEFAULT_COMFORT, all roles
     comfort_only: bool = False  # only recommend champions you've played or have mastery on
     odds: dict = field(default_factory=dict)  # draft win estimate weights, see scoring.DEFAULT_ODDS
+    blind: dict = field(default_factory=dict)  # blind-pick risk settings, see scoring.DEFAULT_BLIND
     record_games: bool = False  # save raw in-game data to recordings/ (for research; nothing shown)
     record_every: float = 15.0  # seconds between saved snapshots
     opgg: bool = True  # players view: each player's season record on their champion, from op.gg

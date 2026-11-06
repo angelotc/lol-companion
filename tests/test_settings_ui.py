@@ -37,7 +37,7 @@ def test_untouched_keys_survive(cfg_path):
     su.save(su.read_values(cfg_path) | {"comfort_only": True}, cfg_path)
     raw = tomllib.loads(cfg_path.read_text(encoding="utf-8"))
     assert raw["weights"]["support"]["base"] == 2.0
-    assert raw["comfort_only"] is True and raw["tier"] == "master_plus"
+    assert raw["comfort_only"] is True and raw["tier"] == "grandmaster_plus"
 
 
 def test_comfort_table_created_only_when_needed(cfg_path):

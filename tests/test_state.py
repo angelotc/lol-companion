@@ -65,6 +65,21 @@ def test_ban_phase_detection():
     assert not in_ban_phase(session())
 
 
+def test_planning_counts_as_ban_phase():
+    s = session()
+    assert in_ban_phase(s | {"timer": {"phase": "PLANNING"}})
+    assert not in_ban_phase(s | {"timer": {"phase": "BAN_PICK"}})
+    fresh = copy.deepcopy(s)  # no timer reading: nothing banned or picked yet
+    for group in fresh["actions"]:
+        for a in group:
+            a.update(completed=False, isInProgress=False)
+    assert in_ban_phase(fresh)
+    ses = Session()
+    ses.on_phase("ChampSelect")
+    ses.on_session(fresh)
+    assert ses.stage == Stage.BAN
+
+
 class StubChamps:
     def name(self, cid): return f"c{cid}"
     def icon_url(self, cid): return ""
@@ -160,13 +175,13 @@ def no_picks_yet(my_turn=False):
     return s
 
 
-def test_recommendations_wait_for_first_pick_unless_its_your_turn():
+def test_picks_show_as_soon_as_bans_are_done():
     pushed = []
     ctl = Controller(Config(), pushed.append)
     ctl.rec = StubRec()
     ctl.on_phase("ChampSelect")
-    ctl.on_session(no_picks_yet())
-    assert pushed[-1]["view"] == "status" and "first pick" in pushed[-1]["message"]
+    ctl.on_session(no_picks_yet())  # bans done, nobody has picked: blind-pick time
+    assert pushed[-1]["view"] == "picks"
     ctl.on_session(no_picks_yet(my_turn=True))
     assert pushed[-1]["view"] == "picks"
     ctl.on_session(session())  # someone has locked in

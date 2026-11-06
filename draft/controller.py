@@ -87,6 +87,8 @@ class Controller:
         tier = load_settings().get("tier")
         if tier in views.TIERS:
             self.rec.tier = tier
+        elif self.rec.tier not in views.TIERS:  # an old config or saved setting: use the one tier offered
+            self.rec.tier = next(iter(views.TIERS))
         self.rec.progress = self.progress
         self.rec.comfort = self.comfort
 
@@ -147,10 +149,6 @@ class Controller:
                 return
             if not self.rec or self.rec.role_for(s.draft) is None:
                 self.show_status("No assigned role in this queue - recommendations need a position (draft or ranked).")
-                return
-            if stage == Stage.PICK and not (s.draft.picked or s.draft.my_turn):
-                # recommendations start with the first locked pick (or your turn, if you're first)
-                self.push(views.status(self.header(self.rec.role_for(s.draft)), views.FIRST_PICK_MESSAGE))
                 return
             tabs = {}
             if stage in STAGE_TABS:

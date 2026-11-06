@@ -1,0 +1,26 @@
+:root{
+  --bg:#010a13; --bg2:#0a1428; --line:#1e2328; --line2:#3c3c41; --grid:#1c2633;
+  --gold:#c8aa6e; --gold2:#f0e6d2; --ink2:#c3c2b7; --muted:#7b8793; --dim:#5b6570;
+  --a:#3987e5; --b:#d95926; --q:#08121f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--gold2);font:13px/1.4 "Segoe UI",system-ui,sans-serif;padding:16px 20px 24px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:18px;color:var(--gold);letter-spacing:.02em}
+.ctl{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;border:1px solid var(--line2);border-radius:999px;padding:2px;background:rgba(0,0,0,.25)}
+.pill button{background:none;border:0;border-radius:999px;color:var(--muted);font:inherit;font-size:12px;font-weight:600;padding:3px 10px;cursor:pointer;text-transform:capitalize}
+.pill button:hover{color:var(--gold2)}
+.pill button.on{background:var(--gold);color:#010a13}
+.sub{color:var(--ink2);margin:6px 0 10px;max-width:900px}
+.hidden{display:none!important}
+.status{color:var(--muted);padding:40px 0;text-align:center}
+.status.err{color:#e84057}
+svg{display:block;max-width:100%;height:auto}
+svg text{fill:var(--ink2);font-size:11px;font-family:inherit}
+svg .lab{fill:var(--gold2);font-size:11.5px}
+svg .quad{fill:var(--dim);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+svg .iso{fill:var(--dim);font-size:10px}
+[data-help]{cursor:help}
+#tip{position:fixed;pointer-events:none;background:var(--bg2);color:var(--gold2);border:1px solid var(--line2);border-radius:6px;padding:6px 8px;font-size:12px;box-shadow:0 2px 10px rgba(0,0,0,.5);display:none;max-width:340px;font-variant-numeric:tabular-nums;z-index:5}
+#tip b{display:block;margin-bottom:3px;color:var(--gold)}

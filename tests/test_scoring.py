@@ -220,3 +220,28 @@ def test_ban_threats_count_teammate_hovers():
     t = ban_threats([leona], rows, w, k=500, allies=[(darius, top_w)])
     assert t[0].champion_id == 30
     assert [c.champion_id for c in t[0].against] == [2]
+
+
+def test_blind_safety_prefers_thin_tail():
+    from draft.scoring import blind_safety
+    opp = {10: 30.0, 11: 30.0, 12: 20.0, 13: 20.0}
+    # same average matchup (0), but B has hard counters among popular picks
+    a = stats(1, matchups={"support": {c: Pair(50, 20000, 0.0) for c in opp}})
+    b = stats(2, matchups={"support": {10: Pair(50, 20000, 4.0), 11: Pair(50, 20000, 4.0),
+                                       12: Pair(50, 20000, -6.0), 13: Pair(50, 20000, -6.0)}})
+    ba, bb = blind_safety(a, "support", opp, k=500), blind_safety(b, "support", opp, k=500)
+    assert ba.mean == pytest.approx(0) and bb.mean == pytest.approx(0, abs=1e-9)
+    assert ba.score > bb.score
+    assert [c for c, _, _ in bb.counters] == [12, 13]
+    # banning B's counters removes the risk
+    safe = blind_safety(b, "support", {10: 30.0, 11: 30.0}, k=500)
+    assert safe.tail > 0 and safe.score > ba.score
+
+
+def test_blind_safety_shrinks_small_samples_and_counts_missing_as_even():
+    from draft.scoring import blind_safety
+    s = stats(1, matchups={"support": {10: Pair(30, 20, None), 11: Pair(50, 20000, 0.0)}})
+    b = blind_safety(s, "support", {10: 50.0, 11: 40.0, 12: 10.0}, k=500)
+    assert b.tail > -2  # a -20 delta on 20 games barely counts
+    assert b.coverage == pytest.approx(0.9)
+

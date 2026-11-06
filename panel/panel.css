@@ -272,3 +272,8 @@ body.overlay .odds .why{display:none}
 .tdmg-t .d-tr{color:var(--gold2)}.tdmg-bar .d-tr{background:#d8d8d8}
 .tdmg-bar{display:flex;height:4px;border-radius:2px;overflow:hidden;background:var(--line);margin-top:2px}
 .tdmg-bar span{display:block;height:100%}
+.recmode{display:flex;align-items:center;justify-content:space-between;gap:.375rem;padding:.25rem .5rem 0;font-size:.6875rem;color:var(--muted)}
+.rec .side{display:flex;flex-direction:column;align-items:flex-end;flex:none}
+.rec .fit{font-size:.625rem;color:var(--muted);white-space:nowrap}
+.recmode .pill button{white-space:nowrap}
+.c.thin{color:var(--dim);font-style:italic}

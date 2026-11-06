@@ -33,7 +33,7 @@
   var pending=null;
   function renderTiers(s){
     var box=$("tiers");
-    $("tiersBox").classList.toggle("hidden",!(s.tiers&&s.tiers.length));
+    $("tiersBox").classList.toggle("hidden",!(s.tiers&&s.tiers.length>1));
     clear(box);
     (s.tiers||[]).forEach(function(t){
       var b=el("button",(pending||s.tier_id)===t.id?"on":null,t.label);
@@ -96,6 +96,7 @@
   });
   document.documentElement.addEventListener("mouseleave",function(){if(tip){tip.remove();tip=null}});
   $("gear").addEventListener("click",function(){api("open_settings")});
+  $("explore").addEventListener("click",function(){api("open_explore")});
   $("hide").addEventListener("click",function(){api("hide")});
 
   /* The enemy team's damage split: a stacked bar (physical / magic / true) with the % as text;

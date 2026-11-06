@@ -14,7 +14,8 @@ from data.lcu import DraftState
 from data.fetch import Fetcher
 from data.lolalytics import Lolalytics
 from draft.scoring import (
-    LANES, ChampStats, Comfort, Recommendation, Threat, assign_enemy_lanes, ban_threats, infer_enemy_lanes, recommend,
+    LANES, Blind, ChampStats, Comfort, Recommendation, Threat, assign_enemy_lanes, ban_threats,
+    infer_enemy_lanes, rank_blind, recommend,
 )
 
 DAMAGE_TYPES = ("physical", "magic", "true")
@@ -28,6 +29,7 @@ class Evaluation:
     recs: list[Recommendation]
     lanes: dict[int, str]  # champion id -> assigned or inferred lane, for allies and enemies
     enemy_rates: dict[int, dict[str, float]] = field(default_factory=dict)  # lane play rates, %
+    blind: list[Blind] = field(default_factory=list)  # safest picks while your lane opponent is unknown
 
 
 @dataclass
@@ -173,7 +175,40 @@ class Recommender:
             tentative_factor=self.cfg.tentative_factor, comfort=comfort,
         )
         lanes = {cid: lane for lane, (cid, _) in allies.items()} | {cid: lane for lane, cid in enemies.items()}
-        return Evaluation(draft, role, recs[: self.cfg.top_n], lanes, rates)
+        blind = []
+        if role not in enemies:
+            try:
+                blind = self.blind(role, candidates, recs, taken | set(draft.enemies))
+            except Exception:  # extra view: never let it break the normal picks
+                log.exception("blind pick ranking failed")
+        return Evaluation(draft, role, recs[: self.cfg.top_n], lanes, rates, blind)
+
+    def blind_report(self, role: str, tier: str | None = None) -> dict:
+        """Every champion played enough in the role, ranked as a blind pick, for the explorer
+        window. Loads the role's pool at the tier if needed (blocking)."""
+        from draft import blind_report
+        tier = tier or self.tier
+        lola = self.lola if tier == self.tier else self.lola.at_tier(tier)
+        pool = self.pool(role, tier=tier)
+        pr = {c: float(r.get("pr") or 0) for c, r in lola.tier_list(role).items()
+              if float(r.get("pr") or 0) >= self.cfg.min_pick_rate}
+        report = blind_report.role_report(pool, pr, role, self.cfg.weights_for(role), self.cfg.k, self.cfg.blind)
+        return blind_report.payload(report, self.champs, role, tier, self.cfg.days)
+
+    def blind(self, role: str, candidates: list[ChampStats], recs: list[Recommendation],
+              taken: set[int]) -> list[Blind]:
+        """Candidates ranked by strength, how they hold up if the enemy laner counters them, and
+        fit with your team's picks so far (also kept apart as `synergy`, to show on its own)."""
+        opponents = {c: float(r.get("pr") or 0) for c, r in self.lola.tier_list(role).items()
+                     if float(r.get("pr") or 0) >= self.cfg.min_pick_rate and c not in taken}
+        by_id = {r.champion_id: r for r in recs}
+        items = [(s, by_id[s.champion_id].base if s.champion_id in by_id else 0.0) for s in candidates]
+        out = rank_blind(items, role, opponents, self.cfg.k, self.cfg.blind)
+        for b in out:
+            if b.champion_id in by_id:
+                b.synergy = sum(c.weighted for c in by_id[b.champion_id].contributions if c.label == "with")
+                b.score += b.synergy
+        return sorted(out, key=lambda b: b.score, reverse=True)[: self.cfg.top_n]
 
     def lane_stats(self, cid: int, lane: str) -> ChampStats | None:
         """Matchup and synergy stats for any champion in any lane at the current tier (blocking)."""

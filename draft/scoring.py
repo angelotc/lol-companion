@@ -113,6 +113,85 @@ def recommend(
     return sorted(recs, key=lambda r: r.score, reverse=True)
 
 
+# Blind picks: p = chance the enemy laner gets to counter you, tail = share of their (pick-rate
+# weighted) lane pool they choose the counter from, weight = how much the blind risk counts.
+DEFAULT_BLIND = {"p": 0.5, "tail": 0.15, "weight": 1.0}
+
+
+@dataclass
+class Blind:
+    """How a champion holds up when picked before its lane opponent is known."""
+    champion_id: int
+    score: float      # base (champion strength) + value (+ synergy in champ select): the ranking
+    value: float      # weight * ((1 - p) * mean + p * tail)
+    mean: float       # average shrunk matchup delta vs a random opponent (by pick rate)
+    tail: float       # average shrunk delta vs the opponents most likely to counter you
+    coverage: float   # share of the opponent pool's pick rate that has matchup data
+    counters: list[tuple[int, float, int]]  # worst matchups: (enemy id, shrunk delta, games)
+    synergy: float = 0.0  # fit with your team's picks (champ select adds it to score; shown on its own too)
+    known_tail: float = 0.0  # tail over the opponents with data only (before the prior)
+
+
+def blind_safety(
+    s: ChampStats, lane: str, opponents: dict[int, float], k: float, base: float = 0.0,
+    p: float = 0.5, tail: float = 0.15, weight: float = 1.0, n_counters: int = 3,
+    prior_tail: float = 0.0,
+) -> Blind | None:
+    """opponents: enemy id -> pick rate in `lane`, already without bans and picked champions.
+    Each matchup delta is shrunk by its games so small samples don't fake a hard counter. The tail
+    is the pick-rate-weighted average of the worst `tail` share of the opponents with data (a
+    counter nobody plays barely counts). Opponents without data are unknown, not even: the tail
+    leans toward prior_tail (a typical champion's) by the share of picks that have no data, so a
+    champion with few matchups doesn't look safe for lack of evidence."""
+    pairs = s.matchups.get(lane, {})
+    rows, total = [], 0.0
+    for cid, pr in opponents.items():
+        if cid == s.champion_id or pr <= 0:
+            continue
+        total += pr
+        pair = pairs.get(cid)
+        if pair is None:
+            continue
+        delta = pair.wr - s.wr if pair.delta is None else pair.delta
+        rows.append((shrink(delta, pair.games, k), pr, cid, pair.games))
+    if not total:
+        return None
+    covered = sum(r[1] for r in rows)
+    cov = covered / total
+    mean = worst = 0.0
+    if covered:
+        rows.sort(key=lambda r: r[0])
+        mean = sum(d * pr for d, pr, _, _ in rows) / covered
+        need, acc, got = max(tail, 1e-9) * covered, 0.0, 0.0
+        for d, pr, _, _ in rows:
+            w = min(pr, need - got)
+            acc, got = acc + d * w, got + w
+            if got >= need:
+                break
+        worst = acc / got
+    known = worst
+    mean, worst = cov * mean, cov * worst + (1 - cov) * prior_tail
+    value = weight * ((1 - p) * mean + p * worst)
+    counters = [(cid, d, g) for d, _, cid, g in rows if d < 0][:n_counters]
+    return Blind(s.champion_id, base + value, value, mean, worst, cov, counters, known_tail=known)
+
+
+def typical_tail(blinds: list[Blind], min_coverage: float = 0.5) -> float:
+    """Median counter risk among champions with enough matchup data: the prior for the rest."""
+    tails = sorted(b.known_tail for b in blinds if b.coverage >= min_coverage)
+    return tails[len(tails) // 2] if tails else 0.0
+
+
+def rank_blind(items: list[tuple[ChampStats, float]], lane: str, opponents: dict[int, float], k: float,
+               cfg: dict | None = None) -> list[Blind]:
+    """blind_safety for (stats, base) pairs, with missing matchups leaning toward the typical
+    counter risk of the champions that do have data. Best blind first."""
+    c = DEFAULT_BLIND | (cfg or {})
+    run = lambda prior: [b for s, base in items if (b := blind_safety(
+        s, lane, opponents, k, base=base, p=c["p"], tail=c["tail"], weight=c["weight"], prior_tail=prior))]
+    return sorted(run(typical_tail(run(0.0))), key=lambda b: b.score, reverse=True)
+
+
 def infer_enemy_lanes(
     enemy_ids: list[int], lane_rates: dict[int, dict[str, float]], lanes: tuple[str, ...] = LANES
 ) -> dict[str, int]:
