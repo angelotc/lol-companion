@@ -1,4 +1,5 @@
-"""Panel payloads. Every payload has a `view` the panel routes on; builders here are pure."""
+"""Panel payloads for the two screens: `client` (out of game) and `game` (in game). Section
+builders return only their own fields and are pure; the screen composers add the header and status."""
 from __future__ import annotations
 
 from data import builds
@@ -32,11 +33,20 @@ def header(role: str | None, tier: str, days: int) -> dict:
     }
 
 
-def status(head: dict, message: str, kind: str = "waiting") -> dict:
-    return head | {"view": "status", "status": kind, "message": message}
+def client(head: dict, stage: Stage, message: str = "", kind: str = "waiting", detail: str = "", *,
+           bans: dict | None = None, picks: dict | None = None, build: dict | None = None,
+           explore: bool = False) -> dict:
+    return head | {"view": "client", "status": kind, "message": message, "detail": detail,
+                   "stage": stage.value, "bans": bans, "picks": picks, "build": build, "explore": explore}
 
 
-def picks(head: dict, ev: Evaluation, champs: Champions, enemy_lanes: dict[int, str]) -> dict:
+def game(head: dict, *, build: dict | None = None, build_note: str = "",
+         teams: list[dict] | None = None, players_note: str = "", kind: str = "active") -> dict:
+    return head | {"view": "game", "status": kind, "message": "", "build": build, "build_note": build_note,
+                   "teams": teams, "players_note": players_note}
+
+
+def picks(ev: Evaluation, champs: Champions, enemy_lanes: dict[int, str]) -> dict:
     champ = lambda cid: {"name": champs.name(cid), "icon": champs.icon_url(cid)}
     d = ev.draft
     found = sum(1 for r in ev.recs for c in r.contributions if c.label == "vs")
@@ -57,10 +67,7 @@ def picks(head: dict, ev: Evaluation, champs: Champions, enemy_lanes: dict[int, 
     split = champs.team_damage(d.enemies)
     dmg = {"enemy_damage": {"ad": round(split[0] * 100), "ap": 100 - round(split[0] * 100)}} if split else {}
 
-    return head | dmg | {
-        "view": "picks",
-        "status": "active",
-        "message": "",
+    return dmg | {
         "note": note,
         "locked": champ(d.my_locked) if d.my_locked else None,
         "allies": [
@@ -95,13 +102,10 @@ def picks(head: dict, ev: Evaluation, champs: Champions, enemy_lanes: dict[int, 
     }
 
 
-def bans(head: dict, bev: BanEvaluation, champs: Champions) -> dict:
+def bans(bev: BanEvaluation, champs: Champions) -> dict:
     champ = lambda cid: {"name": champs.name(cid), "icon": champs.icon_url(cid)}
     d = bev.draft
-    return head | {
-        "view": "bans",
-        "status": "active",
-        "message": "",
+    return {
         "allies": [
             champ(s.champion_id) | {"lane": s.position, "tentative": s.tentative, "is_me": s.is_me}
             for s in d.allies if s.champion_id
@@ -128,10 +132,10 @@ ITEM_SECTIONS = [("start", "Start"), ("core", "Core"), ("boots", "Boots"), ("ite
                  ("item2", "2nd item"), ("item3", "3rd item"), ("item4", "4th item"), ("item5", "5th item")]
 
 
-def build(head: dict, bev: BuildEvaluation, champs: Champions, assets: Assets, top: int = 4) -> dict:
+def build(bev: BuildEvaluation, champs: Champions, assets: Assets, top: int = 4) -> dict:
     champ = lambda cid: {"name": champs.name(cid), "icon": champs.icon_url(cid)}
     b = bev.build
-    out = head | {"view": "build", "status": "active", "message": "", "champ": champ(bev.champion_id)}
+    out = {"champ": champ(bev.champion_id)}
     if b is None:
         return out | {"empty": "No build data for this champion and role at this tier."}
 
@@ -234,12 +238,11 @@ def damage_split(bev: BuildEvaluation | None, champs: Champions) -> dict | None:
     ]}
 
 
-def ingame(head: dict, live: LiveGame, bev: BuildEvaluation | None, champs: Champions, assets: Assets) -> dict:
+def ingame(live: LiveGame, bev: BuildEvaluation | None, champs: Champions, assets: Assets) -> dict:
     """In-game: the build worked out before the game (your champion vs the lanes), with what you
     already own. Uses only your own items and gold; never the enemies' items."""
     champ = lambda cid: {"name": champs.name(cid), "icon": champs.icon_url(cid)}
-    out = head | {"view": "ingame", "status": "active", "message": "", "level": live.level,
-                  "gold": int(live.gold), "time": int(live.game_time)}
+    out = {"level": live.level, "gold": int(live.gold), "time": int(live.game_time)}
     b = bev.build if bev else None
     if bev:
         out["champ"] = champ(bev.champion_id)
@@ -341,16 +344,16 @@ def _player(s: PlayerStats, champs: Champions) -> dict:
     }
 
 
-def players(head: dict, stats: list[PlayerStats], champs: Champions) -> dict:
-    """In game (Ctrl+Shift+X): every player's rank, season record and recent form on their
-    champion. Your team first, each team in lane order."""
+def players(stats: list[PlayerStats], champs: Champions) -> list[dict]:
+    """In game: every player's rank, season record and recent form on their champion. Your team
+    first, each team in lane order."""
     mine = next((s.ref.team for s in stats if s.ref.is_me), 100)
     order = lambda s: (LANE_ORDER.get(s.ref.position, len(LANES)), s.ref.name.lower())
     teams = []
     for side, label in (("ally", "Your team"), ("enemy", "Enemy team")):
         group = sorted((s for s in stats if (s.ref.team == mine) == (side == "ally")), key=order)
         teams.append({"side": side, "label": label, "players": [_player(s, champs) for s in group]})
-    return head | {"view": "players", "status": "active", "message": "", "teams": teams}
+    return teams
 
 
 def odds(o: DraftOdds | None, champs: Champions, top: int = 4) -> dict | None:

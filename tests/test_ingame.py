@@ -10,6 +10,7 @@ from draft.controller import Controller
 from data.builds import Build, Option
 from data.ddragon import Assets, Item
 from data.live import parse
+from data.players import PlayerRef, PlayerStats
 from draft.engine import BuildEvaluation
 from draft.state import Stage
 
@@ -47,7 +48,7 @@ def test_ingame_ticks_owned_items_and_next_cost():
         "item5": [Option("3865", 58, 4, 400)],  # support item: you hold one, section hidden
     })
     g = parse(LIVE)  # holds 3869 (upgraded support item), 3047 (boots), 1320 gold
-    out = views.ingame(views.header("support", "master_plus", 14), g, BuildEvaluation(44, "support", b, {}), Champs(), assets())
+    out = views.ingame(g, BuildEvaluation(44, "support", b, {}), Champs(), assets())
     assert [p["owned"] for p in out["core"]] == [True, True, False]
     assert out["next"]["id"] == 3190 and out["next"]["gold"] == 2200
     # boots stay with their matchup delta; 5th hidden (you hold the support item line)
@@ -61,7 +62,7 @@ def test_ingame_boots_hidden_once_you_hold_a_pair():
     b = Build(44, "support", 51.0, 10000, {}, {}, {
         "boots": [Option(str(i), 50, 10, 1000) for i in (3111, 3190, 3109, 3865)] + [Option("3047", 49, 2, 100)],
     })
-    out = views.ingame(views.header("support", "master_plus", 14), parse(LIVE), BuildEvaluation(44, "support", b, {}), Champs(), assets())
+    out = views.ingame(parse(LIVE), BuildEvaluation(44, "support", b, {}), Champs(), assets())
     assert out["sections"] == []  # you hold 3047, one of the options
 
 
@@ -73,7 +74,7 @@ def test_ingame_core_follows_what_you_bought():
     })
     g = parse(LIVE)
     g.items = [3869, 3047, 3190]
-    out = views.ingame(views.header("support", "master_plus", 14), g, BuildEvaluation(12, "support", b, {}), Champs(), assets())
+    out = views.ingame(g, BuildEvaluation(12, "support", b, {}), Champs(), assets())
     assert [p["id"] for p in out["core"]] == [3869, 3111, 3190]
     assert out["next"] is None
     third = next(s for s in out["sections"] if s["title"] == "3rd item")
@@ -87,10 +88,29 @@ def test_ingame_panel_only_when_toggled():
     ctl.session.phase = "InProgress"
     assert ctl.session.stage == Stage.INGAME
     ctl.render()
-    assert pushed[-1]["view"] == "status"
+    s = pushed[-1]
+    assert s["view"] == "client" and s["picks"] is None and s["bans"] is None and s["build"] is None
     ctl.ingame_shown = True
     ctl.render()
-    assert pushed[-1]["message"] == "Waiting for game data..."
+    s = pushed[-1]
+    assert s["view"] == "game" and s["build"] is None and s["build_note"] == "Waiting for game data..."
+    assert s["teams"] is None and s["players_note"]
+
+
+def test_game_state_halves_are_independent():
+    class Rec:
+        tier = "master_plus"
+        champs = Champs()
+    pushed = []
+    ctl = Controller(Config(), pushed.append)
+    ctl.rec = Rec()
+    ctl.session.phase = "InProgress"
+    ctl.players = (1, [PlayerStats(PlayerRef("p", "Me", "NA1", 44, 100, "support", is_me=True))])
+    ctl.ingame_shown = True
+    ctl.render()
+    s = pushed[-1]
+    assert s["view"] == "game" and s["teams"][0]["players"][0]["name"] == "Me"
+    assert s["build"] is None and s["build_note"] == "Waiting for game data..."
 
 
 def test_ingame_slot_follows_items_bought_not_top_option():
@@ -106,7 +126,7 @@ def test_ingame_slot_follows_items_bought_not_top_option():
     a = assets()
     a.items[3050] = Item(3050, "i3050", "", 2200, [], {}, [], "")
     a.items[3070] = Item(3070, "i3070", "", 400, [], {}, [3004], "")
-    out = views.ingame(views.header("support", "master_plus", 14), g, BuildEvaluation(44, "support", b, {}), Champs(), a)
+    out = views.ingame(g, BuildEvaluation(44, "support", b, {}), Champs(), a)
     # the filled 3rd slot is hidden; the 4th is next
     assert [(x["title"], x["state"]) for x in out["sections"]] == [("4th item", "next"), ("5th item", "")]
     assert [o["parts"][0]["id"] for o in out["sections"][0]["options"]] == [3050]  # Knight's Vow dropped: you own it
@@ -117,7 +137,7 @@ def test_ingame_no_item_slot_is_next_while_buying_the_core():
         "core": [Option("3869_3047_3190", 51, 10, 1000)],
         "item3": [Option("3109", 58, 14, 1400)],
     })
-    out = views.ingame(views.header("support", "master_plus", 14), parse(LIVE), BuildEvaluation(44, "support", b, {}), Champs(), assets())
+    out = views.ingame(parse(LIVE), BuildEvaluation(44, "support", b, {}), Champs(), assets())
     assert out["next"]["id"] == 3190  # the core's next item is the highlight instead
     assert [x["state"] for x in out["sections"] if x["title"] == "3rd item"] == [""]
 
@@ -133,7 +153,7 @@ def test_ingame_filled_slot_hidden_even_when_your_item_ranks_low():
     a = assets()
     for iid in (3050, 3107, 3222):
         a.items[iid] = Item(iid, f"i{iid}", "", 2200, [], {}, [], "")
-    out = views.ingame(views.header("support", "master_plus", 14), g, BuildEvaluation(44, "support", b, {}), Champs(), a)
+    out = views.ingame(g, BuildEvaluation(44, "support", b, {}), Champs(), a)
     assert [x["title"] for x in out["sections"]] == ["4th item"]
 
 

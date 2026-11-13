@@ -7,8 +7,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from config import Config
 from draft.controller import Controller
+from data.ddragon import Assets
 from data.store import Store
-from draft.engine import Evaluation
+from draft.engine import BuildEvaluation, Evaluation
 from draft.scoring import Recommendation
 from draft.state import Event, Session, Stage, in_ban_phase
 
@@ -89,6 +90,7 @@ class StubChamps:
 class StubRec:
     tier = "master_plus"
     champs = StubChamps()
+    assets = Assets("1", {}, [], {})
 
     @staticmethod
     def role_for(draft):
@@ -100,6 +102,9 @@ class StubRec:
     def odds_inputs(self, ev):
         return {}, {}
 
+    def build(self, champion_id, role, enemies):
+        return BuildEvaluation(champion_id, role, None, enemies)
+
 
 def test_controller_records_draft(tmp_path):
     pushed = []
@@ -109,10 +114,10 @@ def test_controller_records_draft(tmp_path):
     ctl.on_phase("ChampSelect")
     ctl.on_session(session())
     ctl.on_session(session())  # identical snapshot is skipped
-    assert pushed[-1]["view"] == "picks" and pushed[-1]["role"] == "support"
+    assert pushed[-1]["view"] == "client" and pushed[-1]["picks"] and pushed[-1]["role"] == "support"
     ctl.on_session(session(my_pick=412))
     ctl.on_phase("InProgress")
-    assert pushed[-1]["view"] == "status"
+    assert pushed[-1]["view"] == "client" and pushed[-1]["picks"] is None and pushed[-1]["build"] is None
     (draft,) = store.drafts()
     assert draft["role"] == "support" and draft["my_champ"] == 412 and draft["ended"]
     assert len(store.draft_snapshots(draft["id"])) == 2
@@ -120,11 +125,13 @@ def test_controller_records_draft(tmp_path):
     assert store.draft_recs(draft["id"], "final") is not None
 
 
-def test_controller_status_views():
+def test_controller_status_messages():
     pushed = []
     ctl = Controller(Config(), pushed.append)
     ctl.on_phase("Matchmaking")
-    assert pushed[-1]["view"] == "status" and "queue" in pushed[-1]["message"].lower()
+    s = pushed[-1]
+    assert s["view"] == "client" and s["picks"] is None and s["bans"] is None and s["build"] is None
+    assert "queue" in s["message"].lower()
 
 
 class StubBanRec(StubRec):
@@ -134,18 +141,16 @@ class StubBanRec(StubRec):
         return BanEvaluation(draft, draft.my_position, [412], [Threat(555, "bottom", 0.3, 10.0, 1.0, [])])
 
 
-def test_ban_phase_shows_bans_then_your_tab_choice():
+def test_ban_phase_shows_bans_and_picks_together():
     pushed = []
     ctl = Controller(Config(), pushed.append)
     ctl.rec = StubBanRec()
     ctl.on_phase("ChampSelect")
     ctl.on_session(session(ban_in_progress=True))
-    assert pushed[-1]["view"] == "bans" and pushed[-1]["tabs"] == ["bans", "picks"]
-    assert pushed[-1]["threats"][0]["id"] == 555
-    ctl.set_tab("picks")
-    assert pushed[-1]["view"] == "picks" and pushed[-1]["tab"] == "picks"
-    ctl.on_session(session())  # ban phase over: picks, no tabs
-    assert pushed[-1]["view"] == "picks" and "tabs" not in pushed[-1]
+    s = pushed[-1]
+    assert s["view"] == "client" and s["bans"]["threats"][0]["id"] == 555 and s["picks"]
+    ctl.on_session(session())  # ban phase over: picks only
+    assert pushed[-1]["bans"] is None and pushed[-1]["picks"]
 
 
 def test_preload_runs_once_per_role(monkeypatch):
@@ -181,24 +186,24 @@ def test_picks_show_as_soon_as_bans_are_done():
     ctl.rec = StubRec()
     ctl.on_phase("ChampSelect")
     ctl.on_session(no_picks_yet())  # bans done, nobody has picked: blind-pick time
-    assert pushed[-1]["view"] == "picks"
+    assert pushed[-1]["picks"]
     ctl.on_session(no_picks_yet(my_turn=True))
-    assert pushed[-1]["view"] == "picks"
+    assert pushed[-1]["picks"]
     ctl.on_session(session())  # someone has locked in
-    assert pushed[-1]["view"] == "picks"
+    assert pushed[-1]["picks"]
 
 
-def test_picks_tab_after_lock_in_shows_recommendations_from_before_you_picked():
+def test_lock_in_shows_build_with_recommendations_from_before_you_picked():
     pushed = []
     ctl = Controller(Config(), pushed.append)
     ctl.rec = StubRec()
     ctl.on_phase("ChampSelect")
     ctl.on_session(session())
     ctl.on_session(session(my_pick=412))
-    ctl.set_tab("picks")
-    assert pushed[-1]["view"] == "picks" and pushed[-1]["tab"] == "picks"
-    assert pushed[-1]["recs"][0]["name"] == "c412"  # your champion is still ranked in the frozen list
-    assert pushed[-1]["locked"]["name"] == "c412"
+    s = pushed[-1]
+    assert s["view"] == "client" and s["build"]["champ"]["name"] == "c412"
+    assert s["picks"]["recs"][0]["name"] == "c412"  # your champion is still ranked in the frozen list
+    assert s["picks"]["locked"]["name"] == "c412"
 
 
 def test_preload_when_idle_uses_your_usual_roles(tmp_path, monkeypatch):

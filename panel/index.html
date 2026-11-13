@@ -5,60 +5,58 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LoL Companion</title>
 <link rel="stylesheet" href="panel.css">
+<link rel="stylesheet" href="explore.css">
 </head>
 <body>
-<div class="hdr"><div class="t" id="title">LoL Companion</div><span class="btns"><button class="x" id="explore" title="Blind-pick explorer (charts for between games)"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="vertical-align:-1px"><path d="M2 14h12M4 11V8M8 11V3M12 11V6"/></svg></button><button class="x" id="gear" title="Settings">&#9881;</button><button class="x" id="hide" title="Hide (Ctrl+X)">&times;</button></span></div>
-<div class="tiers hidden" id="tiersBox"><div><div class="pill" id="tiers"></div><div class="note hidden" id="note"></div></div></div>
-<div class="tabs hidden" id="tabs"></div>
+<div class="hdr"><div class="t" id="title">LoL Companion</div><span class="btns"><button class="x" id="gear" title="Settings">&#9881;</button></span></div>
+<div class="tiers hidden" id="tiersBox"><div><div class="pill" id="tiers"></div></div></div>
 
-<section class="view hidden" data-view="picks">
-  <div class="odds hidden" id="odds"></div>
-  <div class="team" id="team">
-    <div><div class="rlabel">Allies</div><div class="row" id="allies"></div></div>
-    <div><div class="rlabel">Enemies <span id="enemyHint"></span></div><div class="row" id="enemies"></div>
-      <div class="dmg hidden" id="enemyDmg"></div>
-      <div class="lanepick hidden" id="lanePick"></div></div>
-    <div class="bans" id="bansBox"><div class="rlabel">Bans</div><div class="row" id="bans"></div></div>
-  </div>
-  <div class="locked hidden" id="locked"></div>
-  <div class="recmode hidden" id="recMode"></div>
-  <div class="recs" id="recs"></div>
-</section>
+<main class="screen" id="screen">
+  <section class="sec" id="secStatus">
+    <div class="empty" id="empty"><div class="dot"></div><div id="msg"></div><div class="sdetail" id="sdetail"></div></div>
+  </section>
 
-<section class="view hidden" data-view="bans">
-  <div class="team">
-    <div><div class="rlabel">Allies</div><div class="row" id="banAllies"></div></div>
-    <div class="bans" id="banBansBox"><div class="rlabel">Banned</div><div class="row" id="banBans"></div></div>
+  <section class="sec hidden" id="secTeam">
+    <div class="note hidden" id="note"></div>
+    <div class="odds hidden" id="odds"></div>
+    <div class="team" id="team">
+      <div><div class="rlabel">Allies</div><div class="row" id="allies"></div></div>
+      <div><div class="rlabel">Enemies <span id="enemyHint"></span></div><div class="row" id="enemies"></div>
+        <div class="dmg hidden" id="enemyDmg"></div>
+        <div class="lanepick hidden" id="lanePick"></div></div>
+      <div class="bans" id="bansBox"><div class="rlabel">Bans</div><div class="row" id="bans"></div></div>
+    </div>
+    <div class="locked hidden" id="locked"></div>
+  </section>
+
+  <section class="sec hidden" id="secBans">
+    <h2 class="sech">Bans</h2>
     <div class="vsline" id="banPicks"></div>
-  </div>
-  <div class="recs" id="threats"></div>
-</section>
+    <div class="recs" id="threats"></div>
+  </section>
 
-<section class="view hidden" data-view="build">
-  <div class="bhead" id="bHead"></div>
-  <div class="recs bbody" id="bBody"></div>
-</section>
+  <section class="sec hidden" id="secBuild">
+    <h2 class="sech">Build</h2>
+    <div class="bhead" id="bHead"></div>
+    <div class="recs bbody" id="bBody"></div>
+  </section>
 
-<section class="view hidden" data-view="ingame">
-  <div class="recs igbody" id="igBody"></div>
-</section>
+  <section class="sec hidden" id="secPicks">
+    <h2 class="sech">Picks</h2>
+    <div class="recmode hidden" id="recMode"></div>
+    <div class="recs" id="recs"></div>
+  </section>
 
-<section class="view hidden" data-view="players">
-  <div class="recs igbody plbody" id="plBody"></div>
-</section>
-
-<section class="view" data-view="status">
-  <div class="empty" id="empty"><div class="dot"></div><div id="msg"></div><div class="sdetail" id="sdetail"></div></div>
-</section>
+  <section class="sec hidden" id="secExplore"></section>
+</main>
 
 <div class="foot" id="foot">Data: lolalytics &middot; last update --:--:-- &middot; <b>Ctrl+X</b> show/hide</div>
 <script src="js/core.js"></script>
-<script src="views/status.js"></script>
 <script src="views/picks.js"></script>
 <script src="views/bans.js"></script>
 <script src="views/build.js"></script>
-<script src="views/ingame.js"></script>
-<script src="views/players.js"></script>
+<script src="views/explore.js"></script>
+<script src="views/client.js"></script>
 <script src="js/demo.js"></script>
 </body>
 </html>

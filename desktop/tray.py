@@ -56,11 +56,10 @@ def update_item(state: str) -> tuple[str, bool] | None:
 class Tray:
     def __init__(self, toggle: Callable[[], None], quit: Callable[[], None], updater: upd.Updater,
                  restart: Callable[[], None] | None = None,
-                 settings: Callable[[], None] | None = None, explore: Callable[[], None] | None = None):
+                 settings: Callable[[], None] | None = None):
         self.updater, self._ready_shown = updater, False
         self.restart = restart or updater.apply_and_restart
         self.settings = settings or (lambda: os.startfile(paths.config_path()))
-        self.explore = explore
         self.icon = pystray.Icon(
             "LoLCompanion", Image.open(paths.RESOURCES / "assets" / "icon.png"), NAME,
             pystray.Menu(*self._items(toggle, quit)),
@@ -70,14 +69,12 @@ class Tray:
         u = self.updater
         item = pystray.MenuItem
         label = lambda _: (update_item(u.state) or ("", False))[0]
-        yield item("Show / hide panel (Ctrl+X; in game Ctrl+Shift+X for players)", lambda: toggle(), default=True)
+        yield item("Show / hide panel (Ctrl+X)", lambda: toggle(), default=True)
         yield item(
             label, lambda: self.restart() if u.state == "ready" else u.check_async(),
             enabled=lambda _: (update_item(u.state) or ("", False))[1],
             visible=lambda _: update_item(u.state) is not None,
         )
-        if self.explore:
-            yield item("Blind-pick explorer", lambda: self.explore())
         yield item("Settings", lambda: self.settings())
         if paths.FROZEN:
             yield item("Start with Windows", lambda: set_autostart(not autostart_enabled()),

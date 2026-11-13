@@ -1,4 +1,5 @@
-"""Find the League client window and place the panel beside (or over) it. Windows only."""
+"""Find the League client and game windows, place the in-game screen over the game, and keep the
+panel window where you left it. Windows only."""
 from __future__ import annotations
 
 import ctypes
@@ -11,9 +12,8 @@ user32.ShowWindow.argtypes = [w.HWND, ctypes.c_int]
 user32.GetAncestor.argtypes = [w.HWND, w.UINT]
 user32.GetAncestor.restype = w.HWND
 user32.GetForegroundWindow.restype = w.HWND
-user32.MonitorFromWindow.argtypes = [w.HWND, w.DWORD]
-user32.MonitorFromWindow.restype = w.HMONITOR
-user32.GetMonitorInfoW.argtypes = [w.HMONITOR, ctypes.c_void_p]
+user32.MonitorFromRect.argtypes = [ctypes.c_void_p, w.DWORD]
+user32.MonitorFromRect.restype = w.HMONITOR
 user32.GetWindowLongW.argtypes = [w.HWND, ctypes.c_int]
 user32.SetWindowLongW.argtypes = [w.HWND, ctypes.c_int, ctypes.c_long]
 user32.WindowFromPoint.argtypes = [w.POINT]
@@ -28,16 +28,14 @@ CLIENT_TITLE = "League of Legends"
 GAME_CLASS = "RiotWindowClass"  # shared with other Riot games (Valorant, the launcher)
 GAME_TITLE = "League of Legends (TM) Client"  # match the title too, or Valorant passes as the game
 GAME_TITLE_PREFIX = "League of Legends"
-PANEL_BASE = (300, 1080)  # panel width designed for a 1080px-tall client
+PANEL_BASE = (300, 1080)  # panel width designed for a 1080px-tall screen
 MIN_WIDTH = 240
-HWND_TOPMOST = w.HWND(-1)
-SWP_NOACTIVATE = 0x0010
+PANEL_ZOOM = 1.25  # default panel window: this much wider than the design width for its height
+HWND_TOPMOST, HWND_NOTOPMOST = w.HWND(-1), w.HWND(-2)
+SWP_NOSIZE, SWP_NOMOVE, SWP_NOZORDER, SWP_NOACTIVATE = 0x0001, 0x0002, 0x0004, 0x0010
+SW_RESTORE = 9
 GA_ROOTOWNER = 3
-MONITOR_DEFAULTTONEAREST = 2
-
-
-class _MonitorInfo(ctypes.Structure):
-    _fields_ = [("cbSize", w.DWORD), ("rcMonitor", w.RECT), ("rcWork", w.RECT), ("dwFlags", w.DWORD)]
+MONITOR_DEFAULTTONULL = 0
 
 
 @dataclass(frozen=True)
@@ -58,7 +56,7 @@ class Rect:
 
 @dataclass(frozen=True)
 class Placement:
-    mode: str  # "dock-right" | "dock-left" | "overlay"
+    mode: str  # the page's body mode: "ingame"
     x: int
     y: int
     width: int
@@ -91,14 +89,6 @@ def window_rect(hwnd: int) -> Rect:
     return Rect(r.left, r.top, r.right, r.bottom)
 
 
-def work_area(hwnd: int) -> Rect:
-    mi = _MonitorInfo()
-    mi.cbSize = ctypes.sizeof(_MonitorInfo)
-    user32.GetMonitorInfoW(user32.MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), ctypes.byref(mi))
-    a = mi.rcWork
-    return Rect(a.left, a.top, a.right, a.bottom)
-
-
 def primary_work_area() -> Rect:
     r = w.RECT()
     user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(r), 0)  # SPI_GETWORKAREA
@@ -109,37 +99,64 @@ def is_minimized(hwnd: int) -> bool:
     return bool(user32.IsIconic(hwnd)) or not user32.IsWindowVisible(hwnd)
 
 
+def is_normal(hwnd: int) -> bool:
+    """Shown, and neither minimized nor maximized: its rect is the size you gave it."""
+    return not is_minimized(hwnd) and not user32.IsZoomed(hwnd)
+
+
 def foreground_root() -> int:
     fg = user32.GetForegroundWindow()
     return (user32.GetAncestor(fg, GA_ROOTOWNER) or fg) if fg else 0
 
 
-def place(client: Rect, area: Rect) -> Placement:
-    """Dock right if there's room, else dock left, else overlay the client's right side."""
-    scale = client.height / PANEL_BASE[1]
-    width = max(MIN_WIDTH, round(PANEL_BASE[0] * scale))
-    scale = width / PANEL_BASE[0]
-    if area.right - client.right >= width:
-        return Placement("dock-right", client.right, client.top, width, client.height, scale)
-    if client.left - area.left >= width:
-        return Placement("dock-left", client.left - width, client.top, width, client.height, scale)
-    # no room outside: sit over the enemy team column, below the client's top bar
-    top = client.top + round(client.height * 0.12)
-    return Placement("overlay", client.right - width - round(8 * scale), top, width, round(client.height * 0.7), scale)
+def panel_default(area: Rect) -> Rect:
+    """Where the panel window first opens: the right edge of the primary monitor, its full height,
+    and wide enough that the contents (which scale with width) read at PANEL_ZOOM x the design
+    size for that height (about 480px wide, 1.6x, on a 1440p monitor)."""
+    width = round(PANEL_BASE[0] * area.height / PANEL_BASE[1] * PANEL_ZOOM)
+    width = min(area.width, max(MIN_WIDTH, width))
+    return Rect(area.right - width, area.top, area.right, area.bottom)
 
 
-def standalone(area: Rect) -> Placement:
-    """Placement with no client (replay/demo): right edge of the primary monitor."""
-    height = min(area.height, 1080)
-    width = max(MIN_WIDTH, round(PANEL_BASE[0] * height / PANEL_BASE[1]))
-    return Placement("dock-right", area.right - width, area.top, width, height, width / PANEL_BASE[0])
+EXPLORE_SIZE = (1280, 720)  # out-of-game window: the League client's own default size
+
+
+def explore_default(area: Rect) -> Rect:
+    """Where the panel window opens out of game: a regular, browser-like window the size of the
+    League client (EXPLORE_SIZE), at the right edge and vertically centered, so the explorer's
+    chart has room without the whole UI zooming in."""
+    width = min(EXPLORE_SIZE[0], area.width)
+    height = min(EXPLORE_SIZE[1], area.height)
+    left = max(area.left, area.right - width)
+    top = max(area.top, area.top + (area.height - height) // 2)
+    return Rect(left, top, left + width, top + height)
+
+
+def on_screen(r: Rect) -> bool:
+    """Whether a window at `r` would show on a monitor (not one unplugged since)."""
+    rc = w.RECT(r.left, r.top, r.right, r.bottom)
+    return r.width > 0 and r.height > 0 and bool(user32.MonitorFromRect(ctypes.byref(rc), MONITOR_DEFAULTTONULL))
+
+
+def set_rect(hwnd: int, r: Rect) -> None:
+    user32.SetWindowPos(hwnd, None, r.left, r.top, r.width, r.height, SWP_NOZORDER | SWP_NOACTIVATE)
+
+
+def bring_to_front(hwnd: int) -> None:
+    """Un-minimize and raise above other windows without staying on top. Native calls, not
+    pywebview's: setting its on_top off the UI thread can deadlock with the window's own events."""
+    if user32.IsIconic(hwnd):
+        user32.ShowWindow(hwnd, SW_RESTORE)
+    flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
+    user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, flags)
+    user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, flags)
 
 
 def move(hwnd: int, p: Placement) -> None:
     user32.SetWindowPos(hwnd, HWND_TOPMOST, p.x, p.y, p.width, p.height, SWP_NOACTIVATE)
 
 
-INGAME_BASE = 310  # in-game panel width at 1080p (before Config.ingame_scale): narrower, it sits over the game
+INGAME_BASE = 620  # in-game window width at 1080p (before Config.ingame_scale): two 310px columns, players and build
 GWL_EXSTYLE = -20
 WS_EX_LAYERED, WS_EX_TRANSPARENT, WS_EX_NOACTIVATE = 0x00080000, 0x00000020, 0x08000000
 

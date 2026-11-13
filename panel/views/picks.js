@@ -1,4 +1,4 @@
-/* Champ select: teams, enemy lane picker, and ranked recommendations. */
+/* Client screen section: champ select teams, enemy lane picker, and ranked recommendations. */
 (function(L){
   var $=L.$,el=L.el,lane=L.lane,icon=L.icon,fmt=L.fmt,cls=L.cls,clear=L.clear,short=L.short;
   var openSet={},pickId=null,lastEnemies=[];
@@ -123,9 +123,9 @@
   }
 
   var mode="blind";
-  function renderMode(s){
+  function renderMode(d,s){
     var box=$("recMode");clear(box);
-    var has=!!(s.blind&&s.blind.length)&&!s.locked;
+    var has=!!(d.blind&&d.blind.length)&&!d.locked;
     box.classList.toggle("hidden",!has);
     if(!has)return false;
     box.appendChild(el("span",null,"Enemy "+(s.role||"laner")+" unknown"));
@@ -134,7 +134,7 @@
       var b=el("button",mode===m[0]?"on":null,m[1]);
       b.title=m[0]==="blind"?"Ranked by strength, your team, and how each pick holds up if the enemy "+(s.role||"laner")+" counters it":
         "Ranked by strength, the enemies already picked and your team, without counter risk";
-      b.addEventListener("click",function(){mode=m[0];render(s)});
+      b.addEventListener("click",function(){mode=m[0];render(d,s)});
       pill.appendChild(b);
     });
     box.appendChild(pill);
@@ -212,17 +212,16 @@
       "Uncalibrated until backtesting has enough of your games.";
   }
 
-  function render(s){
-    renderOdds(s.odds);
-    chipRow($("allies"),s.allies,"ally");
-    renderEnemies(s.enemies);
-    renderDamage(s.enemy_damage);
-    clear($("bans"));$("bansBox").classList.toggle("hidden",!(s.bans&&s.bans.length));
-    (s.bans||[]).forEach(function(b){var i=icon(b.name,b.icon);i.title=b.name;$("bans").appendChild(i)});
-    renderLocked(s.locked);
-    var keep=$("recs").scrollTop;
-    if(renderMode(s))renderBlind(s.blind);else renderRecs(s.recs,s.locked);
-    $("recs").scrollTop=keep;
+  function render(d,s){
+    $("note").textContent=d.note||"";$("note").classList.toggle("hidden",!d.note);
+    renderOdds(d.odds);
+    chipRow($("allies"),d.allies,"ally");
+    renderEnemies(d.enemies);
+    renderDamage(d.enemy_damage);
+    clear($("bans"));$("bansBox").classList.toggle("hidden",!(d.bans&&d.bans.length));
+    (d.bans||[]).forEach(function(b){var i=icon(b.name,b.icon);i.title=b.name;$("bans").appendChild(i)});
+    renderLocked(d.locked);
+    if(renderMode(d,s))renderBlind(d.blind);else renderRecs(d.recs,d.locked);
   }
-  L.register("picks",{render:render});
+  L.section("picks",{render:render});
 })(window.LPH);

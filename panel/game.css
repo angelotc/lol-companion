@@ -1,0 +1,74 @@
+/* In-game window (game.html): players column left, build column right, each scrolling on its own */
+body[data-mode=ingame]{--bgalpha:1;font-size:.8125rem}
+body[data-mode=ingame] .skillord{flex-wrap:nowrap}
+body[data-mode=ingame] .skillord span{flex:0 1 1.125rem;min-width:0;width:auto;height:1.125rem;font-size:.6875rem}
+.game{flex:1;min-height:0;display:flex}
+.gcol{flex:1 1 0;min-width:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}
+.gcol>*{flex:none}
+.gcol::-webkit-scrollbar{width:4px}.gcol::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
+#gPlayers{border-right:1px solid var(--line)}
+.gnote{margin:auto;padding:1rem;text-align:center;font-size:.75rem;color:var(--muted)}
+.gnote.err{color:var(--neg)}
+.gkey{flex:none;padding:.1875rem .5rem;border-top:1px solid var(--line);text-align:center;font-size:.625rem;color:var(--dim)}
+.gkey b{color:var(--muted);font-weight:600}
+/* build column */
+.igbody{gap:.375rem;padding:.4375rem .5rem}
+.ig-h{display:flex;align-items:center;gap:.375rem}
+.ig-h .igc{width:2rem;height:2rem;border-radius:5px;border:1px solid var(--gold)}
+.ig-h .igk{width:1.5rem;height:1.5rem;margin-left:auto;background:#0b1220}
+.ig-t{min-width:0}
+.ig-n{font-weight:600;color:var(--gold2);font-size:.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ig-s{font-size:.6875rem;color:var(--muted)}
+.ig-l{font-size:.625rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:.125rem}
+.ig-core{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.ig-core .ico,.ig-opt .ico{width:1.625rem;height:1.625rem;border-radius:3px;border:1px solid var(--line2)}
+.ico.own{opacity:.35;filter:grayscale(.6)}
+.ico.own::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--pos);font-weight:700;font-size:.875rem;text-shadow:0 0 2px #000}
+.ig-core .arrow{color:var(--dim);font-size:.6875rem}
+.ig-next{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:.1875rem;gap:.25rem}
+.ig-next span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ig-next b{color:var(--gold2);flex:none}
+.ig-opt{display:flex;align-items:center;gap:.25rem;margin-bottom:2px;position:relative}
+.ig-opt.yours{background:rgba(255,255,255,.05);border-radius:3px}
+.ig-wr{display:flex;flex-direction:column;font-size:.6875rem;line-height:1.1;color:var(--gold2);font-weight:700;flex:1;min-width:2.25rem;white-space:nowrap}
+.ig-vs{display:grid;align-items:center;justify-items:end;flex:none;font-size:.6875rem}
+.ig-vs .ico{width:.9375rem;height:.9375rem;border-radius:2px;border:0}
+.ig-vs b{font-weight:600}
+.ig-lh{display:flex;align-items:flex-end;gap:.25rem;margin-bottom:.125rem}
+.ig-lh .ig-l{flex:1;margin-bottom:0}
+.ig-mu{font-size:.75rem;font-weight:700;flex:none;min-width:2rem;text-align:right}
+.ig-sec.next{outline:1px solid rgba(200,170,110,.55);outline-offset:2px;border-radius:3px;background:rgba(200,170,110,.06)}
+.ig-sec.next .ig-l{color:var(--gold)}
+.ig-tag{position:absolute;left:1px;bottom:0;font-size:.4375rem;line-height:1.2;background:var(--pos);color:#010a13;border-radius:2px;padding:0 .1875rem;font-weight:700;letter-spacing:.04em}
+.skillord span.now{outline:1px solid var(--gold2);color:var(--gold2)}
+.skillord span.done{opacity:.4}
+/* players column */
+.plbody{gap:.25rem;padding:.375rem .4375rem}
+.pl-team{display:flex;flex-direction:column;gap:.1875rem}
+.pl-tl{font-size:.625rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;padding-left:.25rem;border-left:2px solid #4fa3ff;color:#4fa3ff}
+.pl-team.enemy .pl-tl{border-color:var(--neg);color:var(--neg)}
+.pl-row{display:flex;align-items:flex-start;gap:.3125rem;padding:.1875rem .25rem;border-radius:4px;background:rgba(9,20,40,.6);border-left:2px solid #2a4a7a}
+.pl-team.enemy .pl-row{border-left-color:#7a2a36;background:rgba(40,14,20,.5)}
+.pl-row.me{background:rgba(200,170,110,.12);border-left-color:var(--gold)}
+.pl-row:hover{background:rgba(255,255,255,.08)}
+.pl-row .pl-ico{width:2rem;height:2rem;border-radius:5px;border:1px solid var(--line2);margin-top:1px;flex:none}
+.pl-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.pl-l1,.pl-l2{display:flex;align-items:baseline;gap:.3125rem;white-space:nowrap;overflow:hidden;font-size:.6875rem}
+.pl-n{font-weight:500;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.pl-row.me .pl-n{font-weight:700}
+.pl-rk{font-weight:700;flex:none;font-size:.625rem}
+.pl-wr{margin-left:auto;flex:none;color:var(--muted);font-size:.625rem}
+.pl-wr.pos{color:var(--pos)}.pl-wr.neg{color:var(--neg)}
+.pl-rec{color:var(--muted);font-size:.625rem;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pl-ls{font-size:.625rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pl-ls b{color:var(--gold2);font-weight:600}
+.pl-dots{margin-left:auto;display:flex;gap:2px;flex:none;align-self:center}
+.pl-dots i{width:.3125rem;height:.3125rem;border-radius:50%;background:var(--neg)}
+.pl-dots i.w{background:var(--pos)}
+.pl-tags{display:flex;gap:.1875rem;flex-wrap:wrap;margin-top:1px}
+.pl-tag{font-size:.5rem;line-height:1.25;padding:0 .25rem;border-radius:7px;font-weight:600;white-space:nowrap}
+.pl-tag.good{background:rgba(10,200,185,.18);color:var(--pos)}
+.pl-tag.bad{background:rgba(232,64,87,.18);color:var(--neg)}
+.pl-row.err .pl-n::after{content:" ?";color:var(--dim)}
+.t-iron{color:#8a8077}.t-bronze{color:#b0774a}.t-silver{color:#a9b4bd}.t-gold{color:#e0b84a}
+.t-platinum{color:#4fc4b0}.t-emerald{color:#2fbf71}.t-diamond{color:#6aa6ff}.t-master{color:#c77dff}
+.t-grandmaster{color:#ff6b6b}.t-challenger{color:#7fe3ff}.t-none{color:var(--dim)}

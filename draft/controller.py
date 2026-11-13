@@ -1,7 +1,7 @@
-"""Turns phase/session updates into panel views, and records drafts to the store.
+"""Turns phase/session updates into the client and game screens, and records drafts to the store.
 
-Sources (live LCU, replay, simulate) call on_phase / on_session; the panel calls set_tier,
-set_enemy_lane and hide via the window API. All state changes go through one lock.
+Sources (live LCU, replay, simulate) call on_phase / on_session; the client screen calls set_tier
+and set_enemy_lane via the window API. All state changes go through one lock.
 """
 from __future__ import annotations
 
@@ -28,7 +28,6 @@ SYNC_EVERY = 20.0  # seconds; history/mastery sync is cheap but not free
 LIVE_POLL = 2.0  # seconds between game data reads while the in-game panel is shown
 PLAYERS_RETRY = 30.0  # seconds before trying again when player stats could not be read
 STATS_RETRY = 30.0  # seconds before refetching draft-odds stats that failed to load
-STAGE_TABS = {Stage.BAN: ["bans", "picks"], Stage.LOCKED: ["build", "picks"]}  # first is the default
 log = logging.getLogger("controller")
 
 
@@ -64,14 +63,12 @@ class Controller:
         self._stats_pending: set[tuple[int, str]] = set()
         self._stats_retry_at: dict[tuple[int, str], float] = {}  # failed loads: don't refetch before this time
         self._build_cache: tuple[tuple, BuildEvaluation] | None = None
-        self.tab: str | None = None        # "bans" | "picks" chosen by you during the ban phase
         self.lcu: Callable[[], LcuClient] | None = None  # client factory, set by the live source
         self.mastery: dict[int, lcu_data.Mastery] = {}
         self._synced_at = 0.0
         self.preload: str = ""             # progress line while preloading in lobby/queue
         self._preloaded: set[tuple[str, str]] = set()
-        self.ingame_shown = False          # Ctrl+X in game; stays as you left it for the next game
-        self.ingame_view = "build"         # "build" (Ctrl+X) | "players" (Ctrl+Shift+X)
+        self.ingame_shown = False          # game window on (Ctrl+X in game); stays as you left it for the next game
         self.players: tuple[int, list[players.PlayerStats]] | None = None  # (game id, stats) this game
         self._players_loading = False
         self._players_retry_at = 0.0
@@ -124,13 +121,19 @@ class Controller:
 
     # -- output -----------------------------------------------------------
     def show_status(self, message: str, kind: str = "waiting") -> None:
-        self.push(views.status(self.header(), message, kind))
+        stage = self.session.stage
+        if stage == Stage.INGAME and self.ingame_shown:
+            teams, players_note = self._game_players(load=False)
+            self.push(views.game(self.header(), build_note=message, kind=kind, teams=teams, players_note=players_note))
+            return
+        explore = stage not in DRAFT_STAGES and self.rec is not None
+        self.push(views.client(self.header(), stage, message, kind, explore=explore))
 
     def progress(self, message: str) -> None:
         self.show_status(message)  # transient: the next render replaces it
 
     def render(self) -> None:
-        """Show the view for the current stage, re-scoring the draft with current settings."""
+        """Push the screen for the current stage, re-scoring the draft with current settings."""
         with self.lock:
             if self.notice:
                 self.show_status(*self.notice)
@@ -138,40 +141,55 @@ class Controller:
             s = self.session
             stage = s.stage
             if stage == Stage.INGAME and self.ingame_shown:
-                if self.ingame_view == "players":
-                    self._render_players()
-                else:
-                    self._render_ingame()
+                self._render_game()
                 return
             if stage not in DRAFT_STAGES or not s.draft:
                 msg = self.idle_message if stage == Stage.IDLE else views.STAGE_MESSAGES.get(stage, "")
-                self.push(views.status(self.header(), msg) | {"detail": self.preload if stage in PRE_DRAFT_STAGES else ""})
+                detail = self.preload if stage in PRE_DRAFT_STAGES else ""
+                self.push(views.client(self.header(), stage, msg, detail=detail, explore=self.rec is not None))
                 return
             if not self.rec or self.rec.role_for(s.draft) is None:
-                self.show_status("No assigned role in this queue - recommendations need a position (draft or ranked).")
+                self.push(views.client(self.header(), stage,
+                                       "No assigned role in this queue - recommendations need a position (draft or ranked)."))
                 return
-            tabs = {}
-            if stage in STAGE_TABS:
-                tabs = {"tabs": STAGE_TABS[stage], "tab": self.tab if self.tab in STAGE_TABS[stage] else STAGE_TABS[stage][0]}
             try:
-                if tabs.get("tab") == "bans":
-                    bev = self.rec.bans(s.draft, s.pickable)
-                    self.push(views.bans(self.header(bev.role), bev, self.rec.champs) | tabs)
-                    return
+                champs = self.rec.champs
                 ev = self.rec.evaluate(s.draft, s.pickable, s.enemy_lanes)
                 if s.frozen:  # teams stay live, recommendations stay as they were at lock-in
                     ev.recs = self.rec.evaluate(s.frozen, s.pickable, s.enemy_lanes).recs
                 self.last_eval = ev
-                if tabs.get("tab") == "build":
-                    self.push(views.build(self.header(ev.role), self._build(ev), self.rec.champs, self.rec.assets) | tabs)
-                    return
                 odds = self._odds(ev)
                 self.last_odds = odds
-                self.push(views.picks(self.header(ev.role), ev, self.rec.champs, s.enemy_lanes)
-                          | tabs | {"odds": views.odds(odds, self.rec.champs)})
+                picks = views.picks(ev, champs, s.enemy_lanes) | {"odds": views.odds(odds, champs)}
+                bans = views.bans(self.rec.bans(s.draft, s.pickable), champs) if stage == Stage.BAN else None
+                build = views.build(self._build(ev), champs, self.rec.assets) if stage == Stage.LOCKED else None
+                self.push(views.client(self.header(ev.role), stage, "", "active", bans=bans, picks=picks, build=build))
             except Exception:
                 log.exception("evaluate failed")
                 self.show_status("Error scoring draft (see app.log)", "error")
+
+    def _render_game(self) -> None:
+        """One game screen: your build and every player's stats, each half ready on its own."""
+        teams, players_note = self._game_players(load=True)
+        build, build_note, kind, role = None, "", "active", None
+        g = self.live
+        if not g or not self.rec:
+            build_note = "Waiting for game data..."
+        else:
+            cid = self.rec.champs.id_from_slug(g.champion)
+            role = g.role or self.last_role
+            if not cid or not role:
+                build_note = "No build: champion or role unknown in this game."
+            else:
+                enemies = {lane: e for lane, name in g.enemies.items() if (e := self.rec.champs.id_from_slug(name))}
+                try:
+                    bev = self._build_for(cid, role, enemies)
+                    build = views.ingame(g, bev, self.rec.champs, self.rec.assets)
+                except Exception:
+                    log.exception("in-game build failed")
+                    build_note, kind = "Error loading build (see app.log)", "error"
+        self.push(views.game(self.header(role or None), build=build, build_note=build_note,
+                             teams=teams, players_note=players_note, kind=kind))
 
     def _odds(self, ev: Evaluation) -> DraftOdds | None:
         """Draft win estimate from the stats loaded so far; missing stats load in the background."""
@@ -234,35 +252,17 @@ class Controller:
             finally:
                 self.lock.release()
 
-    def _render_ingame(self) -> None:
-        g = self.live
-        if not g or not self.rec:
-            self.show_status("Waiting for game data...")
-            return
-        cid = self.rec.champs.id_from_slug(g.champion)
-        role = g.role or self.last_role
-        if not cid or not role:
-            self.show_status("No build: champion or role unknown in this game.")
-            return
-        enemies = {lane: e for lane, name in g.enemies.items() if (e := self.rec.champs.id_from_slug(name))}
-        try:
-            bev = self._build_for(cid, role, enemies)
-            self.push(views.ingame(self.header(role), g, bev, self.rec.champs, self.rec.assets))
-        except Exception:
-            log.exception("in-game build failed")
-            self.show_status("Error loading build (see app.log)", "error")
-
-    def _render_players(self) -> None:
+    def _game_players(self, load: bool) -> tuple[list[dict] | None, str]:
+        """The players half of the game screen: (teams, "") or (None, why not)."""
         if self.players is None:
-            self.start_players()
+            if load:
+                self.start_players()
             msg = "Loading players..." if self._players_loading else "Player stats unavailable (League client not reachable)."
-            self.show_status(msg)
-            return
+            return None, msg
         champs = self.rec.champs if self.rec else None
         if not champs or not self.players[1]:
-            self.show_status("No player data for this game.")
-            return
-        self.push(views.players(self.header(), self.players[1], champs))
+            return None, "No player data for this game."
+        return views.players(self.players[1], champs), ""
 
     def start_players(self) -> None:
         """Read every player's stats once per game, in the background (from the loading screen on)."""
@@ -302,7 +302,7 @@ class Controller:
             self.players = result
             if result is None:
                 self._players_retry_at = time.monotonic() + PLAYERS_RETRY
-            if self.ingame_shown and self.ingame_view == "players":
+            if self.ingame_shown:
                 self.render()
 
     def _build(self, ev: Evaluation) -> BuildEvaluation:
@@ -342,7 +342,7 @@ class Controller:
             self.start_sync(delay=5.0 if s.stage == Stage.POSTGAME else 0.0)
         if Event.DRAFT_STARTED in events:
             self.user_hidden = False  # new draft: bring the panel back
-            self.tab, self.preload, self.last_odds = None, "", None
+            self.preload, self.last_odds = "", None
             if self.store:
                 role = self.rec.role_for(s.draft) if self.rec and s.draft else None
                 self.draft_id = self._record(lambda: self.store.start_draft(role, self.tier))
@@ -350,11 +350,9 @@ class Controller:
                     self._record(lambda: self.store.snapshot(self.draft_id, session))
         if Event.PHASE in events:
             if s.stage == Stage.INGAME:
-                self.start_players()  # ready by the time you press Ctrl+Shift+X
+                self.start_players()  # ready by the time you press Ctrl+X
             else:
                 self.players, self._players_retry_at = None, 0.0
-        if Event.LOCKED_IN in events:
-            self.tab = None  # show the build first, whatever tab you had in the ban phase
         self.render()
         if Event.DRAFT_CHANGED in events and self.draft_id is not None and self.last_odds:
             # odds timeline: one row per pick/ban, so backtests can watch estimates evolve
@@ -463,25 +461,18 @@ class Controller:
                 self.render()
 
     # -- in game -----------------------------------------------------------
-    def toggle_ingame(self, view: str = "build") -> None:
-        """Ctrl+X (build) / Ctrl+Shift+X (players): show that view, or hide the panel if it's
-        already showing it."""
+    def toggle_ingame(self) -> None:
+        """Ctrl+X in game: show or hide the game window."""
         with self.lock:
-            if self.ingame_shown and self.ingame_view == view:
-                self.ingame_shown = False
-            else:
-                self.ingame_shown, self.ingame_view = True, view
-        log.info("in-game panel %s", view if self.ingame_shown else "off")
+            self.ingame_shown = not self.ingame_shown
+        log.info("in-game panel %s", "on" if self.ingame_shown else "off")
         if self.ingame_shown:
             try:
                 log.info("game data: %s", "found" if self.poll_live() else "not available")
                 with self.lock:
-                    self.render()  # the view may have changed even if the game data didn't
+                    self.render()  # the window was hidden: push a state even if the game data didn't change
             except Exception:
                 log.exception("in-game panel")
-
-    def toggle_players(self) -> None:
-        self.toggle_ingame("players")
 
     def poll_live(self, data: dict | None = None) -> bool:
         """Read the game's local data once (or use `data` already read); re-render if your state
@@ -521,12 +512,6 @@ class Controller:
             time.sleep(LIVE_POLL)
 
     # -- panel actions ----------------------------------------------------
-    def set_tab(self, tab: str) -> None:
-        if any(tab in t for t in STAGE_TABS.values()):
-            with self.lock:
-                self.tab = tab
-                self.render()
-
     def set_tier(self, tier: str) -> None:
         with self.lock:
             if tier in views.TIERS and self.rec:

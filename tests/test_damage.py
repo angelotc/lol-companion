@@ -28,7 +28,7 @@ def test_team_damage_ignores_unknown_and_empty():
 
 def picks(enemies):
     d = DraftState(enemies=enemies)
-    return views.picks(views.header("mid", "master_plus", 14), Evaluation(d, "mid", [], {}), champs, {})
+    return views.picks(Evaluation(d, "mid", [], {}), champs, {})
 
 
 def test_picks_includes_enemy_damage():

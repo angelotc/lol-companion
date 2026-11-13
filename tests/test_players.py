@@ -226,9 +226,7 @@ def test_fixture_end_to_end_facts():
 
 def test_views_players_payload_shape():
     stats = _fixture_stats()
-    out = views.players(views.header("bottom", "master_plus", 14), stats, Champs())
-    assert out["view"] == "players" and out["status"] == "active"
-    ally, enemy = out["teams"]
+    ally, enemy = views.players(stats, Champs())
     assert ally["side"] == "ally" and ally["label"] == "Your team"
     assert enemy["side"] == "enemy" and enemy["label"] == "Enemy team"
     assert len(ally["players"]) == 5 and len(enemy["players"]) == 5
@@ -249,8 +247,7 @@ def test_views_players_payload_shape():
 
 def test_views_players_empty_stats_render():
     bare = PlayerStats(PlayerRef(puuid="", name="Lone", tag="", champion_id=0, team=200, position=""))
-    out = views.players(views.header(None, "master_plus", 14), [bare], Champs())
-    enemy = next(t for t in out["teams"] if t["side"] == "enemy")
+    enemy = next(t for t in views.players([bare], Champs()) if t["side"] == "enemy")
     p = enemy["players"][0]
     assert p["rank"] == "" and p["rank_full"] == "Unranked"
     assert p["wr"] is None and p["kda"] is None
@@ -296,7 +293,7 @@ def test_parse_ranked_losses_unknown_below_master():
 
 def test_view_without_losses_shows_wins_only():
     s = PlayerStats(PlayerRef("p", "A", "1", 1, 100, "top"), tier="DIAMOND", division="II", wins=289, losses=None)
-    row = views.players({}, [s], Champs())["teams"][0]["players"][0]
+    row = views.players([s], Champs())[0]["players"][0]
     assert row["wr"] is None and row["wins"] == 289 and row["season_games"] == 0
 
 
@@ -327,7 +324,7 @@ def test_load_with_season_from_opgg():
     me = next(r for r in refs if r.is_me)
     s = load(c, me, Season({me.champion_id: [40, 22]}), "na")
     assert (s.season_games, s.season_wins) == (40, 22) and "Main" in s.tags
-    row = views.players({}, [s], Champs())["teams"][0]["players"][0]
+    row = views.players([s], Champs())[0]["players"][0]
     assert row["champ_season_games"] == 40 and row["champ_season_wr"] == 55
     s = load(c, me, Season({}), "na")  # op.gg knows the player, no games on this champion
     assert (s.season_games, s.season_wins) == (0, 0)

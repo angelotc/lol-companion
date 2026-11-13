@@ -1,10 +1,10 @@
 # LoL Companion
 
-A panel that docks beside the League client and ranks your best picks in champ select, using
-matchup and synergy stats, your team and theirs, and your own record. After you lock in it shows
-runes and builds; in game, a compact build panel.
+A window that ranks your best picks in champ select, using matchup and synergy stats, your team and
+theirs, and your own record. It is one screen that stacks bans, picks and build as the draft moves
+on; in game, a second window over the game's right edge shows your build beside all 10 players.
 
-![Panel docked beside the League client in champ select](docs/client.png)
+![Panel beside the League client in champ select](docs/client.png)
 
 ## Install
 Download **[LoLCompanion-win-Setup.exe](https://github.com/angelotc/lol-companion/releases/latest/download/LoLCompanion-win-Setup.exe)**
@@ -16,46 +16,43 @@ Portable instead: [LoLCompanion.zip](https://github.com/angelotc/lol-companion/r
 Windows may warn that the app is unrecognized (it isn't code-signed): **More info → Run anyway**.
 
 ## Use
-The panel appears on its own while the League client is in front and hides in game.
+The panel is a normal window: it opens with the app and stays open until you close it. Out of game
+it opens a regular, client-sized window (1280×720) on the right edge of your main monitor for the
+explorer; when champ select starts it switches to a narrow full-height column beside the client,
+and back when the draft ends. It opens where you left each size, and in champ select its contents
+scale with its width (wider is bigger). Closing it hides it to the tray. Ban suggestions, then
+picks, then (after you lock in) the build appear on the same screen, one above the other; a new
+champ select brings a hidden panel back.
 
 | Key | Does |
 |---|---|
-| **Ctrl+X** | Toggle the panel (client in front) or the in-game panel (in game) |
-| **Ctrl+Shift+X** | In game: toggle the players view (all 10 players' rank, season win rate, recent games on their champion) |
+| **Ctrl+X** | Toggle the panel (client or panel in front) or the in-game window (in game) |
 | **Ctrl+Shift+L** | Toggle the panel from any window |
 
 The **tray icon** (bottom-right) shows/hides the panel, checks for updates, opens settings, turns
 on Start with Windows, and quits.
 
-**Blind picks.** While your lane opponent isn't picked yet, the picks view has a **Blind-safe**
+**Blind picks.** While your lane opponent isn't picked yet, the picks section has a **Blind-safe**
 switch: picks ranked by strength, fit with your team, and how much they lose if the enemy laner
-counters them. It switches to the normal ranking once your lane opponent is picked. Between games, the chart button in the panel header (or the tray's **Blind-pick
-explorer**) opens a window for any role (your most played by default): every champion's strength vs how
-much it loses if countered. Hover a portrait for its worst counters. Tune it in `config.toml`
-under `[blind]`.
+counters them. It switches to the normal ranking once your lane opponent is picked. Between games
+(lobby, queue, or with no draft at all) the panel shows the explorer below, for any role (your most
+played by default): every champion's strength vs how much it loses if countered. Hover a portrait
+for its worst counters. Tune it in `config.toml` under `[blind]`.
 
-<img src="docs/views/explore.png" width="640" alt="Blind-pick explorer: support champions by strength vs counter risk">
-
-| Bans | Picks |
-|---|---|
-| <img src="docs/views/bans.png" width="280"> | <img src="docs/views/picks.png" width="280"> |
-| Ban suggestions from the moment champ select opens (planning included) until bans end: vs your likely picks and your team's hovers. | Right after bans: draft win estimate and ranked picks, with **Blind-safe / Best now** while your lane opponent is unknown. |
-
-| Build (after lock-in) | In game |
-|---|---|
-| <img src="docs/views/build.png" width="280"> | <img src="docs/views/ingame.png" width="280"> |
-| Runes, spells, skills and items vs the enemy. | Next item, gold, win rate and Δ vs each enemy lane. |
+| Out of game | Champ select | In game |
+|---|---|---|
+| <img src="docs/views/explore.png" height="320" alt="Out of game: the blind-pick explorer in its client-sized window"> | <img src="docs/views/picks.png" height="320" alt="Champ select: ranked picks with the draft win estimate"> | <img src="docs/views/ingame.png" height="320" alt="In game: your build beside all 10 players"> |
+| The blind-pick explorer, between games, in its own client-sized window: every champion's strength vs how much it loses if countered, for any role. Hover a portrait for its worst counters. | Ranked picks with the draft win estimate (**Blind-safe / Best now** while your lane opponent is unknown). Ban suggestions sit above them until bans end; after you lock in, your build appears above the picks. | Your build (next item, gold, win rate and Δ vs each enemy lane) beside all 10 players. |
 
 - **Before champ select** stats preload in the background for your usual roles (your lobby roles once you queue).
 
-- **Picks** start at the first locked pick. Hover a pick to see every term behind its score.
+- **Picks** are ranked from the moment champ select opens (Blind-safe while your lane opponent is unknown). Hover a pick to see every term behind its score.
 - **Rank tier**: stats are from Master+ games.
 - **Enemy lanes** are guessed from play rates; flex picks get a gold dot. Click an enemy to set their lane.
 - **Build:** each option shows its Δ: how much better it does against these enemies than usual, in win-rate points, discounted for small samples. Bot lane is measured vs the enemy duo, top/mid vs their laner, jungler (and mid vs the roaming support), jungle vs everyone. The best is tagged **BEST VS LANE**. Hover for each enemy's share.
-- **Their damage** (build view and in game): the enemy team's split of physical, magic and true damage, from each enemy's average damage to champions in its lane. Hover for each enemy's own split.
-- **Picks tab after lock-in** shows the recommendations as they were when you locked in.
-- **In game** shows each item's win rate and its Δ vs each enemy, one column per lane (enemy icons on top). Needs borderless or windowed mode. Boots and item slots you've already filled are hidden. It never takes focus from the game: hover an item or row for details, Ctrl+X hides it.
-- **Players** (in game, Ctrl+Shift+X): rank and season win rate, games/win rate/KDA on the champion they're playing (from their last ~20 games), last 10 results, and tags like "First time" or "3 losses in a row". Read from the League client when the game starts.
+- **Their damage** (build section and in game): the enemy team's split of physical, magic and true damage, from each enemy's average damage to champions in its lane. Hover for each enemy's own split.
+- **Picks after lock-in**: the picks section under the build keeps the recommendations as they were when you locked in.
+- **In game** (Ctrl+X hides it) one window pinned to the game's right edge shows the players and your build side by side; it grows with the game's resolution (`ingame_scale` in the config enlarges it). It never takes focus from the game and needs borderless or windowed mode. Build: each item's win rate and its Δ vs each enemy, one column per lane (enemy icons on top); boots and item slots you've already filled are hidden; hover an item or row for details. Players: rank and season win rate, games/win rate/KDA on the champion they're playing (from their last ~20 games), last 10 results, and tags like "First time" or "3 losses in a row", read from the League client when the game starts.
 
 ## Settings
 Tray → Settings (or the gear in the panel header). Saved changes apply immediately. They live in `config.toml` (installed copy in `%LOCALAPPDATA%\league-analysis\`), which also holds what the window doesn't cover:
@@ -67,7 +64,8 @@ Tray → Settings (or the gear in the panel header). Saved changes apply immedia
 | `[comfort]` | | `weight` (0 = off), `k`, `history`, `half_life`, `min_games`, `mastery`, `mastery_cap` |
 | `[weights.<role>]` | | Per-role lane weights. |
 | `[build_weights.<role>]` | | Which enemies build Δs are measured against, and their weights. |
-| `build_min_games` | 50 | Ignore an enemy's Δ for an option below this many games. |
+| `build_min_games` | 20 | Ignore an enemy's Δ for an option below this many games. |
+| `ingame_scale` | 1.0 | In-game window size; it already grows with the game's resolution. |
 | `[odds]` | | Draft win estimate weights. |
 | `record_games` | false | Save the raw in-game data every `record_every` (15) seconds to `recordings\` in the data folder, one `.jsonl` file per game. Research only; nothing changes on screen. |
 
@@ -97,7 +95,7 @@ your games are weighted 0.5^(age / half_life), half_life = 90 days
 | `w_ally` | – | 1.0 | 0.5 | 0.3 |
 
 - **Ban threat** = `pick_rate × (harm to your picks + harm to each teammate's hover + strength × w_enemy)`, summed over lanes. Harm to your picks is averaged (you play one); each hover counts in full, with that teammate's own lane weights.
-- **Build Δ** = `shrink((wr_option_vs − wr_vs) − (wr_option − wr), games, 300)`, hidden under 100 games.
+- **Build Δ** = `shrink((wr_option_vs − wr_vs) − (wr_option − wr), games, 300)`, hidden under 20 games (`build_min_games`).
 - **Draft win estimate**: champion strength (half weight) + cross-team matchups (1.0 same lane, 0.7
   bot duos, 0.35 other) + synergy (half weight), capped 25–75%. Calibrate it on your own drafts with
   `scripts/backtest.py`, which fits `cal_a`/`cal_b` for `[odds]` in the config (the estimate then
@@ -106,10 +104,10 @@ your games are weighted 0.5^(age / half_life), half_life = 90 days
 ## APIs
 | API | Used for |
 |---|---|
-| [League Client API](https://developer.riotgames.com/docs/lol#league-client-api) (local, read-only) | Champ select (`/lol-champ-select/v1/session`, pickable champions), game phase, lobby, match history, mastery, patch version. In game (Ctrl+Shift+X): every player's rank, recent games and mastery, the same public profile data the client shows |
+| [League Client API](https://developer.riotgames.com/docs/lol#league-client-api) (local, read-only) | Champ select (`/lol-champ-select/v1/session`, pickable champions), game phase, lobby, match history, mastery, patch version. In game: every player's rank, recent games and mastery, the same public profile data the client shows |
 | [Live Client Data API](https://developer.riotgames.com/docs/lol#game-client-api) (`127.0.0.1:2999`) | In game: your champion, items, gold, level, and each player's champion/position. No enemy items or timers. |
 | [lolalytics](https://lolalytics.com) (unofficial, may change) | Win rates, matchups, synergies, builds. Cached 24h. |
-| [op.gg](https://op.gg) (unofficial, may change) | Players view: each player's season solo queue record on their champion. Cached 6h; `opgg = false` in config turns it off. |
+| [op.gg](https://op.gg) (unofficial, may change) | In-game players: each player's season solo queue record on their champion. Cached 6h; `opgg = false` in config turns it off. |
 | [Data Dragon](https://ddragon.leagueoflegends.com) + [CommunityDragon](https://raw.communitydragon.org) | Champion, item and rune data and images |
 | GitHub Releases (via [Velopack](https://velopack.io)) | Auto-updates |
 
@@ -122,8 +120,10 @@ uv run app.py                                  # live
 uv run app.py --record drafts/x.jsonl          # live + record
 uv run app.py --replay drafts/x.jsonl          # replay
 uv run app.py --simulate --role support --allies jinx --enemies nautilus
-uv run app.py --simulate --players               # in-game players view, from tests/fixtures/players
+uv run app.py --simulate --items 3158,3109     # in-game window: build for the items you hold
+uv run app.py --simulate --players             # in-game window: players, from tests/fixtures/players
 uv run scripts/dump_players.py                 # in a game: save the client's raw player data
+uv run python -m data.leaderboard              # prototype: a champion's best players, with op.gg links
 uv run pytest
 uv run --group build pyinstaller league_helper.spec --noconfirm   # → dist/LoLCompanion/
 ```
@@ -133,10 +133,10 @@ update feed) plus the portable zip.
 
 | Path | |
 |---|---|
-| `app.py` | Entry point: window, hotkeys, draft sources |
+| `app.py` | Entry point: panel and in-game windows, hotkeys, draft sources |
 | `config.py`, `paths.py` | Settings (`config.toml`) and file locations |
-| `draft/` | `controller.py` + `state.py` (client updates → panel views), `engine.py` + `scoring.py` (candidates and scores), `views.py` (panel payloads) |
+| `draft/` | `controller.py` + `state.py` (client updates → the two screens), `engine.py` + `scoring.py` (candidates and scores), `views.py` (screen payloads) |
 | `desktop/` | Tray icon, auto-updates, settings window, placing the panel beside the client |
-| `data/` | League client (`lcu.py`), lolalytics, Data Dragon, fetcher/cache, `store.py` (SQLite of drafts and games) |
-| `panel/` | The panel UI (`index.html?demo` runs in a browser) |
+| `data/` | League client (`lcu.py`), lolalytics, Data Dragon, fetcher/cache, `store.py` (SQLite of drafts and games), `leaderboard.py` (best players on a champion, prototype) |
+| `panel/` | The panel UI: `index.html` (client screen) and `game.html` (in game); `index.html?demo` and `game.html?demo` run in a browser |
 | `scripts/` | `simulate_views.py` (README screenshots), `render_panel.py`, `make_icon.py` |

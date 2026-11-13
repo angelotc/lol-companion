@@ -1,9 +1,11 @@
-"""Screenshot the panel headless (Microsoft Edge) with a given state, for checking views.
+"""Screenshot a panel page headless (Microsoft Edge) with a given state, for checking screens.
 
-  uv run scripts/render_panel.py out.png                       demo picks view
+  uv run scripts/render_panel.py out.png                       demo client screen
   uv run scripts/render_panel.py out.png --demo status
   uv run scripts/render_panel.py out.png --state state.json --click ".rec" --height 1080
-  uv run scripts/render_panel.py out.png --state state.json --mode ingame --hover ".ig-opt.yours .ig-vs b[title]"
+  uv run scripts/render_panel.py out.png --state state.json --explore report.json
+  uv run scripts/render_panel.py out.png --page game.html --demo 1 --width 827 --scale 1.333 --mode ingame
+  uv run scripts/render_panel.py out.png --page game.html --state game.json --mode ingame --hover ".ig-opt .ig-vs b[title]"
 """
 from __future__ import annotations
 
@@ -45,7 +47,8 @@ HOVER_JS = """function(sel){
 
 def render(out: Path, state: dict | None = None, demo: str | None = None, click: list[str] | None = None,
            width: int = 300, height: int = 900, scale: float = 1.0, mode: str = "",
-           hover: str | None = None) -> Path:
+           hover: str | None = None, page: str = "index.html", explore: dict | None = None) -> Path:
+    """Screenshot `panel/<page>` after pushing `state` (and `explore`, the explorer's data) to it."""
     edge = next((p for p in EDGE_PATHS if p.exists()), None)
     if not edge:
         raise SystemExit("Microsoft Edge not found")
@@ -55,15 +58,17 @@ def render(out: Path, state: dict | None = None, demo: str | None = None, click:
         script = [f"setScale({scale})", f"setMode({json.dumps(mode)})"]
         if state is not None:
             script.append(f"updateState({json.dumps(state)})")
+        if explore is not None:
+            script.append(f"renderExplore({json.dumps(explore)})")
         for sel in click or []:
             script.append(f"(document.querySelector({json.dumps(sel)})||{{click(){{}}}}).click()")
         if hover:
             script.append(f"({HOVER_JS})({json.dumps(hover)})")
         inject = (f"<style>html,body{{width:{width}px;height:{height}px}}</style>"
                   f"<script>window.addEventListener('load',function(){{setTimeout(function(){{{';'.join(script)}}},{700 if demo else 0})}})</script></body>")
-        index = root / "index.html"
-        index.write_text(index.read_text(encoding="utf-8").replace("</body>", inject), encoding="utf-8")
-        url = index.as_uri() + (f"?demo={demo}" if demo else "")
+        html = root / page
+        html.write_text(html.read_text(encoding="utf-8").replace("</body>", inject), encoding="utf-8")
+        url = html.as_uri() + (f"?demo={demo}" if demo else "")
         out = out.resolve()
         subprocess.run(
             [str(edge), "--headless", "--disable-gpu", "--hide-scrollbars", f"--screenshot={out}",
@@ -79,7 +84,9 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("out", type=Path)
     ap.add_argument("--state", type=Path, help="JSON payload as sent by the app")
-    ap.add_argument("--demo", help="demo view instead of a state (picks, status, ...)")
+    ap.add_argument("--demo", help="demo state instead of a state (picks, status, ...)")
+    ap.add_argument("--page", default="index.html", help="page inside panel/: index.html or game.html")
+    ap.add_argument("--explore", type=Path, help="JSON blind-pick report to draw in the explorer section")
     ap.add_argument("--click", action="append", help="CSS selector to click after rendering")
     ap.add_argument("--width", type=int, default=300)
     ap.add_argument("--height", type=int, default=900)
@@ -88,7 +95,9 @@ def main() -> None:
     ap.add_argument("--hover", help="CSS selector to hover: shows its tooltip and a cursor")
     a = ap.parse_args()
     state = json.loads(a.state.read_text(encoding="utf-8")) if a.state else None
-    print(render(a.out, state, a.demo if not state else None, a.click, a.width, a.height, a.scale, a.mode, a.hover))
+    explore = json.loads(a.explore.read_text(encoding="utf-8")) if a.explore else None
+    print(render(a.out, state, a.demo if not state else None, a.click, a.width, a.height, a.scale, a.mode,
+                 a.hover, a.page, explore))
 
 
 if __name__ == "__main__":

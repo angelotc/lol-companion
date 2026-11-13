@@ -1,4 +1,4 @@
-/* Shared helpers and the view router. Python calls updateState(state); state.view picks the view. */
+/* Shared helpers and the screen router. Python calls updateState(state); state.view picks the page's screen. */
 (function(){
   var $=function(id){return document.getElementById(id)};
   var LANES={top:"top",jungle:"jg",jg:"jg",middle:"mid",mid:"mid",bottom:"bot",bot:"bot",adc:"bot",support:"sup",utility:"sup",sup:"sup"};
@@ -19,7 +19,6 @@
   function clear(n){while(n.firstChild)n.removeChild(n.firstChild)}
   function short(n){n=String(n||"");return n.length>8?n.slice(0,7)+"…":n}
   function cap(s){s=String(s||"");return s.charAt(0).toUpperCase()+s.slice(1)}
-  function pad(n){return(n<10?"0":"")+n}
   /* call window.pywebview.api.<name>(...); false when not running inside the app */
   function api(name){
     var args=[].slice.call(arguments,1);
@@ -27,59 +26,18 @@
     return false;
   }
 
-  var views={};
-  function register(name,view){views[name]=view}
-
-  var pending=null;
-  function renderTiers(s){
-    var box=$("tiers");
-    $("tiersBox").classList.toggle("hidden",!(s.tiers&&s.tiers.length>1));
-    clear(box);
-    (s.tiers||[]).forEach(function(t){
-      var b=el("button",(pending||s.tier_id)===t.id?"on":null,t.label);
-      b.disabled=!!pending;
-      b.addEventListener("click",function(){
-        if(pending||t.id===s.tier_id)return;
-        pending=t.id;renderTiers(s);
-        if(!api("set_tier",t.id)){pending=null;renderTiers(s)}
-      });
-      box.appendChild(b);
-    });
-    $("note").textContent=s.note||"";
-    $("note").classList.toggle("hidden",!s.note);
-  }
-
-  function renderTabs(s){
-    var box=$("tabs");clear(box);
-    box.classList.toggle("hidden",!(s.tabs&&s.tabs.length));
-    (s.tabs||[]).forEach(function(t){
-      var b=el("button",t===s.tab?"on":null,t);
-      b.addEventListener("click",function(){if(t!==s.tab)api("set_tab",t)});
-      box.appendChild(b);
-    });
-  }
+  /* screens: one per page ("client" or "game"); sections: parts of the client screen */
+  var screens={},sections={};
+  function register(name,screen){screens[name]=screen}
+  function section(name,view){sections[name]=view}
 
   window.updateState=function(s){
     s=s||{};
-    var name=s.view||(s.status==="active"?"picks":"status");
-    if(!views[name])name="status";
-    var parts=[];
-    if(s.role)parts.push(cap(s.role));if(s.days!=null&&s.days!=="")parts.push(s.days+"d");
-    $("title").textContent=parts.length?parts.join(" · "):"LoL Companion";
-    pending=null;  // any new state answers a tier click (accepted or not)
     if(tip){tip.remove();tip=null}  // its element is about to be redrawn
-    renderTiers(s);
-    document.querySelectorAll("section.view").forEach(function(v){v.classList.toggle("hidden",v.dataset.view!==name)});
-    renderTabs(s);
-    views[name].render(s);
-    var n=new Date();
-    $("foot").innerHTML="Data: lolalytics · last update "+pad(n.getHours())+":"+pad(n.getMinutes())+":"+pad(n.getSeconds())+" · <b>Ctrl+X</b> show/hide";
+    if(screens[s.view])screens[s.view].render(s);
   };
-  window.setScale=function(v){v=parseFloat(v);if(isFinite(v)&&v>0)document.documentElement.style.setProperty("--s",v)};
-  window.setMode=function(m){
-    document.body.classList.toggle("overlay",m==="overlay");
-    document.body.dataset.mode=m||"";
-  };
+  window.setScale=function(v){v=parseFloat(v);if(isFinite(v)&&v>0){document.documentElement.style.setProperty("--s",v);if(window.LPH)window.LPH.scale=v}};
+  window.setMode=function(m){document.body.dataset.mode=m||""};
   /* In game the panel never takes focus, and native tooltips may need it: draw our own from title */
   var tip=null;
   document.addEventListener("mouseover",function(e){
@@ -95,9 +53,6 @@
     tip.style.top=(r.bottom+h+4<H?r.bottom+3:r.top-h-3)+"px";
   });
   document.documentElement.addEventListener("mouseleave",function(){if(tip){tip.remove();tip=null}});
-  $("gear").addEventListener("click",function(){api("open_settings")});
-  $("explore").addEventListener("click",function(){api("open_explore")});
-  $("hide").addEventListener("click",function(){api("hide")});
 
   /* The enemy team's damage split: a stacked bar (physical / magic / true) with the % as text;
      hover for each enemy's own split. */
@@ -119,6 +74,7 @@
     return box;
   }
 
-  window.LPH={$:$,el:el,damage:damage,lane:lane,icon:icon,fmt:fmt,cls:cls,clear:clear,short:short,cap:cap,api:api,register:register,
+  window.LPH={$:$,el:el,damage:damage,lane:lane,icon:icon,fmt:fmt,cls:cls,clear:clear,short:short,cap:cap,api:api,
+    register:register,section:section,sections:sections,scale:1,  // current page zoom (setScale)
     LANE_ORDER:["top","jungle","middle","bottom","support"]};
 })();

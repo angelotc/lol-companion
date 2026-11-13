@@ -1,5 +1,5 @@
-"""Blind-pick explorer window: for looking at between games, not during champ select.
-One chart over one role: every champion's strength vs how much it loses if countered."""
+"""Blind-pick explorer: a section of the client panel, shown between games (not during champ
+select). One chart over one role: every champion's strength vs how much it loses if countered."""
 from __future__ import annotations
 
 import logging
@@ -12,12 +12,11 @@ log = logging.getLogger(__name__)
 
 
 class ExploreApi:
-    """Exposed to explore.html as window.pywebview.api."""
+    """Backs the panel's explorer section (through the panel's Api)."""
 
     def __init__(self, report: Callable[[str, str], dict], tier: Callable[[], str],
                  role: Callable[[], str | None] = lambda: None):
         self._report, self._tier, self._role = report, tier, role
-        self._window = None  # set by the app; private so pywebview doesn't walk it into the page
 
     def start(self) -> dict:
         """What to show first: your most played role (else support) at the panel's tier."""
@@ -30,10 +29,6 @@ class ExploreApi:
             return {"error": "unknown role or tier"}
         try:
             return self._report(role, tier) | {"tier_label": TIERS[tier]}
-        except Exception as e:  # network or data trouble: say so in the window
+        except Exception as e:  # network or data trouble: say so in the panel
             log.exception("blind report")
             return {"error": f"Couldn't load stats ({type(e).__name__}). Try again in a moment."}
-
-    def close(self) -> None:
-        if self._window:
-            self._window.destroy()

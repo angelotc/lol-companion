@@ -1,15 +1,8 @@
-/* Ban phase: enemy champions worth banning against your likely picks and your team's hovers. */
+/* Client screen section: enemy champions worth banning against your likely picks and your team's hovers. */
 (function(L){
   var $=L.$,el=L.el,lane=L.lane,icon=L.icon,fmt=L.fmt,cls=L.cls,clear=L.clear,short=L.short;
   var openSet={};
 
-  function chips(box,list,kind){
-    clear(box);
-    (list||[]).forEach(function(c){
-      var ch=el("div","chip "+kind+(c.tentative?" tent":"")+(c.is_me?" me":""));
-      ch.title=c.name;ch.appendChild(icon(c.name,c.icon));box.appendChild(ch);
-    });
-  }
   function line(c){
     var d=el("div","c");
     d.appendChild(el("span","d "+cls(c.delta),fmt(c.delta)));
@@ -38,22 +31,19 @@
     return box;
   }
 
-  L.register("bans",{render:function(s){
-    chips($("banAllies"),s.allies,"ally");
-    chips($("banBans"),s.bans,"bans");
-    $("banBansBox").classList.toggle("hidden",!(s.bans&&s.bans.length));
+  L.section("bans",{render:function(d){
     var vs=$("banPicks");clear(vs);
-    if(s.picks&&s.picks.length){
+    if(d.picks&&d.picks.length){
       vs.appendChild(el("span",null,"Measured against your likely picks:"));
-      s.picks.forEach(function(p){var i=icon(p.name,p.icon);i.title=p.name;vs.appendChild(i)});
+      d.picks.forEach(function(p){var i=icon(p.name,p.icon);i.title=p.name;vs.appendChild(i)});
     }
-    var team=(s.allies||[]).filter(function(a){return !a.is_me});
+    var team=(d.allies||[]).filter(function(a){return !a.is_me});
     if(team.length){
-      vs.appendChild(el("span",null,(s.picks&&s.picks.length?" and":"Measured against")+" your team's hovers:"));
+      vs.appendChild(el("span",null,(d.picks&&d.picks.length?" and":"Measured against")+" your team's hovers:"));
       team.forEach(function(p){var i=icon(p.name,p.icon);i.title=p.name+(p.lane?" ("+p.lane+")":"");vs.appendChild(i)});
     }
-    var box=$("threats"),keep=box.scrollTop;clear(box);
-    (s.threats||[]).forEach(function(t,i){
+    var box=$("threats");clear(box);
+    (d.threats||[]).forEach(function(t,i){
       var d=el("div","rec threat"+(i===0?" top":"")+(openSet[t.name]?" open":""));
       var m=el("div","main");
       m.appendChild(el("div","rank",String(i+1)));
@@ -73,6 +63,5 @@
       });
       box.appendChild(d);
     });
-    box.scrollTop=keep;
   }});
 })(window.LPH);
