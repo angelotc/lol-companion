@@ -1,4 +1,7 @@
 /* In-game window (game.html): players column left, build column right, each scrolling on its own */
+/* Over the game the page reads from further away than the client panel: everything 15% larger in the
+   same window (both columns have the room), with no text under ~9px at 1080p */
+html{font-size:calc(16px * var(--s) * 1.15)}
 body[data-mode=ingame]{--bgalpha:1;font-size:.8125rem}
 body[data-mode=ingame] .skillord{flex-wrap:nowrap}
 body[data-mode=ingame] .skillord span{flex:0 1 1.125rem;min-width:0;width:auto;height:1.125rem;font-size:.6875rem}
@@ -39,7 +42,7 @@ body[data-mode=ingame] .skillord span{flex:0 1 1.125rem;min-width:0;width:auto;h
 .ig-mu{font-size:.75rem;font-weight:700;flex:none;min-width:2rem;text-align:right}
 .ig-sec.next{outline:1px solid rgba(200,170,110,.55);outline-offset:2px;border-radius:3px;background:rgba(200,170,110,.06)}
 .ig-sec.next .ig-l{color:var(--gold)}
-.ig-tag{position:absolute;left:1px;bottom:0;font-size:.4375rem;line-height:1.2;background:var(--pos);color:#010a13;border-radius:2px;padding:0 .1875rem;font-weight:700;letter-spacing:.04em}
+.ig-tag{position:absolute;left:1px;bottom:0;font-size:.5rem;line-height:1.2;background:var(--pos);color:#010a13;border-radius:2px;padding:0 .1875rem;font-weight:700;letter-spacing:.04em}
 .skillord span.now{outline:1px solid var(--gold2);color:var(--gold2)}
 .skillord span.done{opacity:.4}
 /* players column */
@@ -65,7 +68,7 @@ body[data-mode=ingame] .skillord span{flex:0 1 1.125rem;min-width:0;width:auto;h
 .pl-dots i{width:.3125rem;height:.3125rem;border-radius:50%;background:var(--neg)}
 .pl-dots i.w{background:var(--pos)}
 .pl-tags{display:flex;gap:.1875rem;flex-wrap:wrap;margin-top:1px}
-.pl-tag{font-size:.5rem;line-height:1.25;padding:0 .25rem;border-radius:7px;font-weight:600;white-space:nowrap}
+.pl-tag{font-size:.5625rem;line-height:1.25;padding:0 .25rem;border-radius:7px;font-weight:600;white-space:nowrap}
 .pl-tag.good{background:rgba(10,200,185,.18);color:var(--pos)}
 .pl-tag.bad{background:rgba(232,64,87,.18);color:var(--neg)}
 .pl-row.err .pl-n::after{content:" ?";color:var(--dim)}

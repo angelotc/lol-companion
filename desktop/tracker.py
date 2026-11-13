@@ -35,7 +35,7 @@ HWND_TOPMOST, HWND_NOTOPMOST = w.HWND(-1), w.HWND(-2)
 SWP_NOSIZE, SWP_NOMOVE, SWP_NOZORDER, SWP_NOACTIVATE = 0x0001, 0x0002, 0x0004, 0x0010
 SW_RESTORE = 9
 GA_ROOTOWNER = 3
-MONITOR_DEFAULTTONULL = 0
+MONITOR_DEFAULTTONULL, MONITOR_DEFAULTTONEAREST = 0, 2
 
 
 @dataclass(frozen=True)
@@ -194,13 +194,20 @@ def place_ingame(game: Rect, size: float = 1.0) -> Placement:
     return Placement("ingame", game.right - width - round(4 * scale), top, width, height, scale)
 
 
-def dpi_scale(hwnd: int) -> float:
-    """The monitor's display scaling for this window (1.0 at 100%). WebView2 applies it on top of
-    our own scale, so the panel divides it back out."""
+def dpi_scale(p: Placement) -> float:
+    """Display scaling (1.0 at 100%) of the monitor a window placed at `p` lands on. WebView2
+    applies it on top of our own scale, so the panel divides it back out. Read from the target
+    monitor, not the window: before its first move the window sits wherever WinForms created it
+    (the monitor under the mouse), which may have a different scaling than the game's."""
+    rc = w.RECT(p.x, p.y, p.x + p.width, p.y + p.height)
+    dpi = w.UINT()
     try:
-        return (user32.GetDpiForWindow(hwnd) or 96) / 96
+        mon = user32.MonitorFromRect(ctypes.byref(rc), MONITOR_DEFAULTTONEAREST)
+        if ctypes.windll.shcore.GetDpiForMonitor(mon, 0, ctypes.byref(dpi), ctypes.byref(w.UINT())) == 0:  # MDT_EFFECTIVE_DPI
+            return (dpi.value or 96) / 96
     except (AttributeError, OSError):
-        return 1.0
+        pass
+    return 1.0
 
 
 def set_no_activate(hwnd: int, on: bool) -> None:

@@ -96,6 +96,7 @@ class Tracked:
     hwnd: int = 0  # pywebview creates the native window lazily
     shown: bool = False
     last: tracker.Placement | None = None
+    view: str = ""  # in-game window: the last setScale/setMode sent to its page
     rect: tracker.Rect | None = None  # panel window: its last position and size in this context
     wide: bool = False  # panel window: showing the out-of-game (explorer) rect
 
@@ -389,9 +390,11 @@ class App:
         """Move, rescale and show or hide one window."""
         visible = bool(placement and focused)
         if visible and (not t.shown or placement != t.last):
-            if not t.last or (placement.mode, placement.scale) != (t.last.mode, t.last.scale):
-                self.js(t.window, f"setScale({placement.scale / tracker.dpi_scale(t.hwnd):.3f});"
-                                  f"setMode({json.dumps(placement.mode)})")
+            view = (f"setScale({placement.scale / tracker.dpi_scale(placement):.3f});"
+                    f"setMode({json.dumps(placement.mode)})")
+            if view != t.view:  # also when the game moves to a monitor with other display scaling
+                self.js(t.window, view)
+                t.view = view
             if not t.shown:
                 log.info("%s shown (%s)", t.title, placement.mode)
                 t.window.show()  # via pywebview so WinForms/WebView2 know they're visible
