@@ -34,15 +34,30 @@ on Start with Windows, and quits.
 
 **Blind picks.** While your lane opponent isn't picked yet, the picks section has a **Blind-safe**
 switch: picks ranked by strength, fit with your team, and how much they lose if the enemy laner
-counters them. It switches to the normal ranking once your lane opponent is picked. Between games
-(lobby, queue, or with no draft at all) the panel shows the explorer below, for any role (your most
-played by default): every champion's strength vs how much it loses if countered. Hover a portrait
-for its worst counters. Tune it in `config.toml` under `[blind]`.
+counters them. It switches to the normal ranking once your lane opponent is picked. Tune it in
+`config.toml` under `[blind]`.
 
-| Out of game | Champ select | In game |
-|---|---|---|
-| <img src="docs/views/explore.png" height="320" alt="Out of game: the blind-pick explorer in its client-sized window"> | <img src="docs/views/picks.png" height="320" alt="Champ select: ranked picks with the draft win estimate"> | <img src="docs/views/ingame.png" height="320" alt="In game: your build beside all 10 players"> |
-| The blind-pick explorer, between games, in its own client-sized window: every champion's strength vs how much it loses if countered, for any role. Hover a portrait for its worst counters. | Ranked picks with the draft win estimate (**Blind-safe / Best now** while your lane opponent is unknown). Ban suggestions sit above them until bans end; after you lock in, your build appears above the picks. | Your build (next item, gold, win rate and Δ vs each enemy lane) beside all 10 players. |
+### 1 · Out of game
+
+<img src="docs/views/explore.png" alt="The blind-pick explorer in its client-sized window">
+
+The blind-pick explorer, between games (lobby, queue, or with no draft at all), in its own
+client-sized window: every champion's strength vs how much it loses if countered, for any role
+(your most played by default). Hover a portrait for its worst counters.
+
+### 2 · Champ select
+
+<img src="docs/views/picks.png" width="480" alt="Champ select: ranked picks with the draft win estimate">
+
+Ranked picks with the draft win estimate (**Blind-safe / Best now** while your lane opponent is
+unknown). Ban suggestions sit above them until bans end; after you lock in, your build appears
+above the picks.
+
+### 3 · In game
+
+<img src="docs/views/ingame.png" width="700" alt="In game: your build beside all 10 players">
+
+Your build (next item, gold, win rate and Δ vs each enemy lane) beside all 10 players.
 
 - **Before champ select** stats preload in the background for your usual roles (your lobby roles once you queue).
 

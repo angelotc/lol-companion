@@ -70,9 +70,9 @@ def main() -> None:
     for lane, (cid, _) in list(ours.items()) + list(theirs.items()):
         ctl.rec.lane_stats(cid, lane)
     ctl.render()
-    # the README shows champ select beside the other two views at one height: crop to the teams
-    # and the first picks rather than the full scroll
-    shots["picks"] = dict(state=states[-1], click=[".rec"], height=700)
+    # the README shows champ select as its own full section: render the whole column at double
+    # density (600x2350, scale 2) so nothing is cut mid-card and the browser downsamples crisply
+    shots["picks"] = dict(state=states[-1], click=[".rec"], width=600, height=2350, scale=2)
 
     # locked in: build with matchup deltas, the picks from lock-in below it
     leona = ids(LOCK)[0]
@@ -82,7 +82,8 @@ def main() -> None:
     ctl.render()
     shots["build"] = dict(state=states[-1], height=2870)
 
-    # in game (Ctrl+X): Leona at level 13 with boots, Knight's Vow and Locket beside the 10 players; hovering a matchup cell
+    # in game (Ctrl+X): Leona at level 13 with boots, Knight's Vow and Locket beside the 10 players; hovering a matchup cell.
+    # Double density for the README (the page's own 1440p scale, doubled): displayed at ~700px it downsamples crisp
     ctl.session.draft = ctl.session.frozen = None
     ctl.session.phase, ctl.ingame_shown = "InProgress", True
     enemies = dict(zip(["bottom", "support", "middle", "jungle"], ["Caitlyn", "Nautilus", "Hwei", "Viego"]))
@@ -91,7 +92,7 @@ def main() -> None:
     _, refs = game_refs(client)
     ctl.players = (1, load_all(client, refs))
     ctl.render()
-    shots["ingame"] = dict(state=states[-1], page="game.html", width=827, height=806, scale=1.333, mode="ingame",
+    shots["ingame"] = dict(state=states[-1], page="game.html", width=1654, height=1612, scale=2.667, mode="ingame",
                            hover=".ig-opt .ig-vs b[title]")
 
     # between games: the explorer section in the wide out-of-game window (the League client's size;
