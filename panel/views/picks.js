@@ -1,10 +1,17 @@
-/* Client screen section: champ select teams, enemy lane picker, and ranked recommendations. */
+/* Client screen section: champ select teams, enemy lane picker, and the ranked picks as a table:
+   picks left to right, and under each one every term of its score (strength, each matchup and
+   synergy, your own record). */
 (function(L){
-  var $=L.$,el=L.el,lane=L.lane,icon=L.icon,fmt=L.fmt,cls=L.cls,clear=L.clear,short=L.short;
-  var openSet={},pickId=null,lastEnemies=[];
-  var KIND={vs:"vs",with:"w/",you:"you",mastery:"mastery"};
+  var $=L.$,el=L.el,lane=L.lane,icon=L.icon,fmt=L.fmt,cls=L.cls,clear=L.clear;
+  var pickId=null,lastEnemies=[];
+  var KIND={vs:"vs",with:"w/"};
+  var KIND_ORDER={vs:0,with:1,you:2,mastery:3};
+  var KEY_RECS="Δ = win-rate change in that matchup or duo · small = points it adds to the score (shrunk by games, weighted by lane)";
+  var KEY_BLIND="Enemy {role} not picked yet: ranked by strength, team fit, and what each loses if they counter it";
   function pts(n){n=Number(n)||0;return n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?Math.round(n/1e3)+"k":String(n)}
   function personal(c){return c.kind==="you"||c.kind==="mastery"}
+  function key(c){return personal(c)?c.kind:c.kind+":"+c.name}
+  function laneIdx(l){var i=L.LANE_ORDER.indexOf(l);return i<0?9:i}
 
   function chipRow(box,list,kind){
     clear(box);
@@ -17,7 +24,7 @@
         ch.title=c.name+" ("+(c.manual?"set to ":"guessed ")+(c.lane||"?")+")"+(c.flex?" - flex pick":"")+": click to set lane";
         ch.appendChild(el("div","lane"+(c.manual?" manual":""),lane(c.lane)));
         ch.addEventListener("click",function(){pickId=pickId===c.id?null:c.id;renderEnemies(lastEnemies)});
-      }
+      }else ch.appendChild(el("div","lane",lane(c.lane)));
       box.appendChild(ch);
     });
   }
@@ -60,40 +67,6 @@
     row.appendChild(a);
     box.appendChild(row);
   }
-  function contrib(c){
-    var d=el("div","c");
-    d.appendChild(el("span","d "+cls(c.weighted),fmt(c.weighted)));
-    if(c.kind==="you"){d.appendChild(el("span",null,"you · "+c.games+" games"));return d}
-    if(c.kind==="mastery"){d.appendChild(el("span",null,"mastery · "+pts(c.delta)));return d}
-    d.appendChild(el("span",null,KIND[c.kind]||c.kind));
-    d.appendChild(icon(c.name,c.icon));
-    d.appendChild(el("span","n",short(c.name)));
-    return d;
-  }
-  function detail(r){
-    var box=el("div","detail"),t=document.createElement("table");
-    var h=document.createElement("tr");
-    ["Kind","Champ","Lane","Δ","Games","Wtd"].forEach(function(x){h.appendChild(el("th",null,x))});
-    t.appendChild(h);
-    (r.contributions||[]).forEach(function(c){
-      var tr=document.createElement("tr");if(c.tentative)tr.className="tent";
-      tr.appendChild(el("td",null,KIND[c.kind]||c.kind));
-      var td=el("td","ch");
-      if(personal(c))td.appendChild(el("span","n",c.kind==="you"?"your games":"points"));
-      else{td.appendChild(icon(c.name,c.icon));td.appendChild(el("span","n",c.name))}
-      tr.appendChild(td);
-      tr.appendChild(el("td",null,lane(c.lane)));
-      if(c.kind==="mastery")tr.appendChild(el("td",null,pts(c.delta)));
-      else tr.appendChild(el("td",cls(c.delta),fmt(c.delta)));
-      tr.appendChild(el("td",null,c.kind==="mastery"?"-":c.games!=null?String(c.games):"-"));
-      tr.appendChild(el("td",null,fmt(c.weighted)));
-      t.appendChild(tr);
-    });
-    box.appendChild(t);
-    var b=el("div","base");b.appendChild(el("span",null,"Base"));b.appendChild(el("span",null,fmt(r.base,2)));
-    box.appendChild(b);
-    return box;
-  }
   function renderLocked(l){
     var b=$("locked");clear(b);b.classList.toggle("hidden",!l);
     if(!l)return;
@@ -101,93 +74,70 @@
     b.appendChild(el("span",null,"Locked in: "+l.name));
     b.appendChild(el("span","sub2","picks frozen"));
   }
+
+  /* one cell: a term of rec `r`'s score */
+  function termCell(r,c){
+    var lw=" → "+fmt(c.weighted)+" to the score";
+    if(c.kind==="mastery"){
+      var m=el("span","mval");m.appendChild(el("b",null,pts(c.delta)));m.appendChild(el("i",null,fmt(c.weighted)));
+      m.title=pts(c.delta)+" mastery points on "+r.name+lw;
+      return m;
+    }
+    var t=c.kind==="you"?"Your games on "+r.name+": "+fmt(c.delta)+" win rate vs usual in "+c.games+" games":
+      r.name+" "+(c.kind==="with"?"with ":"vs ")+c.name+" ("+lane(c.lane)+"): "+fmt(c.delta)+" win rate in "+c.games+" games";
+    return L.mxVal(c.delta,c.weighted,fmt(c.weighted),t+lw+(c.tentative?" (still hovering: counts less)":""));
+  }
+  function rowHead(c){
+    if(c.kind==="you")return L.mxLabel("","Your games");
+    if(c.kind==="mastery")return L.mxLabel("","Mastery");
+    var h=L.mxLabel(KIND[c.kind]||c.kind,c.name,c.icon,c.lane);
+    if(c.tentative)h.appendChild(el("span","ln","hover"));
+    return h;
+  }
+  function cols(list,locked){
+    return list.map(function(r,i){return{
+      head:L.mxHead(i+1,r.name,r.icon,fmt(r.score,2),cls(r.score)),
+      cls:(i===0?"top":"")+(locked&&locked.name===r.name?" mine":"")}});
+  }
   function renderRecs(recs,locked){
-    var box=$("recs");clear(box);
-    (recs||[]).forEach(function(r,i){
-      var d=el("div","rec"+(i===0?" top":"")+(openSet[r.name]?" open":"")+(locked&&locked.name===r.name?" mine":""));
-      var m=el("div","main");
-      m.appendChild(el("div","rank",String(i+1)));
-      m.appendChild(icon(r.name,r.icon,"big"));
-      var mid=el("div","mid");mid.appendChild(el("div","name",r.name));
-      var sub=el("div","sub");
-      (r.contributions||[]).slice(0,2).forEach(function(c){sub.appendChild(contrib(c))});
-      mid.appendChild(sub);m.appendChild(mid);
-      m.appendChild(el("div","score "+cls(r.score),fmt(r.score,2)));
-      d.appendChild(m);d.appendChild(detail(r));
-      d.addEventListener("click",function(){
-        if(openSet[r.name]){delete openSet[r.name];d.classList.remove("open")}
-        else{openSet[r.name]=1;d.classList.add("open")}
-      });
-      box.appendChild(d);
+    recs=recs||[];
+    var seen={},order=[];
+    recs.forEach(function(r){(r.contributions||[]).forEach(function(c){
+      var k=key(c);if(!seen[k]){seen[k]=c;order.push(k)}
+    })});
+    order.sort(function(a,b){var x=seen[a],y=seen[b];return(KIND_ORDER[x.kind]-KIND_ORDER[y.kind])||(laneIdx(x.lane)-laneIdx(y.lane))});
+    var rows=[{head:L.mxLabel("","Strength"),cls:"base",cells:recs.map(function(r){
+      return L.mxVal(r.base,r.base,null,r.name+": "+fmt(r.base,2)+" win rate vs an average pick in this role, before this draft")})}];
+    order.forEach(function(k){
+      rows.push({head:rowHead(seen[k]),cls:seen[k].tentative?"tent":"",cells:recs.map(function(r){
+        var c=(r.contributions||[]).filter(function(x){return key(x)===k})[0];
+        return c?termCell(r,c):null;
+      })});
     });
+    L.matrix($("recs"),cols(recs,locked),rows);
   }
 
-  var mode="blind";
-  function renderMode(d,s){
-    var box=$("recMode");clear(box);
-    var has=!!(d.blind&&d.blind.length)&&!d.locked;
-    box.classList.toggle("hidden",!has);
-    if(!has)return false;
-    box.appendChild(el("span",null,"Enemy "+(s.role||"laner")+" unknown"));
-    var pill=el("div","pill");
-    [["blind","Blind-safe"],["best","Best now"]].forEach(function(m){
-      var b=el("button",mode===m[0]?"on":null,m[1]);
-      b.title=m[0]==="blind"?"Ranked by strength, your team, and how each pick holds up if the enemy "+(s.role||"laner")+" counters it":
-        "Ranked by strength, the enemies already picked and your team, without counter risk";
-      b.addEventListener("click",function(){mode=m[0];render(d,s)});
-      pill.appendChild(b);
-    });
-    box.appendChild(pill);
-    return mode==="blind";
-  }
-  function blindDetail(r){
-    var box=el("div","detail"),t=document.createElement("table");
-    var h=document.createElement("tr");
-    ["Worst vs","Δ","Games"].forEach(function(x){h.appendChild(el("th",null,x))});
-    t.appendChild(h);
-    (r.counters||[]).forEach(function(c){
-      var tr=document.createElement("tr"),td=el("td","ch");
-      td.appendChild(icon(c.name,c.icon));td.appendChild(el("span","n",c.name));tr.appendChild(td);
-      tr.appendChild(el("td",cls(c.delta),fmt(c.delta)));
-      tr.appendChild(el("td",null,String(c.games)));
-      t.appendChild(tr);
-    });
-    box.appendChild(t);
-    [["Random opponent",fmt(r.mean,2)],["If countered",fmt(r.tail,2)],["Blind risk",fmt(r.value,2)],
-     ["Strength",fmt(r.score-r.value-r.synergy,2)],["Team fit",fmt(r.synergy,2)],["Matchup data",r.coverage+"% of picks"]]
-    .forEach(function(x){var b=el("div","base");b.appendChild(el("span",null,x[0]));b.appendChild(el("span",null,x[1]));box.appendChild(b)});
-    return box;
-  }
   function renderBlind(list){
-    var box=$("recs");clear(box);
-    (list||[]).forEach(function(r,i){
-      var key="b:"+r.name;
-      var d=el("div","rec"+(i===0?" top":"")+(openSet[key]?" open":""));
-      var m=el("div","main");
-      m.appendChild(el("div","rank",String(i+1)));
-      m.appendChild(icon(r.name,r.icon,"big"));
-      var mid=el("div","mid");mid.appendChild(el("div","name",r.name));
-      var sub=el("div","sub"),c=el("div","c");
-      var tl=Math.abs(r.tail)<0.05?0:r.tail;
-      c.appendChild(el("span","d "+cls(tl),fmt(tl)));
-      c.appendChild(el("span",null,(r.counters&&r.counters.length)?"if countered by":"if countered"));
-      (r.counters||[]).forEach(function(x){var ic=icon(x.name,x.icon);ic.title=x.name+" "+fmt(x.delta);c.appendChild(ic)});
-      sub.appendChild(c);
-      if(r.coverage<50){var w=el("div","c thin","only "+r.coverage+"% of matchups known");w.title="Few games at this tier: the counter risk is partly a typical value";sub.appendChild(w)}
-      mid.appendChild(sub);m.appendChild(mid);
-      var side=el("div","side");
-      side.appendChild(el("div","score "+cls(r.score),fmt(r.score,2)));
-      var tm=el("div","fit");tm.appendChild(document.createTextNode("team "));
-      tm.appendChild(el("span",cls(r.synergy),fmt(r.synergy)));
-      tm.title="Fit with your team's picks so far (included in the score)";
-      side.appendChild(tm);m.appendChild(side);
-      d.appendChild(m);d.appendChild(blindDetail(r));
-      d.addEventListener("click",function(){
-        if(openSet[key]){delete openSet[key];d.classList.remove("open")}
-        else{openSet[key]=1;d.classList.add("open")}
-      });
-      box.appendChild(d);
-    });
+    list=list||[];
+    var row=function(name,f,c){return{head:L.mxLabel("",name),cells:list.map(f),cls:c||""}};
+    var rows=[
+      row("Strength",function(r){var v=r.score-r.value-r.synergy;return L.mxVal(v,v,null,r.name+": overall strength in this role")},"base"),
+      row("Team fit",function(r){return L.mxVal(r.synergy,r.synergy,null,r.name+" with your team's picks so far")}),
+      row("Avg matchup",function(r){return L.mxVal(r.mean,r.mean,null,r.name+" vs a random enemy laner (pick-rate weighted)")}),
+      row("If countered",function(r){return L.mxVal(r.tail,r.tail,null,r.name+" vs its worst matchups (15% of enemy picks)")}),
+      row("Blind risk",function(r){return L.mxVal(r.value,r.value,null,"What not knowing the enemy laner adds to "+r.name+"'s score")}),
+      row("Worst vs",function(r){
+        var w=el("span","mics");
+        (r.counters||[]).forEach(function(x){var ic=icon(x.name,x.icon);ic.title=x.name+" "+fmt(x.delta)+" ("+x.games+" games)";w.appendChild(ic)});
+        return w;
+      }),
+      row("Matchup data",function(r){
+        var t=el("span","mtxt"+(r.coverage<50?" thin":""),r.coverage+"%");
+        t.title=r.coverage<50?"Few games at this tier: the counter risk is partly a typical value":"Share of enemy picks with matchup data";
+        return t;
+      })
+    ];
+    L.matrix($("recs"),cols(list,null),rows);
   }
 
   var KINDS={strength:"strong pick",matchup:"",synergy:"synergy"};
@@ -212,7 +162,8 @@
       "Uncalibrated until backtesting has enough of your games.";
   }
 
-  function render(d,s){
+  /* view: "blind" (1b) or "best" (1c), the tab client.js shows; the team strip renders either way */
+  function render(d,s,view){
     $("note").textContent=d.note||"";$("note").classList.toggle("hidden",!d.note);
     renderOdds(d.odds);
     chipRow($("allies"),d.allies,"ally");
@@ -221,7 +172,9 @@
     clear($("bans"));$("bansBox").classList.toggle("hidden",!(d.bans&&d.bans.length));
     (d.bans||[]).forEach(function(b){var i=icon(b.name,b.icon);i.title=b.name;$("bans").appendChild(i)});
     renderLocked(d.locked);
-    if(renderMode(d,s))renderBlind(d.blind);else renderRecs(d.recs,d.locked);
+    var blind=view==="blind";
+    $("recKey").textContent=blind?KEY_BLIND.replace("{role}",s.role||"laner"):KEY_RECS;
+    if(blind)renderBlind(d.blind);else renderRecs(d.recs,d.locked);
   }
   L.section("picks",{render:render});
 })(window.LPH);

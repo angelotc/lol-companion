@@ -60,7 +60,7 @@
   }
 
   /* strength vs counter risk scatter, sized to the section's actual space (in design units), so the
-     chart fills the wide out-of-game window instead of the whole page zooming to its width. */
+     chart fills whatever the header, roles and status lines leave of the page. */
   function draw(D){
     var svg=ui.svg,s=(window.LPH&&window.LPH.scale)||1;
     var r=svg.getBoundingClientRect();
@@ -100,16 +100,9 @@
     });
   }
 
-  /* the wide out-of-game window: zoom from its height (540 design px), not its width; below that
-     width the panel is the narrow champ-select one and zooms by width like everywhere else */
-  var DESIGN_H=540;
-  function refit(){
-    var de=document.documentElement,z=de.clientWidth>600?Math.max(1,Math.min(2,de.clientHeight/DESIGN_H)):de.clientWidth/300;
-    if((window.LPH?window.LPH.scale:0)!==z)window.setScale(z)
-  }
   window.addEventListener("resize",function(){
     if(!box||box.classList.contains("hidden")||!champs.length)return;
-    refit();draw(champs)
+    requestAnimationFrame(function(){draw(champs)});  // after client.js has re-zoomed the page
   });
 
   function show(d){
@@ -120,7 +113,7 @@
     var ln=(ROLE[role]||role||"").toLowerCase();
     ui.sub.title="Right = stronger overall. Up = loses less when the enemy "+ln+" counters it. Top right is what to blind; bottom right is strong but better picked after the enemy "+ln+" is known. "+
       d.tier_label+", last "+d.days+" days, lolalytics.\n\nBlind score: "+HELP["Blind score"];
-    refit();draw(d.champs);
+    draw(d.champs);
   }
   function pills(){
     L.clear(ui.roles);ui.roles.classList.toggle("hidden",!meta);
@@ -152,7 +145,7 @@
   }
 
   L.section("explore",{render:function(d,s){
-    build();last=s;refit();
+    build();last=s;
     if(!pv()){
       if(!waiting){waiting=true;window.addEventListener("pywebviewready",function(){if(last&&last.explore)L.sections.explore.render(true,last)})}
       return;
@@ -168,6 +161,6 @@
   window.renderExplore=function(d){
     build();box.classList.remove("hidden");
     meta={roles:L.LANE_ORDER,tier:d.tier};role=d.role;tier=d.tier;
-    refit();pills();status("");show(d);
+    pills();status("");show(d);
   };
 })(window.LPH);

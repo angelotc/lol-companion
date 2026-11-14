@@ -48,9 +48,7 @@ from desktop.tray import Tray
 TITLE = "LoL Companion"
 GAME_TITLE = "LoL Companion — In game"
 SETTINGS_TITLE = "LoL Companion — Settings"
-# stages where the panel is between games and opens wide for the explorer
-WIDE_STAGES = {Stage.IDLE.value, Stage.LOBBY.value, Stage.QUEUE.value, Stage.READY.value,
-               Stage.POSTGAME.value}
+RECT_SETTING = "window_rect"  # settings.json: where the panel window was left
 MOD_CONTROL, MOD_SHIFT, MOD_NOREPEAT, WM_HOTKEY = 0x2, 0x4, 0x4000, 0x0312
 HOTKEYS = {1: "L"}  # Ctrl+Shift+L panel, from anywhere (fallback; Ctrl+X is polled, see toggle_keys)
 VK_SHIFT, VK_CONTROL, VK_MENU = 0x10, 0x11, 0x12
@@ -97,8 +95,7 @@ class Tracked:
     shown: bool = False
     last: tracker.Placement | None = None
     view: str = ""  # in-game window: the last setScale/setMode sent to its page
-    rect: tracker.Rect | None = None  # panel window: its last position and size in this context
-    wide: bool = False  # panel window: showing the out-of-game (explorer) rect
+    rect: tracker.Rect | None = None  # panel window: its last position and size
 
 
 def raise_window(win: webview.Window) -> bool:
@@ -125,7 +122,6 @@ class App:
         self._quitting = False  # closing the panel window quits instead of hiding it
         live = not self.always_show
         self.ctl = Controller(load_config(args.config), self.push, Store() if live else None)
-        self.explore_up = True  # the panel starts out of game: the wide explorer window
         self.explore = explore_ui.ExploreApi(
             self.blind_report, lambda: self.ctl.rec.tier if self.ctl.rec else "master_plus", self.main_role)
         self.updater = updater.Updater(on_change=lambda: self.tray.on_update())
@@ -180,7 +176,7 @@ class App:
                                           self.ctl.reload_config, self.version_text)
             win = webview.create_window(
                 SETTINGS_TITLE, url=str(RESOURCES / "panel" / "settings.html"), js_api=api,
-                width=480, height=480, min_size=(420, 360), resizable=True, background_color="#010a13",
+                width=480, height=480, min_size=(420, 360), resizable=True, background_color="#000000",
             )
             api._window = win
             win.events.closed += lambda: setattr(self, "settings_window", None)
@@ -231,10 +227,6 @@ class App:
             win.evaluate_js(code)
 
     def push(self, state: dict) -> None:
-        if state.get("view") == "client":
-            # between games the panel opens wide for the explorer; drafts (and games) use the
-            # narrow rect, so the panel keeps out of the client's and the game's way
-            self.explore_up = bool(state.get("explore")) and state.get("stage") in WIDE_STAGES
         win = self.game_window if state.get("view") == "game" else self.window
         self.js(win, f"window.updateState&&updateState({json.dumps(state)})")
 
@@ -340,7 +332,8 @@ class App:
             tracker.set_no_activate(hwnd, True)  # over the game, it never takes the keyboard
             game_panel.hwnd = hwnd
         if not panel.hwnd and (hwnd := tracker.find_window(TITLE)):
-            panel.hwnd, panel.rect, panel.wide = hwnd, self._panel_rect(self.explore_up), self.explore_up
+            tracker.lock_aspect(hwnd)
+            panel.hwnd, panel.rect = hwnd, self._panel_rect(hwnd)
             tracker.set_rect(hwnd, panel.rect)  # before the first show, so it opens there
         game, front = tracker.find_game(), tracker.foreground_root()
         if game_panel.hwnd:
@@ -348,25 +341,20 @@ class App:
         if panel.hwnd:
             self._apply_panel(panel)
 
-    def _panel_rect(self, wide: bool) -> tracker.Rect:
-        """Where the panel window was left last time in this context (wide: out of game), if
-        that's still on a monitor."""
-        saved = load_settings().get("explore_rect" if wide else "panel_rect")
+    def _panel_rect(self, hwnd: int) -> tracker.Rect:
+        """Where the panel window was left last time if that's still on a monitor, else the
+        default; either way with its page at the panel's shape."""
+        frame = tracker.frame_size(hwnd)
+        saved = load_settings().get(RECT_SETTING)
         if isinstance(saved, list) and len(saved) == 4 and all(isinstance(v, int) for v in saved):
             rect = tracker.Rect(*saved)
             if tracker.on_screen(rect):
-                return rect
-        area = tracker.primary_work_area()
-        return tracker.explore_default(area) if wide else tracker.panel_default(area)
+                return tracker.fit_aspect(rect, frame)
+        return tracker.window_default(tracker.primary_work_area(), frame)
 
     def _apply_panel(self, t: Tracked) -> None:
-        """Show, raise or hide the panel window. Between games it takes the wide explorer rect,
-        in champ select (and in game) the narrow one; each is remembered where you leave it."""
-        if t.wide != self.explore_up:  # champ select came or went: switch to that context's window
-            t.wide = self.explore_up
-            t.rect = self._panel_rect(t.wide)
-            if t.hwnd and t.shown and tracker.is_normal(t.hwnd):
-                tracker.set_rect(t.hwnd, t.rect)
+        """Show, raise or hide the panel window. One window for every stage (explorer between
+        games, draft in champ select), remembered where you leave it."""
         visible = self._panel_visible()
         if visible and (not t.shown or self._raise):
             if not t.shown:
@@ -383,8 +371,7 @@ class App:
             t.shown = False
         if t.shown and tracker.is_normal(t.hwnd) and (rect := tracker.window_rect(t.hwnd)) != t.rect:
             t.rect = rect
-            save_settings(**{"explore_rect" if t.wide else "panel_rect":
-                             [rect.left, rect.top, rect.right, rect.bottom]})
+            save_settings(**{RECT_SETTING: [rect.left, rect.top, rect.right, rect.bottom]})
 
     def _apply(self, t: Tracked, placement: tracker.Placement | None, focused: bool) -> None:
         """Move, rescale and show or hide one window."""
@@ -477,14 +464,14 @@ class App:
         self.window = webview.create_window(  # placed by the tracker where you left it
             TITLE, url=str(RESOURCES / "panel" / "index.html"), js_api=Api(self),
             x=0, y=0,  # any position: makes WinForms keep the tracker's instead of centering on show
-            width=300, height=800, min_size=(tracker.MIN_WIDTH, 360), hidden=True,
-            background_color="#010a13",
+            width=tracker.PAGE_SIZE[0], height=tracker.PAGE_SIZE[1], min_size=tracker.MIN_WINDOW, hidden=True,
+            background_color="#000000",
         )
         self.window.events.closing += self._on_panel_closing
         self.game_window = webview.create_window(  # sized and placed by the tracker over the game
             GAME_TITLE, url=str(RESOURCES / "panel" / "game.html"),
             width=620, height=600, frameless=True, on_top=True, focus=False,
-            resizable=False, hidden=True, background_color="#010a13", easy_drag=False,
+            resizable=False, hidden=True, background_color="#000000", easy_drag=False,
         )
         self._install_quit_handler()
         # persistent storage so the settings page can remember things (e.g. the comfort weight);

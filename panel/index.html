@@ -18,33 +18,35 @@
 
   <section class="sec hidden" id="secTeam">
     <div class="note hidden" id="note"></div>
-    <div class="odds hidden" id="odds"></div>
     <div class="team" id="team">
-      <div><div class="rlabel">Allies</div><div class="row" id="allies"></div></div>
-      <div><div class="rlabel">Enemies <span id="enemyHint"></span></div><div class="row" id="enemies"></div>
+      <div class="tside tally">
+        <div><div class="rlabel">Allies</div><div class="row" id="allies"></div></div>
+        <div class="bans" id="bansBox"><div class="rlabel">Bans</div><div class="row" id="bans"></div></div>
+      </div>
+      <div class="odds hidden" id="odds"></div>
+      <div class="tside tenemy">
+        <div><div class="rlabel">Enemies <span id="enemyHint"></span></div><div class="row" id="enemies"></div></div>
         <div class="dmg hidden" id="enemyDmg"></div>
-        <div class="lanepick hidden" id="lanePick"></div></div>
-      <div class="bans" id="bansBox"><div class="rlabel">Bans</div><div class="row" id="bans"></div></div>
+        <div class="lanepick hidden" id="lanePick"></div>
+      </div>
     </div>
-    <div class="locked hidden" id="locked"></div>
   </section>
+
+  <nav class="steps hidden" id="steps"></nav>
 
   <section class="sec hidden" id="secBans">
-    <h2 class="sech">Bans</h2>
-    <div class="vsline" id="banPicks"></div>
-    <div class="recs" id="threats"></div>
-  </section>
-
-  <section class="sec hidden" id="secBuild">
-    <h2 class="sech">Build</h2>
-    <div class="bhead" id="bHead"></div>
-    <div class="recs bbody" id="bBody"></div>
+    <div class="sechrow"><span class="mxkey">Δ = how much your pick's win rate changes against it (red = it beats you) · small = shrunk by games, weighted by lane</span></div>
+    <div class="mx" id="threats"></div>
   </section>
 
   <section class="sec hidden" id="secPicks">
-    <h2 class="sech">Picks</h2>
-    <div class="recmode hidden" id="recMode"></div>
-    <div class="recs" id="recs"></div>
+    <div class="sechrow"><span class="mxkey" id="recKey"></span><div class="locked hidden" id="locked"></div></div>
+    <div class="mx" id="recs"></div>
+  </section>
+
+  <section class="sec hidden" id="secBuild">
+    <div class="bhead" id="bHead"></div>
+    <div class="bbody" id="bBody"></div>
   </section>
 
   <section class="sec hidden" id="secExplore"></section>
@@ -52,6 +54,7 @@
 
 <div class="foot" id="foot">Data: lolalytics &middot; last update --:--:-- &middot; <b>Ctrl+X</b> show/hide</div>
 <script src="js/core.js"></script>
+<script src="js/matrix.js"></script>
 <script src="views/picks.js"></script>
 <script src="views/bans.js"></script>
 <script src="views/build.js"></script>

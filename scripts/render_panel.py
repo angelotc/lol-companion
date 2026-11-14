@@ -26,22 +26,29 @@ EDGE_PATHS = [
 
 # Hover: fire the panel's own mouseover (in game it draws #tip from the title), fall back to drawing
 # the same #tip elsewhere (native tooltips aren't in screenshots), then draw a mouse cursor on top.
+# Redone on resize: headless Edge only reaches --window-size when it takes the screenshot, and the
+# client page re-zooms to its window then.
 HOVER_JS = """function(sel){
-  var t=document.querySelector(sel);if(!t)return;
-  var r=t.getBoundingClientRect(),x=r.left+r.width*0.6,y=r.top+r.height*0.6;
-  t.dispatchEvent(new MouseEvent("mouseover",{bubbles:true,clientX:x,clientY:y}));
-  var tipped=t.closest("[title],[data-tip]");
-  if(!document.getElementById("tip")&&tipped&&tipped.title){
-    var tip=document.createElement("div");tip.id="tip";tip.textContent=tipped.title;document.body.appendChild(tip);
-    var W=document.body.clientWidth,H=document.body.clientHeight,b=tipped.getBoundingClientRect();
-    tip.style.maxWidth=(W-4)+"px";
-    tip.style.left=Math.max(2,Math.min(W-tip.offsetWidth-2,b.left))+"px";
-    tip.style.top=(b.bottom+tip.offsetHeight+4<H?b.bottom+3:b.top-tip.offsetHeight-3)+"px";
+  function hover(){
+    ["tip","hovercur"].forEach(function(id){var e=document.getElementById(id);if(e)e.remove()});
+    var t=document.querySelector(sel);if(!t)return;
+    var r=t.getBoundingClientRect(),x=r.left+r.width*0.6,y=r.top+r.height*0.6;
+    t.dispatchEvent(new MouseEvent("mouseover",{bubbles:true,clientX:x,clientY:y}));
+    var tipped=t.closest("[title],[data-tip]");
+    if(!document.getElementById("tip")&&tipped&&(tipped.title||tipped.dataset.tip)){
+      var tip=document.createElement("div");tip.id="tip";tip.textContent=tipped.title||tipped.dataset.tip;document.body.appendChild(tip);
+      var W=document.body.clientWidth,H=document.body.clientHeight,b=tipped.getBoundingClientRect();
+      tip.style.maxWidth=(W-4)+"px";
+      tip.style.left=Math.max(2,Math.min(W-tip.offsetWidth-2,b.left))+"px";
+      tip.style.top=(b.bottom+tip.offsetHeight+4<H?b.bottom+3:b.top-tip.offsetHeight-3)+"px";
+    }
+    var c=document.createElement("div");c.id="hovercur";
+    c.style.cssText="position:fixed;z-index:99;pointer-events:none;left:"+x+"px;top:"+y+"px;width:16px;height:24px";
+    c.innerHTML='<svg width="16" height="24" viewBox="0 0 16 24"><path d="M1 1v19l5-5 3.5 7.5 3-1.4L9 13.6h6.5z" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/></svg>';
+    document.body.appendChild(c);
   }
-  var c=document.createElement("div");
-  c.style.cssText="position:fixed;z-index:99;pointer-events:none;left:"+x+"px;top:"+y+"px;width:16px;height:24px";
-  c.innerHTML='<svg width="16" height="24" viewBox="0 0 16 24"><path d="M1 1v19l5-5 3.5 7.5 3-1.4L9 13.6h6.5z" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/></svg>';
-  document.body.appendChild(c);
+  hover();
+  window.addEventListener("resize",function(){requestAnimationFrame(hover)});
 }"""
 
 

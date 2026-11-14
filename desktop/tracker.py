@@ -1,11 +1,14 @@
 """Find the League client and game windows, place the in-game screen over the game, and keep the
-panel window where you left it. Windows only."""
+panel window where you left it, at one shape (16:9). Windows only."""
 from __future__ import annotations
 
 import ctypes
+import logging
+import os
 from ctypes import wintypes as w
 from dataclasses import dataclass
 
+log = logging.getLogger("tracker")
 user32 = ctypes.windll.user32
 user32.SetWindowPos.argtypes = [w.HWND, w.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, w.UINT]
 user32.ShowWindow.argtypes = [w.HWND, ctypes.c_int]
@@ -20,17 +23,30 @@ user32.WindowFromPoint.argtypes = [w.POINT]
 user32.WindowFromPoint.restype = w.HWND
 user32.GetClassNameW.argtypes = [w.HWND, w.LPWSTR, ctypes.c_int]
 user32.GetWindowTextW.argtypes = [w.HWND, w.LPWSTR, ctypes.c_int]
+user32.GetClientRect.argtypes = [w.HWND, ctypes.POINTER(w.RECT)]
+user32.FindWindowExW.argtypes = [w.HWND, w.HWND, w.LPCWSTR, w.LPCWSTR]
+user32.FindWindowExW.restype = w.HWND
+user32.GetWindowThreadProcessId.argtypes = [w.HWND, ctypes.POINTER(w.DWORD)]
 WNDENUMPROC = ctypes.WINFUNCTYPE(w.BOOL, w.HWND, w.LPARAM)
 user32.EnumWindows.argtypes = [WNDENUMPROC, w.LPARAM]
+WNDPROC = ctypes.WINFUNCTYPE(w.LPARAM, w.HWND, w.UINT, w.WPARAM, w.LPARAM)  # returns LRESULT
+user32.GetWindowLongPtrW.argtypes = [w.HWND, ctypes.c_int]
+user32.GetWindowLongPtrW.restype = ctypes.c_void_p
+user32.SetWindowLongPtrW.argtypes = [w.HWND, ctypes.c_int, ctypes.c_void_p]
+user32.SetWindowLongPtrW.restype = ctypes.c_void_p
+user32.CallWindowProcW.argtypes = [ctypes.c_void_p, w.HWND, w.UINT, w.WPARAM, w.LPARAM]
+user32.CallWindowProcW.restype = w.LPARAM
 
 CLIENT_CLASS = "RCLIENT"
 CLIENT_TITLE = "League of Legends"
 GAME_CLASS = "RiotWindowClass"  # shared with other Riot games (Valorant, the launcher)
 GAME_TITLE = "League of Legends (TM) Client"  # match the title too, or Valorant passes as the game
 GAME_TITLE_PREFIX = "League of Legends"
-PANEL_BASE = (300, 1080)  # panel width designed for a 1080px-tall screen
-MIN_WIDTH = 240
-PANEL_ZOOM = 1.25  # default panel window: this much wider than the design width for its height
+INGAME_REF_HEIGHT = 1080  # the in-game window is designed for a 1080px-tall game
+PAGE_SIZE = (1280, 720)  # the panel window's default page (client area): the League client's default size
+ASPECT = 16 / 9  # the panel's page keeps this shape whatever its size
+MIN_PAGE_WIDTH = 640  # smallest page while resizing (640x360)
+MIN_WINDOW = (480, 270)  # WinForms' own limit: below ours, so it never cuts in and bends the shape
 HWND_TOPMOST, HWND_NOTOPMOST = w.HWND(-1), w.HWND(-2)
 SWP_NOSIZE, SWP_NOMOVE, SWP_NOZORDER, SWP_NOACTIVATE = 0x0001, 0x0002, 0x0004, 0x0010
 SW_RESTORE = 9
@@ -80,7 +96,14 @@ def game_running() -> bool:
 
 
 def find_window(title: str) -> int:
-    return user32.FindWindowW(None, title) or 0
+    """This process's top-level window with this title. Only ours: the shell keeps proxy windows
+    (Alt+Tab tab previews) that can carry the same title, and moving one of those instead does nothing."""
+    pid, hwnd = w.DWORD(), None
+    while hwnd := user32.FindWindowExW(None, hwnd, None, title):
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value == os.getpid():
+            return hwnd
+    return 0
 
 
 def window_rect(hwnd: int) -> Rect:
@@ -109,27 +132,78 @@ def foreground_root() -> int:
     return (user32.GetAncestor(fg, GA_ROOTOWNER) or fg) if fg else 0
 
 
-def panel_default(area: Rect) -> Rect:
-    """Where the panel window first opens: the right edge of the primary monitor, its full height,
-    and wide enough that the contents (which scale with width) read at PANEL_ZOOM x the design
-    size for that height (about 480px wide, 1.6x, on a 1440p monitor)."""
-    width = round(PANEL_BASE[0] * area.height / PANEL_BASE[1] * PANEL_ZOOM)
-    width = min(area.width, max(MIN_WIDTH, width))
-    return Rect(area.right - width, area.top, area.right, area.bottom)
+WMSZ_LEFT, WMSZ_RIGHT, WMSZ_TOP, WMSZ_TOPLEFT, WMSZ_TOPRIGHT, WMSZ_BOTTOM, WMSZ_BOTTOMLEFT, WMSZ_BOTTOMRIGHT = range(1, 9)
+LEFT_EDGES = {WMSZ_LEFT, WMSZ_TOPLEFT, WMSZ_BOTTOMLEFT}
+TOP_EDGES = {WMSZ_TOP, WMSZ_TOPLEFT, WMSZ_TOPRIGHT}
+CORNERS = {WMSZ_TOPLEFT, WMSZ_TOPRIGHT, WMSZ_BOTTOMLEFT, WMSZ_BOTTOMRIGHT}
 
 
-EXPLORE_SIZE = (1280, 720)  # out-of-game window: the League client's own default size
+def frame_size(hwnd: int) -> tuple[int, int]:
+    """The window's borders and title bar: its size minus its page's (client area) size."""
+    cr = w.RECT()
+    user32.GetClientRect(hwnd, ctypes.byref(cr))
+    wr = window_rect(hwnd)
+    return wr.width - cr.right, wr.height - cr.bottom
 
 
-def explore_default(area: Rect) -> Rect:
-    """Where the panel window opens out of game: a regular, browser-like window the size of the
-    League client (EXPLORE_SIZE), at the right edge and vertically centered, so the explorer's
-    chart has room without the whole UI zooming in."""
-    width = min(EXPLORE_SIZE[0], area.width)
-    height = min(EXPLORE_SIZE[1], area.height)
+def fit_aspect(r: Rect, frame: tuple[int, int], edge: int = WMSZ_BOTTOMRIGHT, current: Rect | None = None) -> Rect:
+    """`r` resized so its page (`r` minus `frame`) is ASPECT and at least MIN_PAGE_WIDTH wide.
+    `edge` is the side or corner being dragged (WM_SIZING's), and the opposite one stays put. A
+    side sets the size along its own axis; a corner follows whichever of width and height moved
+    more from `current` (the window before this drag step), width if unknown."""
+    fw, fh = frame
+    cw, ch = r.width - fw, r.height - fh
+    if edge in CORNERS:
+        by_width = current is None or abs(cw - (current.width - fw)) >= abs(ch - (current.height - fh)) * ASPECT
+    else:
+        by_width = edge not in (WMSZ_TOP, WMSZ_BOTTOM)
+    cw = max(MIN_PAGE_WIDTH, cw if by_width else round(ch * ASPECT))
+    width, height = cw + fw, round(cw / ASPECT) + fh
+    left = r.right - width if edge in LEFT_EDGES else r.left
+    top = r.bottom - height if edge in TOP_EDGES else r.top
+    return Rect(left, top, left + width, top + height)
+
+
+def window_default(area: Rect, frame: tuple[int, int]) -> Rect:
+    """Where the panel window first opens: a PAGE_SIZE page (smaller if the monitor is), at the
+    right edge of `area` and vertically centered."""
+    fw, fh = frame
+    cw = min(PAGE_SIZE[0], area.width - fw, round((area.height - fh) * ASPECT))
+    width, height = cw + fw, round(cw / ASPECT) + fh
     left = max(area.left, area.right - width)
     top = max(area.top, area.top + (area.height - height) // 2)
     return Rect(left, top, left + width, top + height)
+
+
+WM_SIZING = 0x0214
+GWLP_WNDPROC = -4
+_aspect_procs: dict[int, WNDPROC] = {}  # hwnd -> its window procedure, kept alive for ctypes
+
+
+def lock_aspect(hwnd: int) -> None:
+    """Keep the window's page at ASPECT while you drag an edge or corner: WM_SIZING's rect is
+    corrected as you drag, so it only resizes as a whole. Maximize and Snap still fill their
+    area (the page zooms to fit the smaller side). Subclasses the window procedure, which then
+    runs on the window's own thread."""
+    if hwnd in _aspect_procs:
+        return
+    old = user32.GetWindowLongPtrW(hwnd, GWLP_WNDPROC)
+
+    @WNDPROC
+    def proc(h, msg, wparam, lparam):
+        result = user32.CallWindowProcW(old, h, msg, wparam, lparam)
+        if msg != WM_SIZING:
+            return result
+        try:
+            rc = ctypes.cast(lparam, ctypes.POINTER(w.RECT)).contents
+            r = fit_aspect(Rect(rc.left, rc.top, rc.right, rc.bottom), frame_size(h), wparam, window_rect(h))
+            rc.left, rc.top, rc.right, rc.bottom = r.left, r.top, r.right, r.bottom
+        except Exception:
+            log.exception("aspect lock")
+        return 1
+
+    _aspect_procs[hwnd] = proc
+    user32.SetWindowLongPtrW(hwnd, GWLP_WNDPROC, ctypes.cast(proc, ctypes.c_void_p))
 
 
 def on_screen(r: Rect) -> bool:
@@ -187,7 +261,7 @@ def find_game() -> int:
 def place_ingame(game: Rect, size: float = 1.0) -> Placement:
     """Right edge of the game, below the top bar and above the minimap (bottom right). Scales with
     the game's height (1.33x at 1440p), times `size` (Config.ingame_scale)."""
-    scale = game.height / PANEL_BASE[1] * size
+    scale = game.height / INGAME_REF_HEIGHT * size
     width = max(200, round(INGAME_BASE * scale))
     top = game.top + round(game.height * 0.13)
     height = round(game.height * 0.56)  # the minimap starts around 72% down

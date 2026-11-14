@@ -18,7 +18,7 @@ body[data-mode=ingame] .skillord span{flex:0 1 1.125rem;min-width:0;width:auto;h
 .igbody{gap:.375rem;padding:.4375rem .5rem}
 .ig-h{display:flex;align-items:center;gap:.375rem}
 .ig-h .igc{width:2rem;height:2rem;border-radius:5px;border:1px solid var(--gold)}
-.ig-h .igk{width:1.5rem;height:1.5rem;margin-left:auto;background:#0b1220}
+.ig-h .igk{width:1.5rem;height:1.5rem;margin-left:auto;background:var(--raised)}
 .ig-t{min-width:0}
 .ig-n{font-weight:600;color:var(--gold2);font-size:.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ig-s{font-size:.6875rem;color:var(--muted)}
@@ -40,19 +40,19 @@ body[data-mode=ingame] .skillord span{flex:0 1 1.125rem;min-width:0;width:auto;h
 .ig-lh{display:flex;align-items:flex-end;gap:.25rem;margin-bottom:.125rem}
 .ig-lh .ig-l{flex:1;margin-bottom:0}
 .ig-mu{font-size:.75rem;font-weight:700;flex:none;min-width:2rem;text-align:right}
-.ig-sec.next{outline:1px solid rgba(200,170,110,.55);outline-offset:2px;border-radius:3px;background:rgba(200,170,110,.06)}
+.ig-sec.next{outline:1px solid rgba(255,215,95,.6);outline-offset:2px;border-radius:3px;background:rgba(255,215,95,.07)}
 .ig-sec.next .ig-l{color:var(--gold)}
-.ig-tag{position:absolute;left:1px;bottom:0;font-size:.5rem;line-height:1.2;background:var(--pos);color:#010a13;border-radius:2px;padding:0 .1875rem;font-weight:700;letter-spacing:.04em}
+.ig-tag{position:absolute;left:1px;bottom:0;font-size:.5rem;line-height:1.2;background:var(--pos);color:var(--bg);border-radius:2px;padding:0 .1875rem;font-weight:700;letter-spacing:.04em}
 .skillord span.now{outline:1px solid var(--gold2);color:var(--gold2)}
 .skillord span.done{opacity:.4}
 /* players column */
 .plbody{gap:.25rem;padding:.375rem .4375rem}
 .pl-team{display:flex;flex-direction:column;gap:.1875rem}
-.pl-tl{font-size:.625rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;padding-left:.25rem;border-left:2px solid #4fa3ff;color:#4fa3ff}
+.pl-tl{font-size:.625rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;padding-left:.25rem;border-left:2px solid var(--ally);color:var(--ally)}
 .pl-team.enemy .pl-tl{border-color:var(--neg);color:var(--neg)}
-.pl-row{display:flex;align-items:flex-start;gap:.3125rem;padding:.1875rem .25rem;border-radius:4px;background:rgba(9,20,40,.6);border-left:2px solid #2a4a7a}
-.pl-team.enemy .pl-row{border-left-color:#7a2a36;background:rgba(40,14,20,.5)}
-.pl-row.me{background:rgba(200,170,110,.12);border-left-color:var(--gold)}
+.pl-row{display:flex;align-items:flex-start;gap:.3125rem;padding:.1875rem .25rem;border-radius:4px;background:var(--card);border-left:2px solid var(--ally)}
+.pl-team.enemy .pl-row{border-left-color:var(--neg);background:#140707}
+.pl-row.me{background:rgba(255,215,95,.12);border-left-color:var(--gold)}
 .pl-row:hover{background:rgba(255,255,255,.08)}
 .pl-row .pl-ico{width:2rem;height:2rem;border-radius:5px;border:1px solid var(--line2);margin-top:1px;flex:none}
 .pl-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
@@ -69,8 +69,8 @@ body[data-mode=ingame] .skillord span{flex:0 1 1.125rem;min-width:0;width:auto;h
 .pl-dots i.w{background:var(--pos)}
 .pl-tags{display:flex;gap:.1875rem;flex-wrap:wrap;margin-top:1px}
 .pl-tag{font-size:.5625rem;line-height:1.25;padding:0 .25rem;border-radius:7px;font-weight:600;white-space:nowrap}
-.pl-tag.good{background:rgba(10,200,185,.18);color:var(--pos)}
-.pl-tag.bad{background:rgba(232,64,87,.18);color:var(--neg)}
+.pl-tag.good{background:rgba(95,255,135,.16);color:var(--pos)}
+.pl-tag.bad{background:rgba(255,95,95,.18);color:var(--neg)}
 .pl-row.err .pl-n::after{content:" ?";color:var(--dim)}
 .t-iron{color:#8a8077}.t-bronze{color:#b0774a}.t-silver{color:#a9b4bd}.t-gold{color:#e0b84a}
 .t-platinum{color:#4fc4b0}.t-emerald{color:#2fbf71}.t-diamond{color:#6aa6ff}.t-master{color:#c77dff}

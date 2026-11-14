@@ -1,7 +1,7 @@
 /* Blind-pick explorer section of the client screen (views/explore.js).
    Out of game it's the only section: it fills the client-sized window and the chart takes what's
    left after the header, roles, subtitle and status lines. */
-#secExplore{--ink2:#c3c2b7;--grid:#1c2633;--q:#08121f;--a:#3987e5}
+#secExplore{--ink2:var(--gold2);--grid:#262626;--q:#0f0f0f;--a:var(--ally)}
 #secExplore{flex:1;display:flex;flex-direction:column;min-height:0}
 #secExplore .xroles{display:inline-flex;align-self:flex-start;margin:.25rem 0 .3125rem}
 #secExplore .xroles button{padding:.125rem .5rem;letter-spacing:0}
