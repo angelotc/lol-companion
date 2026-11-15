@@ -5,34 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LoL Companion</title>
 <link rel="stylesheet" href="panel.css">
+<link rel="stylesheet" href="matrix.css">
+<link rel="stylesheet" href="build.css">
 <link rel="stylesheet" href="explore.css">
 </head>
 <body>
-<div class="hdr"><div class="t" id="title">LoL Companion</div><span class="btns"><button class="x" id="gear" title="Settings">&#9881;</button></span></div>
+<header class="tbar">
+  <div class="tb-l"><span class="tb-app">LoL Companion</span><span class="tb-ctx" id="title"></span></div>
+  <div class="tb-r">
+    <span class="tb-status hidden" id="tbStatus"><i></i><span id="tbMsg"></span></span>
+    <span class="tb-data" id="foot">lolalytics</span>
+    <span class="tb-key" title="Ctrl+X shows/hides the panel (Ctrl+Shift+L from any window)"><b>Ctrl+X</b>hide</span>
+    <button class="gear" id="gear" title="Settings" aria-label="Settings"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></button>
+  </div>
+</header>
 <div class="tiers hidden" id="tiersBox"><div><div class="pill" id="tiers"></div></div></div>
+
+<section class="dbar hidden" id="secTeam">
+  <div class="dteam" id="allies"></div>
+  <div class="odds" id="odds"></div>
+  <div class="dteam" id="enemies"></div>
+  <div class="lanepick hidden" id="lanePick"></div>
+</section>
+
+<nav class="steps hidden" id="stepsRow">
+  <div class="st-tabs" id="steps"></div>
+  <div class="st-right">
+    <div class="sdmg hidden" id="enemyDmg"></div>
+    <div class="sbans hidden" id="bansBox"><span class="st-lbl">Bans</span><span class="sbans" id="bans"></span></div>
+  </div>
+</nav>
 
 <main class="screen" id="screen">
   <section class="sec" id="secStatus">
     <div class="empty" id="empty"><div class="dot"></div><div id="msg"></div><div class="sdetail" id="sdetail"></div></div>
   </section>
-
-  <section class="sec hidden" id="secTeam">
-    <div class="note hidden" id="note"></div>
-    <div class="team" id="team">
-      <div class="tside tally">
-        <div><div class="rlabel">Allies</div><div class="row" id="allies"></div></div>
-        <div class="bans" id="bansBox"><div class="rlabel">Bans</div><div class="row" id="bans"></div></div>
-      </div>
-      <div class="odds hidden" id="odds"></div>
-      <div class="tside tenemy">
-        <div><div class="rlabel">Enemies <span id="enemyHint"></span></div><div class="row" id="enemies"></div></div>
-        <div class="dmg hidden" id="enemyDmg"></div>
-        <div class="lanepick hidden" id="lanePick"></div>
-      </div>
-    </div>
-  </section>
-
-  <nav class="steps hidden" id="steps"></nav>
 
   <section class="sec hidden" id="secBans">
     <div class="sechrow"><span class="mxkey">Δ = how much your pick's win rate changes against it (red = it beats you) · small = shrunk by games, weighted by lane</span></div>
@@ -52,9 +59,9 @@
   <section class="sec hidden" id="secExplore"></section>
 </main>
 
-<div class="foot" id="foot">Data: lolalytics &middot; last update --:--:-- &middot; <b>Ctrl+X</b> show/hide</div>
 <script src="js/core.js"></script>
 <script src="js/matrix.js"></script>
+<script src="views/draftbar.js"></script>
 <script src="views/picks.js"></script>
 <script src="views/bans.js"></script>
 <script src="views/build.js"></script>

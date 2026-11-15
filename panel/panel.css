@@ -1,215 +1,186 @@
+/* Shell and shared primitives for both pages (index.html: the panel; game.html: the in-game window).
+   View-specific styles live in matrix.css (1a-1c tables), build.css (1d) and explore.css (explorer). */
+@font-face{font-family:Roboto;font-style:normal;font-weight:100 900;font-display:swap;
+  src:url(fonts/roboto-latin-wght-normal.woff2) format("woff2-variations"),url(fonts/roboto-latin-wght-normal.woff2) format("woff2")}
+@font-face{font-family:"Space Grotesk";font-style:normal;font-weight:300 700;font-display:swap;
+  src:url(fonts/space-grotesk-latin-wght-normal.woff2) format("woff2-variations"),url(fonts/space-grotesk-latin-wght-normal.woff2) format("woff2")}
 :root{
-  --s:1;
-  /* high-contrast terminal palette: black ground, near-white text, bright accents */
-  --bg:#000; --bg2:#0a0a0a; --card:#0a0a0a; --card2:#161616; --raised:#1c1c1c; --line:#3a3a3a; --line2:#6a6a6a;
-  --gold:#ffd75f; --gold2:#f5f5f5; --muted:#c0c0c0; --dim:#949494;
-  --pos:#5fff87; --neg:#ff5f5f; --ally:#5fafff; --bgalpha:1;
+  --s:1;  /* page zoom (client.js / setScale): 1 at the 960x540 design size */
+  /* one mockup pixel: the designs are drawn at 1280x720, so N mockup px = calc(N * var(--px)) */
+  --px:calc(var(--s) * .75px);
+  /* design tokens */
+  --bg:#0D1015; --bg2:#11151B; --panel:#151A21; --raised:#1B222B; --line:#262E39; --line2:#3A4350; --axis:#4A5565;
+  --text:#E8ECF1; --text2:#C9D1DB; --muted:#9AA5B4; --dim:#7C8796;
+  --gold:#E6B85C; --ally:#5AA9FF; --ally-text:#6FB4FF; --enemy:#FF6B6B; --enemy-text:#FF7B7B;
+  --pos:#3DDC97; --neg:#FF8A70; --ad:#F2A25C; --ap:#7FA8FF;
+  --font:Roboto,system-ui,sans-serif; --display:'Space Grotesk',Roboto,sans-serif;
+  /* older names, still used by view CSS and game.css: prefer the tokens above in new code */
+  --gold2:var(--text); --card:var(--panel); --card2:var(--raised); --bgalpha:1;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{font-size:calc(16px * var(--s));}
 html,body{height:100%;overflow:hidden;background:transparent}
 body{
-  font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
-  color:var(--gold2);font-size:.8125rem;line-height:1.25;
-  background:rgba(0,0,0,var(--bgalpha));
+  font-family:var(--font);font-variant-numeric:tabular-nums;
+  color:var(--text);font-size:calc(13 * var(--px));line-height:1.25;
+  background:var(--bg);
   display:flex;flex-direction:column;height:100vh;
-  border:1px solid var(--line2);user-select:none;-webkit-user-select:none;cursor:default;
+  user-select:none;-webkit-user-select:none;cursor:default;
 }
-.hdr{display:flex;align-items:center;justify-content:space-between;padding:.5rem .625rem .375rem;border-bottom:1px solid var(--line);flex:none}
-.hdr .t{font-variant:small-caps;letter-spacing:.08em;color:var(--gold);font-weight:600;font-size:.8125rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.x{background:none;border:1px solid transparent;color:var(--muted);font-size:1rem;line-height:1;width:1.375rem;height:1.375rem;border-radius:3px;cursor:pointer;flex:none}
-.hdr .btns{display:flex;gap:.125rem;flex:none}
-#gear{font-size:.8125rem;opacity:.7}#gear:hover{opacity:1}
-.x:hover{color:var(--gold2);border-color:var(--line2)}
-/* champ select's top strip: your team and bans | draft estimate | their team */
-.team{padding:.4375rem .625rem;border-bottom:1px solid var(--line);flex:none;display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(0,1fr);gap:.875rem;align-items:start}
-.tside{display:flex;flex-direction:column;gap:.3125rem;min-width:0}
-.tenemy{align-items:flex-end;text-align:right}
-.tenemy .row{justify-content:flex-end}
-.tenemy .dmg,.tenemy .lanepick{width:100%;text-align:left}
-.row{display:flex;flex-wrap:wrap;gap:.3125rem;align-items:flex-start;min-height:0}
-.rlabel{width:100%;font-size:.5625rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:.125rem}
-.chip{display:flex;flex-direction:column;align-items:center;gap:1px}
+body[data-mode=ingame]{border:1px solid var(--line2)}  /* the in-game window is frameless */
+button{font-family:inherit}
+
+/* ---------- shared primitives ---------- */
+.hidden{display:none!important}
+.pos{color:var(--pos)}.neg{color:var(--neg)}
+/* champion / item / rune portrait (L.icon): an image over a 2-letter fallback */
 .ico{position:relative;display:inline-block;flex:none;overflow:hidden;background:var(--raised);border-radius:50%;
   color:var(--gold);font-weight:700;text-align:center}
 .ico img{display:block;width:100%;height:100%;object-fit:cover}
 .ico .fb{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.6em}
-.ally .ico{width:2.25rem;height:2.25rem;border:2px solid var(--ally);border-radius:6px}
-.ally.tent .ico{opacity:.5;border:2px dashed var(--gold)}
-.ally.me .ico{border:2px solid var(--gold);box-shadow:0 0 0 2px rgba(255,215,95,.4)}
-.enemy .ico{width:2.25rem;height:2.25rem;border:2px solid var(--neg);border-radius:6px;background:#1f0a0a}
-.enemy .ico img{filter:saturate(.9)}
-.lane{font-size:.5625rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.enemy{cursor:pointer;position:relative}
-.enemy:hover .ico,.enemy.sel .ico{border-color:var(--gold)}
-.enemy .lane.manual{color:var(--gold2);font-weight:700}
-.enemy.flex .ico::after{content:"";position:absolute;top:2px;right:2px;width:.375rem;height:.375rem;border-radius:50%;
-  background:var(--gold);box-shadow:0 0 0 1px var(--bg)}
-.dmg{margin-top:.3125rem;font-size:.625rem;color:var(--muted)}
-.dmg .bar{display:flex;height:.3125rem;margin-top:.1875rem;border-radius:3px;overflow:hidden;background:var(--line)}
-.dmg .ad{background:#ff9944}.dmg .ap{background:#66b3ff}
-.lanepick{margin-top:.3125rem;padding:.3125rem;border:1px solid var(--line2);border-radius:4px;background:rgba(0,0,0,.3)}
-.lanepick .lp-t{font-size:.625rem;color:var(--muted);margin-bottom:.25rem}
-.lanepick .lp-t b{color:var(--gold2);font-weight:600}
-.lanepick .lp-b{display:flex;gap:.1875rem}
-.lanepick button{flex:1;min-width:0;background:none;border:1px solid var(--line2);border-radius:3px;color:var(--muted);font:inherit;
-  font-size:.5625rem;text-transform:uppercase;letter-spacing:.03em;padding:.1875rem 0;cursor:pointer;line-height:1.25}
-.lanepick button span{display:block;font-size:.5rem;color:var(--dim);text-transform:none}
-.lanepick button:hover{color:var(--gold2);border-color:var(--gold)}
+/* small rounded tag: a value in bold, then text */
+.chip{display:inline-flex;align-items:baseline;gap:calc(4 * var(--px));padding:calc(2 * var(--px)) calc(8 * var(--px));
+  border-radius:calc(10 * var(--px));background:var(--raised);font-size:calc(11 * var(--px));color:var(--text2);white-space:nowrap}
+.chip b{font-weight:700}
+.chip.warn{color:var(--gold)}
+/* gold badge (e.g. DRAFT IS HERE) */
+.badge{font-size:calc(10 * var(--px));font-weight:600;letter-spacing:.06em;line-height:1.2;padding:calc(2 * var(--px)) calc(6 * var(--px));
+  border-radius:calc(8 * var(--px));background:var(--gold);color:var(--bg);white-space:nowrap}
+/* small caps-style section caption (AGAINST, WITH, BEST INTO...) */
+.cap{font-size:calc(10 * var(--px));font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+/* segmented toggle (tier picker, explorer roles) */
+.pill{display:inline-flex;border:1px solid var(--line2);border-radius:999px;padding:2px;background:rgba(0,0,0,.25)}
+.pill button{background:none;border:0;border-radius:999px;color:var(--muted);font:inherit;font-size:.6875rem;font-weight:600;
+  letter-spacing:.04em;padding:.1875rem .625rem;cursor:pointer;transition:background .15s,color .15s}
+.pill button:hover{color:var(--text)}
+.pill button.on{background:var(--gold);color:var(--bg)}
+.pill button:disabled{cursor:wait}
+.sech{font-variant:small-caps;letter-spacing:.08em;color:var(--gold);font-weight:600;font-size:.75rem;padding:.375rem .625rem 0}
+.note{font-size:.625rem;color:var(--muted);text-align:center;padding:.25rem .625rem 0}
+.bnote{font-size:.5625rem;color:var(--dim);line-height:1.35}
+/* our own tooltip (in game, where native ones need focus) */
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--raised);border:1px solid var(--line2);
+  border-radius:4px;padding:.1875rem .375rem;font-size:.6875rem;color:var(--text);white-space:normal}
+/* enemy team damage split (L.damage: build view and in game) */
+.tdmg{margin-top:.25rem;flex:none}
+.tdmg-t{display:flex;align-items:baseline;gap:.375rem;font-size:.625rem;color:var(--muted)}
+.tdmg-t b{font-weight:600}
+.tdmg-t .d-ad{color:var(--ad)}.tdmg-bar .d-ad{background:var(--ad)}
+.tdmg-t .d-ap{color:var(--ap)}.tdmg-bar .d-ap{background:var(--ap)}
+.tdmg-t .d-tr{color:var(--text)}.tdmg-bar .d-tr{background:#fff}
+.tdmg-bar{display:flex;height:4px;border-radius:2px;overflow:hidden;background:var(--line);margin-top:2px}
+.tdmg-bar span{display:block;height:100%}
+/* "Δ vs" opponent row and skill order (build view and in game) */
+.vsrow{display:flex;align-items:center;gap:.25rem;font-size:.625rem;color:var(--muted);margin-top:2px;flex-wrap:wrap}
+.vsrow .ico{width:1rem;height:1rem;border-radius:3px}
+.skillord{display:flex;gap:1px;flex-wrap:wrap}
+.skillord span{width:1rem;height:1rem;display:flex;align-items:center;justify-content:center;font-size:.5625rem;font-weight:700;border-radius:2px;background:var(--raised);color:var(--muted)}
+.skillord span.R{background:var(--gold);color:var(--bg)}
+.skillord span.max{color:var(--bg);background:var(--text)}
+
+/* ---------- title bar (36px): app name, context, data time, settings ---------- */
+.tbar{height:calc(36 * var(--px));flex:none;display:flex;align-items:center;justify-content:space-between;gap:calc(12 * var(--px));
+  padding:0 calc(16 * var(--px));border-bottom:1px solid var(--line)}
+.tb-l,.tb-r{display:flex;align-items:center;gap:calc(12 * var(--px));min-width:0}
+.tb-l{align-items:baseline}
+.tb-r{flex:none;max-width:70%}
+.tb-app{font-family:var(--display);font-weight:700;font-size:calc(13 * var(--px));letter-spacing:.08em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+.tb-ctx,.tb-data{color:var(--muted);font-size:calc(12 * var(--px));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tb-data{flex:none}
+.tb-key{color:var(--dim);font-size:calc(11 * var(--px));white-space:nowrap;flex:none}
+.tb-key b{font-weight:600;color:var(--muted);border:1px solid var(--line2);border-radius:calc(3 * var(--px));padding:0 calc(4 * var(--px));margin-right:calc(3 * var(--px))}
+.tb-status{display:flex;align-items:center;gap:calc(8 * var(--px));color:var(--text2);font-size:calc(12 * var(--px));min-width:0;white-space:nowrap}
+.tb-status span{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tb-status i{flex:none;width:calc(8 * var(--px));height:calc(8 * var(--px));border-radius:50%;background:var(--gold)}
+.tb-status.err i{background:var(--neg)}
+.gear{flex:none;width:calc(28 * var(--px));height:calc(28 * var(--px));border:0;border-radius:calc(6 * var(--px));background:transparent;
+  color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.gear svg{width:calc(16 * var(--px));height:calc(16 * var(--px))}
+.gear:hover{color:var(--text);background:var(--raised)}
+.tiers{display:flex;justify-content:center;padding:.375rem .625rem;border-bottom:1px solid var(--line);flex:none}
+
+/* ---------- draft bar (92px): allies | draft win estimate | enemies ---------- */
+.dbar{position:relative;height:calc(92 * var(--px));flex:none;display:flex;align-items:center;justify-content:space-between;gap:calc(16 * var(--px));
+  padding:0 calc(16 * var(--px));background:var(--bg2);border-bottom:1px solid var(--line)}
+.dteam{display:flex;gap:calc(8 * var(--px));flex:none}
+/* one team slot: 44px portrait over a lane caption */
+.slot{display:flex;flex-direction:column;align-items:center;gap:calc(4 * var(--px));width:calc(48 * var(--px));position:relative}
+.slot .pt{width:calc(44 * var(--px));height:calc(44 * var(--px));border-radius:calc(8 * var(--px));border:2px solid var(--line2);
+  background:var(--raised);display:flex;align-items:center;justify-content:center}
+.slot .pt .fb{font-size:calc(12 * var(--px))}
+.slot .you{font-size:calc(11 * var(--px));font-weight:700;color:var(--gold)}
+.slot.ally .pt{border-color:var(--ally)}
+.slot.enemy .pt{border-color:var(--enemy)}
+.slot.tent .pt{border-style:dashed;opacity:.6}
+.slot.open .pt{border:2px dashed var(--line2)}
+.slot.me .pt{border-color:var(--gold);border-style:solid}
+.slot.me.tent .pt{border-style:dashed}
+.slot.me .cap,.slot.flex .cap{color:var(--gold)}
+.slot .cap.manual{color:var(--text)}
+.slot.enemy:not(.open){cursor:pointer}
+.slot.enemy:not(.open):hover .pt,.slot.enemy.sel .pt{border-color:var(--gold)}
+/* draft win estimate */
+.odds{width:calc(520 * var(--px));min-width:0;flex:0 1 auto;display:flex;flex-direction:column;gap:calc(6 * var(--px))}
+.odds .ol{display:flex;align-items:baseline;justify-content:space-between;gap:calc(8 * var(--px));white-space:nowrap}
+.odds .us,.odds .them{font-family:var(--display);font-weight:700;font-size:calc(22 * var(--px));line-height:1.1}
+.odds .us{color:var(--ally-text)}.odds .them{color:var(--enemy-text)}
+.odds .us small,.odds .them small{font-size:calc(12 * var(--px));font-weight:500}
+.odds .mid{font-size:calc(11 * var(--px));color:var(--muted);overflow:hidden;text-overflow:ellipsis;min-width:0}
+.odds .bar{height:calc(6 * var(--px));border-radius:calc(3 * var(--px));background:var(--enemy);overflow:hidden;display:flex}
+.odds .bar div{height:100%;background:var(--ally);border-right:2px solid var(--bg);transition:width .3s}
+.odds .why{display:flex;gap:calc(6 * var(--px));justify-content:center;overflow:hidden}
+.odds .hint{text-align:center;font-size:calc(11 * var(--px));color:var(--muted)}
+/* enemy lane picker: opens under the draft bar when you click an enemy */
+.lanepick{position:absolute;top:calc(100% + 4 * var(--px));right:calc(16 * var(--px));z-index:20;width:calc(360 * var(--px));
+  padding:calc(10 * var(--px)) calc(12 * var(--px));background:var(--panel);border:1px solid var(--line2);border-radius:calc(8 * var(--px));
+  box-shadow:0 calc(8 * var(--px)) calc(24 * var(--px)) rgba(0,0,0,.55)}
+.lanepick .lp-t{font-size:calc(11 * var(--px));color:var(--muted);margin-bottom:calc(8 * var(--px))}
+.lanepick .lp-t b{color:var(--text);font-weight:600}
+.lanepick .lp-b{display:flex;gap:calc(4 * var(--px))}
+.lanepick button{flex:1;min-width:0;background:none;border:1px solid var(--line2);border-radius:calc(6 * var(--px));color:var(--muted);font:inherit;
+  font-size:calc(11 * var(--px));font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:calc(4 * var(--px)) 0;cursor:pointer;line-height:1.25}
+.lanepick button span{display:block;font-size:calc(10 * var(--px));font-weight:400;color:var(--dim);text-transform:none}
+.lanepick button:hover{color:var(--text);border-color:var(--gold)}
 .lanepick button.on{background:var(--gold);border-color:var(--gold);color:var(--bg)}
 .lanepick button.on span{color:var(--bg)}
-.bans .ico{width:1.375rem;height:1.375rem;border-radius:4px;border:1px solid var(--line2)}
-.bans .ico img{filter:grayscale(1) brightness(.8)}
-.bans .row{gap:.1875rem}
-.bans{flex-direction:row;align-items:center;gap:.375rem}
-.bans .rlabel{width:auto}
-.pos{color:var(--pos)}.neg{color:var(--neg)}
-.rank{color:var(--dim);font-weight:700;font-size:.75rem}
-.name{font-weight:600;font-size:.8125rem;color:var(--gold2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.score{font-size:1.0625rem;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
-/* comparison table (js/matrix.js): candidates as columns, score terms as rows */
-.mx{display:grid;grid-template-columns:minmax(8.5rem,max-content) repeat(var(--n,1),minmax(0,1fr));
-  margin:.25rem .5rem .375rem;font-variant-numeric:tabular-nums}
-.mr{display:contents}
-.mc{display:flex;align-items:center;justify-content:center;min-width:0;padding:.125rem .25rem;border-bottom:1px solid var(--bg2);font-size:.6875rem}
-.mc.rh{justify-content:flex-start;padding-left:0;padding-right:.5rem;color:var(--muted)}
-.mr:hover .mc{background:var(--card2)}
-.mc.lit{background:#121212}
-.mr:hover .mc.lit{background:#262626}
-.mh .mc{align-items:stretch;border-bottom:1px solid var(--line2);padding-bottom:.25rem;background:none!important}
-.mc.top{box-shadow:inset 1px 0 0 rgba(255,215,95,.45),inset -1px 0 0 rgba(255,215,95,.45)}
-.mh .mc.top{box-shadow:inset 1px 0 0 rgba(255,215,95,.45),inset -1px 0 0 rgba(255,215,95,.45),inset 0 2px 0 var(--gold)}
-.mc.mine{background:rgba(255,215,95,.07)}
-.mr.base .mc{border-bottom-color:var(--line)}
-.mr.base .mc.rh{color:var(--gold2);font-weight:600}
-.mr.tent .mc{opacity:.6}
-.pk{display:flex;flex-direction:column;align-items:center;gap:.125rem;min-width:0;width:100%}
-.pk-t{display:flex;align-items:center;gap:.3125rem}
-.pk .ico.big{width:2.25rem;height:2.25rem;border-radius:6px;border:1px solid var(--line2)}
-.top .pk .ico.big{border-color:var(--gold)}
-.top .rank{color:var(--gold)}
-.pk-r{display:flex;flex-direction:column;align-items:flex-end;line-height:1.1}
-.pk .name{max-width:100%}
-.pk-s{font-size:.5625rem;color:var(--dim);white-space:nowrap;text-transform:uppercase;letter-spacing:.03em}
-.rl{display:flex;align-items:center;gap:.25rem;min-width:0;white-space:nowrap}
-.rl .k{color:var(--dim);font-size:.625rem;width:1.25rem;flex:none}
-.rl .ico{width:1.125rem;height:1.125rem;border-radius:3px}
-.rl .n{color:var(--gold2);overflow:hidden;text-overflow:ellipsis}
-.rl .ln{font-size:.5625rem;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
-.mval{display:flex;align-items:baseline;gap:.25rem;cursor:default}
-.mval b{font-weight:700;font-size:.75rem;padding:0 .1875rem;border-radius:3px}
-.mval i{font-style:normal;font-size:.5625rem;color:var(--dim)}
-.mc .none{color:var(--line2)}
-.mics{display:flex;gap:2px}.mics .ico{width:1.125rem;height:1.125rem;border-radius:3px}
-.mtxt{color:var(--muted)}.mtxt.thin{color:var(--neg);font-style:italic}
-.sechrow{display:flex;align-items:center;gap:.75rem;padding:.375rem .625rem 0;flex-wrap:wrap}
-.mxkey{font-size:.5625rem;color:var(--dim);flex:1;min-width:0}
+
+/* ---------- step row (44px): the views as numbered steps | their damage, bans ---------- */
+.steps{height:calc(44 * var(--px));flex:none;display:flex;align-items:stretch;justify-content:space-between;gap:calc(16 * var(--px));
+  padding:0 calc(16 * var(--px));border-bottom:1px solid var(--line)}
+.st-tabs{display:flex;align-items:stretch;gap:calc(4 * var(--px));min-width:0}
+.st-tabs button{border:0;border-bottom:2px solid transparent;background:transparent;color:var(--muted);font:inherit;font-size:calc(13 * var(--px));
+  font-weight:500;padding:0 calc(14 * var(--px));cursor:pointer;display:flex;align-items:center;gap:calc(8 * var(--px));white-space:nowrap}
+.st-tabs button .n{font-size:calc(11 * var(--px));color:var(--dim)}
+.st-tabs button:hover{color:var(--text)}
+.st-tabs button.on{color:var(--gold);font-weight:700;border-bottom-color:var(--gold)}
+.st-tabs button.on .n{color:inherit}
+.st-tabs button:disabled{color:var(--dim);cursor:default}
+.st-tabs button:disabled .n{color:inherit}
+.st-right{display:flex;align-items:center;gap:calc(20 * var(--px));flex:none}
+.st-lbl{font-size:calc(11 * var(--px));color:var(--muted)}
+.sdmg{display:flex;align-items:center;gap:calc(8 * var(--px));font-size:calc(11 * var(--px));white-space:nowrap}
+.sdmg .bar{width:calc(120 * var(--px));height:calc(6 * var(--px));border-radius:calc(3 * var(--px));overflow:hidden;display:flex;gap:2px}
+.sdmg .bar .ad{background:var(--ad)}.sdmg .bar .ap{flex:1;background:var(--ap)}
+.sdmg b{font-weight:700}.sdmg b.ad{color:var(--ad)}.sdmg b.ap{color:var(--ap)}
+.sbans{display:flex;align-items:center;gap:calc(4 * var(--px))}
+.sbans .st-lbl{margin-right:calc(4 * var(--px))}
+.sbans .ico,.sbans .open{width:calc(22 * var(--px));height:calc(22 * var(--px));border-radius:calc(4 * var(--px))}
+.sbans .ico img{filter:grayscale(1);opacity:.7}
+.sbans .open{border:1px dashed var(--line2)}
+
+/* ---------- the content under the shell: the sections that apply, stacked (scrolls if they outgrow the window) ---------- */
+.screen{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}
+.screen::-webkit-scrollbar{width:4px}.screen::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
+.sec{flex:none}
+/* status line: compact above other sections, centered when alone */
 .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;color:var(--muted);text-align:center;padding:1rem}
 .dot{width:.625rem;height:.625rem;border-radius:50%;background:var(--gold);animation:pulse 1.8s ease-in-out infinite}
 .err .dot{background:var(--neg)}
 @keyframes pulse{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}}
-.foot{flex:none;padding:.3125rem .625rem;border-top:1px solid var(--line);font-size:.5625rem;color:var(--dim);text-align:center}
-.hidden{display:none!important}
-/* the one screen: the sections that apply, stacked (champ select scrolls if they outgrow the window) */
-.screen{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}
-.screen::-webkit-scrollbar{width:4px}.screen::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
-.sec{flex:none}
-.sech{font-variant:small-caps;letter-spacing:.08em;color:var(--gold);font-weight:600;font-size:.75rem;padding:.375rem .625rem 0}
-/* status line: compact above other sections, centered when alone */
+.sdetail{font-size:.6875rem;color:var(--dim);max-width:90%}
 #secStatus .empty{flex-direction:row;flex-wrap:wrap;justify-content:flex-start;gap:.25rem .5rem;padding:.375rem .625rem;text-align:left;border-bottom:1px solid var(--line)}
 #secStatus .sdetail{width:100%;max-width:none}
 #secStatus .sdetail:empty{display:none}
 .screen.solo #secStatus{flex:1;display:flex;flex-direction:column}
 .screen.solo #secStatus .empty{flex-direction:column;flex-wrap:nowrap;justify-content:center;gap:.75rem;padding:1rem;text-align:center;border-bottom:0}
 .screen.solo #secStatus .sdetail{width:auto;max-width:90%}
-.tiers{display:flex;justify-content:center;padding:.375rem .625rem;border-bottom:1px solid var(--line);flex:none}
-.pill{display:inline-flex;border:1px solid var(--line2);border-radius:999px;padding:2px;background:rgba(0,0,0,.25)}
-.pill button{background:none;border:0;border-radius:999px;color:var(--muted);font:inherit;font-size:.6875rem;font-weight:600;
-  letter-spacing:.04em;padding:.1875rem .625rem;cursor:pointer;transition:background .15s,color .15s}
-.pill button:hover{color:var(--gold2)}
-.pill button.on{background:var(--gold);color:var(--bg)}
-.pill button:disabled{cursor:wait}
-.note{font-size:.625rem;color:var(--muted);text-align:center;padding:.25rem .625rem 0}
-.locked{display:flex;align-items:center;gap:.375rem;padding:.1875rem .5rem;border:1px solid var(--gold);
-  border-radius:4px;background:rgba(255,215,95,.08);font-size:.6875rem;color:var(--gold2);flex:none}
-.locked .ico{width:1.25rem;height:1.25rem}
-.locked .sub2{color:var(--muted);font-size:.625rem}
-/* status detail line */
-.sdetail{font-size:.6875rem;color:var(--dim);max-width:90%}
-/* build section */
-.bhead{display:flex;align-items:center;gap:.4375rem;padding:.4375rem .625rem;border-bottom:1px solid var(--line);flex:none}
-.bhead .ico.big{width:2.5rem;height:2.5rem;border-radius:6px;border:1px solid var(--gold)}
-.bhead .bt{flex:1;min-width:0}
-.bhead .bn{font-weight:600;font-size:.9375rem;color:var(--gold2)}
-.bhead .bs{font-size:.625rem;color:var(--muted)}
-.vsrow{display:flex;align-items:center;gap:.25rem;font-size:.625rem;color:var(--muted);margin-top:2px;flex-wrap:wrap}
-.vsrow .ico{width:1rem;height:1rem;border-radius:3px}
-.bbody{columns:4 13rem;column-gap:.625rem;padding:.375rem .625rem}
-.bsec{break-inside:avoid;margin-bottom:.5rem}
-.bbody>.bnote{column-span:all}
-.bsec h3{font-size:.5625rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:.1875rem;display:flex;justify-content:space-between}
-.bsec h3 span{letter-spacing:.02em;text-transform:none;font-weight:400}
-.page{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:.3125rem .375rem;margin-bottom:.25rem}
-.page .pl{display:flex;justify-content:space-between;font-size:.625rem;color:var(--muted);margin-bottom:.25rem}
-.page .pl b{color:var(--gold2);font-weight:600}
-.page .pr{display:flex;align-items:flex-start;gap:.1875rem;margin-bottom:.1875rem}
-.page .pr .sep{width:1px;align-self:stretch;background:var(--line2);margin:0 .125rem}
-.page .pr .wsl{font-size:.5625rem;color:var(--muted);align-self:center}
-.rn{display:flex;flex-direction:column;align-items:center;gap:1px;width:1.75rem}
-.rn .ico{width:1.5rem;height:1.5rem;border-radius:50%;background:var(--raised)}
-.rn.key .ico{width:1.875rem;height:1.875rem}
-.rn.shard .ico{width:1.125rem;height:1.125rem}
-.rn .dl{font-size:.5rem;font-weight:700;line-height:1}
-.opt{display:flex;align-items:center;gap:.375rem;padding:.1875rem .3125rem;border:1px solid var(--line);border-radius:4px;background:var(--card);margin-bottom:.1875rem;position:relative}
-.opt.best{border-color:var(--pos)}
-.opt .its{display:flex;gap:2px;flex:none}
-.opt .its .ico{width:1.5rem;height:1.5rem;border-radius:3px}
-.opt .its .arrow{color:var(--dim);font-size:.625rem;align-self:center}
-.opt .st{flex:1;min-width:0;font-size:.625rem;color:var(--muted);overflow:hidden}
-.opt .st span{white-space:nowrap}
-.opt .st b{color:var(--gold2);font-weight:600}
-.opt .mu{font-size:.6875rem;font-weight:700;flex:none;text-align:right;min-width:2.25rem}
-.opt .tag{position:absolute;top:-.4375rem;right:.25rem;font-size:.5rem;background:var(--pos);color:var(--bg);border-radius:2px;padding:0 .1875rem;font-weight:700;letter-spacing:.04em}
-.opt .vsd{display:none;position:absolute;right:0;top:100%;z-index:5;background:var(--raised);border:1px solid var(--line2);border-radius:4px;padding:.25rem .375rem;font-size:.625rem;color:var(--muted);white-space:nowrap}
-.opt:hover .vsd{display:block}
-.vsd div{display:flex;align-items:center;gap:.25rem}
-.vsd .ico{width:.875rem;height:.875rem;border-radius:2px}
-.skillord{display:flex;gap:1px;flex-wrap:wrap}
-.skillord span{width:1rem;height:1rem;display:flex;align-items:center;justify-content:center;font-size:.5625rem;font-weight:700;border-radius:2px;background:var(--raised);color:var(--muted)}
-.skillord span.R{background:var(--gold);color:var(--bg)}
-.skillord span.max{color:var(--bg);background:var(--gold2)}
-.bnote{font-size:.5625rem;color:var(--dim);line-height:1.35}
-.foot b{color:var(--muted);font-weight:600}
-#tip{position:fixed;z-index:50;pointer-events:none;background:var(--raised);border:1px solid var(--line2);
-  border-radius:4px;padding:.1875rem .375rem;font-size:.6875rem;color:var(--gold2);white-space:normal}
-/* draft win estimate (middle of the team strip) */
-.odds{min-width:0}
-.odds .ol{display:flex;justify-content:space-between;align-items:baseline;gap:.375rem;font-size:.6875rem;font-weight:700;margin-bottom:.1875rem;white-space:nowrap}
-.odds .ol .us{color:var(--ally)}.odds .ol .them{color:var(--neg)}
-.odds .ol .mid{font-weight:400;font-size:.5625rem;color:var(--dim);overflow:hidden;text-overflow:ellipsis;min-width:0;text-align:center}
-.odds .bar{height:.375rem;border-radius:3px;background:var(--neg);overflow:hidden}
-.odds .bar div{height:100%;background:var(--ally);transition:width .3s}
-.odds .why{margin-top:.25rem;display:flex;flex-direction:column;gap:1px}
-.odds .why div{display:flex;align-items:center;gap:.25rem;font-size:.625rem;color:var(--muted);white-space:nowrap;overflow:hidden}
-.odds .why .ico{width:.875rem;height:.875rem;border-radius:2px}
-.odds .why b{min-width:2rem;font-weight:700}
-/* enemy team damage split (build section and in game) */
-.tdmg{margin-top:.25rem;flex:none}
-.tdmg-t{display:flex;align-items:baseline;gap:.375rem;font-size:.625rem;color:var(--muted)}
-.tdmg-t b{font-weight:600}
-.tdmg-t .d-ad{color:#ff9944}.tdmg-bar .d-ad{background:#ff9944}
-.tdmg-t .d-ap{color:#66b3ff}.tdmg-bar .d-ap{background:#66b3ff}
-.tdmg-t .d-tr{color:var(--gold2)}.tdmg-bar .d-tr{background:#fff}
-.tdmg-bar{display:flex;height:4px;border-radius:2px;overflow:hidden;background:var(--line);margin-top:2px}
-.tdmg-bar span{display:block;height:100%}
-/* champ select's views (client.js): the active one joins the content below; a dot marks where the
-   draft is while you look at another */
-.steps{display:flex;gap:.25rem;padding:.3125rem .625rem 0;border-bottom:1px solid var(--line2);flex:none}
-.steps button{position:relative;background:none;border:1px solid transparent;border-bottom:0;border-radius:4px 4px 0 0;
-  margin-bottom:-1px;padding:.25rem .875rem .3125rem .75rem;color:var(--muted);font:inherit;font-size:.75rem;font-weight:600;cursor:pointer}
-.steps button b{color:var(--dim);margin-right:.375rem;font-variant-numeric:tabular-nums}
-.steps button:hover{color:var(--gold2)}
-.steps button.on{color:var(--gold);background:var(--bg);border-color:var(--line2);border-bottom:1px solid var(--bg)}
-.steps button.on b{color:var(--gold)}
-.steps button.now::after{content:"";position:absolute;top:.3125rem;right:.3125rem;width:.3125rem;height:.3125rem;border-radius:50%;background:var(--gold)}

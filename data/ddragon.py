@@ -25,6 +25,8 @@ SHARDS = {
     5011: ("Health", "statmodshealthplusicon.png"),
     5013: ("Tenacity and Slow Resist", "statmodstenacityicon.png"),
 }
+# the client's three stat-shard rows (offense, flex, defense), each option in display order
+SHARD_ROWS = [[5008, 5005, 5007], [5008, 5010, 5001], [5011, 5013, 5001]]
 
 
 @dataclass
@@ -60,10 +62,14 @@ class Assets:
             )
         self.runes: dict[int, Rune] = {}
         self.styles: dict[int, Rune] = {}
+        # each tree's rows of rune ids in the client's order: row 0 the keystones, then the minor rows
+        self.trees: dict[int, list[list[int]]] = {}
         for style in runes or []:
             sid = int(style["id"])
             self.styles[sid] = Rune(sid, style["name"], f"{DDRAGON}/cdn/img/{style['icon']}", sid, -2)
+            self.trees[sid] = []
             for i, slot in enumerate(style.get("slots") or []):
+                self.trees[sid].append([int(r["id"]) for r in slot.get("runes") or []])
                 for r in slot.get("runes") or []:
                     self.runes[int(r["id"])] = Rune(int(r["id"]), r["name"], f"{DDRAGON}/cdn/img/{r['icon']}", sid, i)
         for sid, (name, icon) in SHARDS.items():

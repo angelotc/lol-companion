@@ -5,7 +5,7 @@ from __future__ import annotations
 from data import builds
 from data.builds import Option
 from data.champions import Champions
-from data.ddragon import Assets
+from data.ddragon import SHARD_ROWS, Assets
 from data.live import LiveGame
 from data.players import PlayerStats
 from draft.engine import BanEvaluation, BuildEvaluation, Evaluation
@@ -152,6 +152,25 @@ def build(bev: BuildEvaluation, champs: Champions, assets: Assets, top: int = 4)
         info = assets.rune(int(key.rstrip("f")))
         return info | ({"wr": round(o.wr, 1), "pr": round(o.pr, 1), "games": o.games} | vs(o) if o else {})
 
+    def tree(pg, secondary: bool) -> list[list[dict]]:
+        """The page's primary (or secondary: no keystone row) tree, row by row in the client's order,
+        every rune with its stats and whether this page takes it; [] when the tree isn't known."""
+        chosen = pg.secondary if secondary else pg.primary
+        style = assets.runes[chosen[0]].style if chosen and chosen[0] in assets.runes else None
+        rows = (assets.trees.get(style) or [])[1 if secondary else 0:]
+        if not rows or any(not any(r in row for row in rows) for r in chosen):
+            return []
+        return [[rune(str(r)) | {"chosen": r in chosen} for r in row] for row in rows]
+
+    def shard_rows(shards: list[int]) -> list[list[dict]]:
+        """The three stat-shard rows (offense, flex, defense), the page's pick marked in each."""
+        out = []
+        for i, (sid, key) in enumerate(zip(shards, builds.shard_keys(shards))):
+            row = SHARD_ROWS[i] if i < len(SHARD_ROWS) and sid in SHARD_ROWS[i] else [sid]
+            sfx = key[len(str(sid)):]
+            out.append([rune(f"{r}{sfx}") | {"chosen": r == sid} for r in row])
+        return out
+
     pages = []
     for kind, label in (("pick", "Most picked"), ("win", "Highest win rate")):
         pg = b.pages.get(kind)
@@ -169,6 +188,7 @@ def build(bev: BuildEvaluation, champs: Champions, assets: Assets, top: int = 4)
             "styles": [assets.rune(st) for st in styles],
             "primary": [rune(str(r)) for r in pg.primary], "secondary": [rune(str(r)) for r in pg.secondary],
             "shards": [rune(k) for k in builds.shard_keys(pg.shards)],
+            "tree": {"primary": tree(pg, False), "secondary": tree(pg, True), "shards": shard_rows(pg.shards)},
         })
     keystones = sorted(
         (o for k, o in b.runes.items() if k.isdigit() and (r := assets.runes.get(int(k))) and r.slot == 0 and o.pr >= 1),

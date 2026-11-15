@@ -2,6 +2,7 @@
 
   uv run scripts/simulate_views.py              writes docs/views/{bans,blind,picks,build,ingame,explore}.png
   uv run scripts/simulate_views.py --out DIR
+  uv run scripts/simulate_views.py --account    scored with your own games and mastery (League client running)
 
 No League client needed: the draft, lock-in, game and lobby are simulated; the in-game players come
 from tests/fixtures/players, re-cast onto the simulated draft's champions. Bans, blind, picks and
@@ -68,12 +69,34 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=ROOT / "docs" / "views")
     ap.add_argument("--items", type=lambda s: [int(i) for i in s.split(",")], default=[3158, 3109, 3190],
                     help="in-game item ids you hold (default: Ionian Boots, Knight's Vow, Locket)")
+    ap.add_argument("--account", action="store_true",
+                    help="score with the logged-in account's own games (the app's store) and mastery "
+                         "(needs the League client running); without it you have no record")
     args = ap.parse_args()
     out_dir = args.out
     out_dir.mkdir(parents=True, exist_ok=True)
     states: list[dict] = []
     ctl = Controller(load_config(), states.append)
     ctl.boot()
+    if args.account:
+        # the store only inside comfort(): the controller must not record this simulated draft into it
+        from data import lcu_data
+        from data.lcu import LcuClient, read_lockfile
+        from data.store import Store
+        store = Store()
+        client = LcuClient(read_lockfile(ctl.cfg.lockfile))
+        try:
+            ctl.mastery = lcu_data.mastery(client) or {}
+        finally:
+            client.close()
+
+        def comfort(role: str):
+            ctl.store = store
+            try:
+                return Controller.comfort(ctl, role)
+            finally:
+                ctl.store = None
+        ctl.rec.comfort = comfort
     ids = lambda *names: [ctl.rec.champs.id_from_slug(n) for n in names]
     shots: dict[str, dict] = {}  # name -> render() keyword arguments
     w, h = tracker.PAGE_SIZE  # the panel window's default page; it zooms itself to fit (client.js)
@@ -104,10 +127,10 @@ def main() -> None:
     ctl.render()
     shots["blind"] = dict(state=states[-1], width=w, height=h)
 
-    # 1c best picks; hovering a matchup cell of the top pick: its column lights up, the tooltip explains the cell
+    # 1c best picks: the ranked table with the top pick's breakdown beside it
     ctl.session.draft = draft
     ctl.render()
-    shots["picks"] = dict(state=states[-1], width=w, height=h, hover="#recs .mr:nth-child(5) .mc[data-c='0'] .mval")
+    shots["picks"] = dict(state=states[-1], width=w, height=h)
 
     # 1d locked in: build with matchup deltas (the picks from lock-in stay under 1c)
     leona = ids(LOCK)[0]

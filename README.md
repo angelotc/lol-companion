@@ -5,7 +5,7 @@ theirs, and your own record. It is one 16:9 window that shows the blind-pick exp
 and bans, picks and build as the draft moves on; in game, a second window over the game's right edge
 shows your build beside all 10 players.
 
-![Champ select, 1c best picks: your best picks left to right, every matchup and synergy below](docs/views/picks.png)
+![Champ select, best picks: your best picks top to bottom, every matchup and synergy beside them](docs/views/picks.png)
 
 ## Install
 Download **[LoLCompanion-win-Setup.exe](https://github.com/angelotc/lol-companion/releases/latest/download/LoLCompanion-win-Setup.exe)**
@@ -35,43 +35,49 @@ on Start with Windows, and quits.
 
 ### 1 · Champ select
 
-Your team and bans, the draft win estimate, and the enemy team stay across the top. Under them,
-one view at a time: the tab strip **follows the draft** (1a while bans last, 1b while your lane
-opponent is unknown, 1c once they're picked, 1d after you lock in), and only shows the views that
-apply. Click another tab to look at it; a gold dot marks where the draft is, and the next phase
-brings you back. Every view is a table: candidates left to right, best first, and under each one
-the numbers behind its score. Hover a cell for its games; the column under the pointer lights up.
+Your team, the draft win estimate with its main reasons, and the enemy team stay across the top.
+Under them, one view at a time: the step row **follows the draft** (1 while bans last, 2 while your
+lane opponent is unknown, 3 once they're picked, 4 after you lock in); steps that don't apply are
+greyed out. Click another step to look at it; a **DRAFT IS HERE** tag marks where the draft is, and
+the next phase brings you back. The step row also holds the bans and the enemy team's damage split.
+Every view is a table: candidates top to bottom, best first, and beside each one the numbers behind
+its score. Hover a cell for its games; the column under the pointer lights up.
 
-#### 1a · Ban phase
+#### 1 · Ban phase
 
-<img src="docs/views/bans.png" alt="1a: ban candidates with how your likely picks and your team's hovers do against each">
+<img src="docs/views/bans.png" alt="Bans: ban candidates with how your likely picks and your team's hovers do against each">
 
 Enemy champions worth banning (how likely you face it × how much it hurts you), with each one's
-strength, then one row per likely pick of yours and per teammate's hover: the win-rate change
-against it (red = it beats you) and what that adds to its ban value.
+strength, then one column per likely pick of yours and per teammate's hover: how that pick's win
+rate moves against it, shrunk by games and weighted by lane (coral = it beats you). The panel on the
+right explains the top ban: how often it's picked, who it hurts most, and what comes next.
 
-#### 1b · Blind pick (while your lane opponent is unknown)
+#### 2 · Blind pick (while your lane opponent is unknown)
 
-<img src="docs/views/blind.png" alt="1b: blind-safe picks with strength, team fit and counter risk">
+<img src="docs/views/blind.png" alt="Blind pick: blind-safe picks with strength, team fit and counter risk">
 
 Picks ranked by strength, fit with your team, and how much they lose if the enemy laner counters
-them: rows for average matchup, if countered (the worst matchups that make up 15% of their
-picks), the blind risk that adds up to, the worst counters, and how many matchups have data. Tune
+them: a track from if countered (the worst matchups that make up 15% of their picks) to the average
+matchup, the blind risk that adds up to, the worst counters, and how many matchups have data. Tune
 it in `config.toml` under `[blind]`.
 
-#### 1c · Best picks
+#### 3 · Best picks
 
 The screenshot at the top. Picks ranked against the enemies picked so far and with your team: their
-strength, then one row per enemy (**vs**) and teammate (**w/**) with the win-rate change in that
-matchup or duo (big number) and what it adds to the score (small number, shrunk by games and
-weighted by lane), then your own games and mastery. After you lock in, these stay as they were at
-lock-in.
+strength, then one column per enemy (**against**) and teammate (**with**) showing what that matchup
+or duo adds to the score (shrunk by games and weighted by lane), and a **you** column for your own
+games and mastery, so a row's cells add up to its score. Click a pick for its breakdown on the
+right: the raw win-rate change behind every term. After you
+lock in, these stay as they were at lock-in.
 
-#### 1d · Build (after lock-in)
+#### 4 · Build (after lock-in)
 
-<img src="docs/views/build.png" alt="1d: runes, spells, skills and items with their edge vs your lane">
+<img src="docs/views/build.png" alt="Build: rune page, spells, skills and items with their edge vs your lane">
 
-Runes, summoner spells, skill order and items for your champion, each with its Δ vs your lane.
+The rune page (most picked or highest win rate), laid out like the client's with the chosen runes
+lit, summoner spells, skill order and items for your champion, each with its Δ vs your lane. Hover
+any rune, chosen or not, for its win rate and Δ. Each item slot shows its top options; hover "+N more" for
+the rest.
 
 ### 2 · In game
 
@@ -84,20 +90,20 @@ Your build (next item, gold, win rate and Δ vs each enemy lane) beside all 10 p
 <img src="docs/views/explore.png" alt="The blind-pick explorer">
 
 The blind-pick explorer, between games (lobby, queue, or with no draft at all): every champion's
-strength vs how much it loses if countered, for any role (your most played by default). Hover a
-portrait for its worst counters.
+strength vs how much it loses if countered, for any role (your most played by default). Click a
+portrait, or a row in the best blind picks list, for its verdict and worst counters.
 
 - **Before champ select** stats preload in the background for your usual roles (your lobby roles once you queue).
 
-- **Picks** are ranked from the moment champ select opens (1b while your lane opponent is unknown). Every term behind a pick's score is in its column.
+- **Picks** are ranked from the moment champ select opens (blind pick while your lane opponent is unknown). Every term behind a pick's score is in its row.
 - **Rank tier**: stats are from Master+ games.
-- **Enemy lanes** are guessed from play rates; flex picks get a gold dot. Click an enemy to set their lane.
+- **Enemy lanes** are guessed from play rates; flex picks get a gold lane label with a "?". Click an enemy to set their lane.
 - **Build:** each option shows its Δ: how much better it does against these enemies than usual, in win-rate points, discounted for small samples. Bot lane is measured vs the enemy duo, top/mid vs their laner, jungler (and mid vs the roaming support), jungle vs everyone. The best is tagged **BEST VS LANE**. Hover for each enemy's share.
-- **Their damage** (build view and in game): the enemy team's split of physical, magic and true damage, from each enemy's average damage to champions in its lane. Hover for each enemy's own split.
+- **Their damage** (step row and in game): the enemy team's split of physical, magic and true damage, from each enemy's average damage to champions in its lane. Hover for each enemy's own split.
 - **In game** (Ctrl+X hides it) one window pinned to the game's right edge shows the players and your build side by side; it grows with the game's resolution (`ingame_scale` in the config enlarges it). It never takes focus from the game and needs borderless or windowed mode. Build: each item's win rate and its Δ vs each enemy, one column per lane (enemy icons on top); boots and item slots you've already filled are hidden; hover an item or row for details. Players: rank and season win rate, games/win rate/KDA on the champion they're playing (from their last ~20 games), last 10 results, and tags like "First time" or "3 losses in a row", read from the League client when the game starts.
 
 ## Settings
-Tray → Settings (or the gear in the panel header). Saved changes apply immediately. They live in `config.toml` (installed copy in `%LOCALAPPDATA%\league-analysis\`), which also holds what the window doesn't cover:
+Tray → Settings (or the gear in the panel's title bar). Saved changes apply immediately. They live in `config.toml` (installed copy in `%LOCALAPPDATA%\league-analysis\`), which also holds what the window doesn't cover:
 
 | Key | Default | |
 |---|---|---|
@@ -180,5 +186,5 @@ update feed) plus the portable zip.
 | `draft/` | `controller.py` + `state.py` (client updates → the two screens), `engine.py` + `scoring.py` (candidates and scores), `views.py` (screen payloads) |
 | `desktop/` | Tray icon, auto-updates, settings window, placing the windows (the panel's 16:9 resize lock, the in-game window over the game) |
 | `data/` | League client (`lcu.py`), lolalytics, Data Dragon, fetcher/cache, `store.py` (SQLite of drafts and games), `leaderboard.py` (best players on a champion, prototype) |
-| `panel/` | The panel UI: `index.html` (client screen; `js/matrix.js` is champ select's comparison table) and `game.html` (in game); `index.html?demo` and `game.html?demo` run in a browser |
+| `panel/` | The panel UI: `index.html` (client screen; `views/draftbar.js` is the team strip, `js/matrix.js` champ select's ranked tables) and `game.html` (in game); `index.html?demo` and `game.html?demo` run in a browser |
 | `scripts/` | `simulate_views.py` (README screenshots), `render_panel.py`, `make_icon.py` |
