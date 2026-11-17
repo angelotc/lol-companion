@@ -7,7 +7,7 @@ use crate::engine::controller::Controller;
 use crate::engine::views::{ExploreChampView, ExploreReportView};
 
 use crate::images::ImageCache;
-use crate::ui::theme::{BG, BG2, DIM, GOLD, LINE, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, TEXT2, fmt_signed, strong, strong_font};
+use crate::ui::theme::{ACCENT, BG, BG2, DIM, LINE, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, TEXT2, fmt_signed, strong, strong_font};
 
 pub struct ExploreUiState {
     pub role: String,
@@ -132,7 +132,7 @@ pub fn render_explore(
                                 .strong()
                                 .color(if on { BG } else { MUTED }),
                         )
-                        .fill(if on { GOLD } else { Color32::TRANSPARENT })
+                        .fill(if on { ACCENT } else { Color32::TRANSPARENT })
                         .stroke(Stroke::NONE)
                         .min_size(Vec2::new(44.0, 22.0))
                         .corner_radius(CornerRadius::same(13));
@@ -229,10 +229,10 @@ fn render_explore_list(ui: &mut Ui, rep: &ExploreReportView, selected: &mut Opti
             let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
             if resp.clicked() { *selected = Some(c.champ.id); }
             if on || resp.hovered() {
-                ui.painter().rect_filled(row.shrink(1.0), CornerRadius::same(4), if on { Color32::from_rgba_unmultiplied(0xE6, 0xB8, 0x5C, 22) } else { RAISED });
+                ui.painter().rect_filled(row.shrink(1.0), CornerRadius::same(4), if on { Color32::from_rgba_unmultiplied(ACCENT.r(), ACCENT.g(), ACCENT.b(), 22) } else { RAISED });
             }
             if on {
-                ui.painter().rect_stroke(row.shrink(1.0), CornerRadius::same(4), Stroke::new(1.0, GOLD.gamma_multiply(0.55)), egui::StrokeKind::Inside);
+                ui.painter().rect_stroke(row.shrink(1.0), CornerRadius::same(4), Stroke::new(1.0, ACCENT.gamma_multiply(0.55)), egui::StrokeKind::Inside);
             }
             let p = ui.painter();
             p.text(Pos2::new(row.left() + 8.0, row.center().y), Align2::CENTER_CENTER, (i + 1).to_string(), FontId::proportional(11.0), DIM);
@@ -240,7 +240,7 @@ fn render_explore_list(ui: &mut Ui, rep: &ExploreReportView, selected: &mut Opti
             let mut icon_ui = ui.new_child(egui::UiBuilder::new().max_rect(icon));
             imgs.paint_icon(&mut icon_ui, &c.champ.name, &c.champ.icon, icon.size(), 4.0, Color32::WHITE);
             let name_rect = Rect::from_min_max(Pos2::new(row.left() + 60.0, row.top()), Pos2::new(row.right() - 122.0, row.bottom()));
-            ui.painter_at(name_rect).text(name_rect.left_center(), Align2::LEFT_CENTER, &c.champ.name, strong_font(13.0), if on { GOLD } else { TEXT });
+            ui.painter_at(name_rect).text(name_rect.left_center(), Align2::LEFT_CENTER, &c.champ.name, strong_font(13.0), if on { ACCENT } else { TEXT });
             ui.painter().text(Pos2::new(row.right() - 74.0, row.center().y), Align2::RIGHT_CENTER, fmt_signed(c.base, 1), strong_font(12.5), if c.base > 0.0 { POS } else { NEG });
             ui.painter().text(Pos2::new(row.right() - 6.0, row.center().y), Align2::RIGHT_CENTER, fmt_signed(c.tail, 1), strong_font(12.5), if c.tail < 0.0 { NEG } else { POS });
             resp.on_hover_text(format!("{} · blind score {}", c.champ.name, fmt_signed(c.score, 2)));
@@ -430,7 +430,7 @@ fn render_scatter(
         imgs.paint_icon(&mut sub, &c.champ.name, &c.champ.icon, Vec2::splat(pt_sz), pt_sz * 0.5, Color32::WHITE);
 
         if on {
-            ui.painter().circle_stroke(pt_rect.center(), pt_sz * 0.52, Stroke::new(2.5, GOLD));
+            ui.painter().circle_stroke(pt_rect.center(), pt_sz * 0.52, Stroke::new(2.5, ACCENT));
         } else if resp.hovered() {
             ui.painter().circle_stroke(pt_rect.center(), pt_sz * 0.53, Stroke::new(2.0, TEXT));
         } else if good {
@@ -482,7 +482,7 @@ fn render_scatter(
         let emphasized = on || Some(c.champ.id) == hovered;
         let (_, pt_rect) = pt_boxes[idx];
         let font = if emphasized { strong_font(11.0) } else { FontId::proportional(10.0) };
-        let galley = ui.painter().layout_no_wrap(c.champ.name.clone(), font, if on { GOLD } else { TEXT });
+        let galley = ui.painter().layout_no_wrap(c.champ.name.clone(), font, if on { ACCENT } else { TEXT });
         let lw = galley.rect.width() + 4.0;
         let lh = galley.rect.height() + 2.0;
 
@@ -507,7 +507,7 @@ fn render_scatter(
             if emphasized {
                 ui.painter().rect_filled(lr.expand(1.0), CornerRadius::same(3), BG);
             }
-            ui.painter().galley(Pos2::new(lr.left() + 2.0, lr.top() + 1.0), galley, if on { GOLD } else { TEXT });
+            ui.painter().galley(Pos2::new(lr.left() + 2.0, lr.top() + 1.0), galley, if on { ACCENT } else { TEXT });
             placed.push(lr);
         }
     }
@@ -518,14 +518,14 @@ fn render_explore_detail(ui: &mut Ui, d: &ExploreChampView, med: f64, imgs: &mut
     let safe = d.tail >= med;
     let (verdict, vcol) = match (above_average, safe) {
         (true, true) => ("Safe to pick blind", POS),
-        (true, false) => ("Strong, but wait for their pick", GOLD),
+        (true, false) => ("Strong, but wait for their pick", ACCENT),
         (false, true) => ("Safe fallback, below avg strength", MUTED),
         (false, false) => ("Avoid picking blind", NEG),
     };
 
     egui::Frame::new()
         .fill(PANEL)
-        .stroke(Stroke::new(1.0, GOLD))
+        .stroke(Stroke::new(1.0, ACCENT))
         .corner_radius(CornerRadius::same(8))
         .inner_margin(egui::Margin::same(10))
         .show(ui, |ui| {

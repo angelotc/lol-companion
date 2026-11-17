@@ -10,7 +10,7 @@ use crate::ui::bans_view::render_bans;
 use crate::ui::build_view::{BuildUiState, render_build};
 use crate::ui::explore_view::{ExploreUiState, render_explore};
 use crate::ui::picks_view::{PicksUiState, render_best_picks, render_blind_picks};
-use crate::ui::theme::{AD, ALLY, ALLY_TEXT, AP, BG, BG2, DIM, ENEMY, ENEMY_TEXT, GOLD, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, fmt_signed, short_lane, strong};
+use crate::ui::theme::{ACCENT, AD, ALLY, ALLY_TEXT, AP, BG, BG2, CORAL, DIM, ENEMY, ENEMY_TEXT, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, fmt_signed, short_lane, strong};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DraftTab {
@@ -64,7 +64,7 @@ pub fn render_client(
         .inner_margin(egui::Margin::symmetric(14, 7))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.label(strong("LOL COMPANION").size(12.5).color(GOLD));
+                ui.label(strong("LOL COMPANION").size(12.5).color(ACCENT));
                 let mut parts = Vec::new();
                 if !s.header.role.is_empty() && !(s.explore && s.picks.is_none()) {
                     parts.push(cap_first(&s.header.role));
@@ -101,7 +101,7 @@ pub fn render_client(
                             format!("{} · {}", s.message, s.detail)
                         };
                         ui.label(RichText::new(txt).size(11.0).color(MUTED));
-                        let dot_col = if s.status == "error" { NEG } else { GOLD };
+                        let dot_col = if s.status == "error" { NEG } else { ACCENT };
                         let (r, _) = ui.allocate_exact_size(Vec2::splat(7.0), Sense::hover());
                         ui.painter().circle_filled(r.center(), 3.5, dot_col);
                     } else if !s.updated_hms.is_empty() && s.picks.is_some() {
@@ -199,7 +199,7 @@ pub fn render_client(
                                 ui.label(
                                     RichText::new(num)
                                         .size(11.0)
-                                        .color(if active { GOLD } else if enabled { MUTED } else { DIM }),
+                                        .color(if active { ACCENT } else if enabled { MUTED } else { DIM }),
                                 );
                                 ui.label(
                                     strong(lbl)
@@ -209,7 +209,7 @@ pub fn render_client(
                                 );
                                 if is_auto {
                                     egui::Frame::new()
-                                        .fill(GOLD)
+                                        .fill(CORAL)
                                         .corner_radius(CornerRadius::same(8))
                                         .inner_margin(egui::Margin::symmetric(6, 1))
                                         .show(ui, |ui| {
@@ -224,7 +224,7 @@ pub fn render_client(
                                 let y = resp.rect.bottom() + 4.0;
                                 ui.painter().line_segment(
                                     [egui::pos2(resp.rect.left(), y), egui::pos2(resp.rect.right(), y)],
-                                    Stroke::new(2.0, GOLD),
+                                    Stroke::new(2.0, ACCENT),
                                 );
                             }
                             if resp.clicked() && enabled {
@@ -465,7 +465,7 @@ fn paint_ally_slot(ui: &mut Ui, slot: Option<&AllySlotView>, idx: usize, imgs: &
     let default_lanes = ["TOP", "JG", "MID", "BOT", "SUP"];
     ui.allocate_ui_with_layout(Vec2::new(42.0, 58.0), Layout::top_down(Align::Center), |ui| {
         if let Some(a) = slot {
-            let border = if a.is_me { GOLD } else { ALLY };
+            let border = if a.is_me { ACCENT } else { ALLY };
             let tint = if a.tentative {
                 Color32::from_rgba_unmultiplied(255, 255, 255, 145)
             } else {
@@ -477,7 +477,7 @@ fn paint_ally_slot(ui: &mut Ui, slot: Option<&AllySlotView>, idx: usize, imgs: &
                 let mut sub = ui.new_child(egui::UiBuilder::new().max_rect(rect.shrink(2.0)));
                 imgs.paint_icon(&mut sub, &a.champ.name, &a.champ.icon, Vec2::splat(40.0), 5.0, tint);
             } else if a.is_me {
-                ui.painter().text(rect.center(), egui::Align2::CENTER_CENTER, "YOU", egui::FontId::proportional(10.0), GOLD);
+                ui.painter().text(rect.center(), egui::Align2::CENTER_CENTER, "YOU", egui::FontId::proportional(10.0), ACCENT);
             }
             ui.painter().rect_stroke(rect, CornerRadius::same(6), Stroke::new(1.5, border), egui::StrokeKind::Inside);
             let cap = if a.is_me && !a.champ.icon.is_empty() {
@@ -485,7 +485,7 @@ fn paint_ally_slot(ui: &mut Ui, slot: Option<&AllySlotView>, idx: usize, imgs: &
             } else {
                 format!("{}{}", short_lane(&a.lane), if a.tentative && !a.is_me { "?" } else { "" })
             };
-            ui.label(RichText::new(cap).size(9.5).strong().color(if a.is_me { GOLD } else { MUTED }));
+            ui.label(RichText::new(cap).size(9.5).strong().color(if a.is_me { ACCENT } else { MUTED }));
             resp.on_hover_text(if a.champ.name.is_empty() {
                 format!("You ({})", a.lane)
             } else {
@@ -511,7 +511,7 @@ fn paint_enemy_slot(
     let mut clicked = false;
     ui.allocate_ui_with_layout(Vec2::new(46.0, 64.0), Layout::top_down(Align::Center), |ui| {
         if let Some(e) = slot {
-            let border = if selected { GOLD } else { ENEMY };
+            let border = if selected { ACCENT } else { ENEMY };
             let (rect, resp) = ui.allocate_exact_size(Vec2::splat(44.0), Sense::click());
             ui.painter().rect_filled(rect, CornerRadius::same(6), RAISED);
             let mut sub = ui.new_child(egui::UiBuilder::new().max_rect(rect.shrink(2.0)));
@@ -520,7 +520,7 @@ fn paint_enemy_slot(
             let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
             clicked = resp.clicked();
             let cap = format!("{}{}", short_lane(&e.lane), if e.flex && !e.manual { "?" } else { "" });
-            let cap_col = if e.manual { TEXT } else if e.flex { GOLD } else { MUTED };
+            let cap_col = if e.manual { TEXT } else if e.flex { ACCENT } else { MUTED };
             ui.label(RichText::new(cap).size(9.5).strong().color(cap_col));
             resp.on_hover_text(format!("{} ({}) · click to set lane", e.champ.name, e.lane));
         } else {
@@ -587,7 +587,7 @@ fn render_odds(ui: &mut Ui, o: Option<&OddsView>, note: &str) {
                         });
                 }
                 if !note.is_empty() {
-                    ui.label(RichText::new(note).size(10.0).color(GOLD));
+                    ui.label(RichText::new(note).size(10.0).color(ACCENT));
                 }
             });
         } else {

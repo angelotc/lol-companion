@@ -74,6 +74,9 @@ struct Cli {
     gold: f64,
     #[arg(long)]
     screenshot: Option<PathBuf>,
+    /// Capture the Settings window instead of the main panel.
+    #[arg(long, requires = "screenshot")]
+    screenshot_settings: bool,
 }
 
 enum AppSignal {
@@ -99,8 +102,16 @@ struct SharedUi {
     last_game_place: Mutex<Option<win32::Placement>>,
     always_show: bool,
     screenshot: Mutex<Option<PathBuf>>,
+    screenshot_settings: bool,
     screenshot_sent: AtomicBool,
+    screenshot_ready_at: Mutex<Option<std::time::Instant>>,
     started_at: std::time::Instant,
+}
+
+fn prepare_screenshot(ctx: &egui::Context, shared: &SharedUi) {
+    if shared.screenshot.lock().unwrap().is_some() {
+        ctx.input_mut(|input| input.pointer = Default::default());
+    }
 }
 
 fn check_screenshot(ctx: &egui::Context, shared: &SharedUi, ready: bool) {
@@ -126,7 +137,16 @@ fn check_screenshot(ctx: &egui::Context, shared: &SharedUi, ready: bool) {
         std::process::exit(0);
     }
     if shared.screenshot.lock().unwrap().is_some() {
-        if ready && shared.started_at.elapsed() >= Duration::from_secs(6) {
+        let settled = {
+            let mut ready_at = shared.screenshot_ready_at.lock().unwrap();
+            if ready {
+                ready_at.get_or_insert_with(std::time::Instant::now).elapsed() >= Duration::from_secs(2)
+            } else {
+                *ready_at = None;
+                false
+            }
+        };
+        if settled && shared.started_at.elapsed() >= Duration::from_secs(6) {
             if !shared.screenshot_sent.swap(true, Ordering::Relaxed) {
                 ctx.send_viewport_cmd(ViewportCommand::Screenshot(Default::default()));
             }
@@ -222,6 +242,7 @@ impl CompanionApp {
 
 impl eframe::App for CompanionApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        prepare_screenshot(ctx, &self.shared);
         if !self.initialized {
             self.initialized = true;
             *self.shared.egui_ctx.lock().unwrap() = Some(ctx.clone());
@@ -316,12 +337,15 @@ impl eframe::App for CompanionApp {
             let panel_ready = matches!(
                 &self.cached_screen,
                 ScreenUpdate::Client(c)
-                    if c.bans.is_some()
+                    if (c.bans.is_some()
                         || c.picks.is_some()
                         || c.build.is_some()
-                        || (c.explore && self.client_ui.explore.report.is_some())
+                        || (c.explore && self.client_ui.explore.report.is_some()))
+                        && (c.stage != crate::domain::state::Stage::Locked || c.build.is_some())
             );
-            check_screenshot(ctx, &self.shared, panel_ready);
+            if !self.shared.screenshot_settings {
+                check_screenshot(ctx, &self.shared, panel_ready);
+            }
         }
         if open_settings {
             let mut st = self.shared.settings_ui.lock().unwrap();
@@ -355,6 +379,7 @@ impl eframe::App for CompanionApp {
             .with_position([place.x as f32 / dpi, place.y as f32 / dpi]);
         let shared_ig = Arc::clone(&self.shared);
         ctx.show_viewport_deferred(ViewportId::from_hash_of("ingame_overlay"), builder, move |ctx, _| {
+            prepare_screenshot(ctx, &shared_ig);
             if shared_ig.game_hwnd.load(Ordering::Relaxed) == 0 {
                 let hwnd = win32::find_window_by_title(GAME_TITLE);
                 if hwnd != 0 {
@@ -372,7 +397,9 @@ impl eframe::App for CompanionApp {
                 egui::CentralPanel::default().show(ctx, |ui| {
                     render_game_overlay(ui, &g, &mut imgs);
                 });
-                check_screenshot(ctx, &shared_ig, true);
+                if !shared_ig.screenshot_settings {
+                    check_screenshot(ctx, &shared_ig, g.build.is_some() || g.build_note != "Loading build...");
+                }
             }
         });
 
@@ -385,6 +412,7 @@ impl eframe::App for CompanionApp {
                 .with_min_inner_size([420.0, 340.0]);
             let shared_st = Arc::clone(&self.shared);
             ctx.show_viewport_deferred(ViewportId::from_hash_of("settings_win"), builder, move |ctx, _| {
+                prepare_screenshot(ctx, &shared_st);
                 let mut st = shared_st.settings_ui.lock().unwrap();
                 if ctx.input(|i| i.viewport().close_requested()) {
                     st.open = false;
@@ -392,6 +420,9 @@ impl eframe::App for CompanionApp {
                 egui::CentralPanel::default().show(ctx, |ui| {
                     render_settings(ui, &mut st, &shared_st.ctl);
                 });
+                if shared_st.screenshot_settings {
+                    check_screenshot(ctx, &shared_st, true);
+                }
             });
         }
     }
@@ -505,7 +536,17 @@ fn spawn_tracker_and_tray(
             let (placement, focused) = if want_game {
                 let scale = shared.ctl.config_snapshot().ingame_scale as f32;
                 if shared.always_show {
-                    (Some(win32::place_ingame(win32::primary_work_area(), scale)), true)
+                    let area = win32::primary_work_area();
+                    let mut place = win32::place_ingame(area, scale);
+                    if shared.screenshot.lock().unwrap().is_some() {
+                        // Capture the complete roster and build regardless of the monitor's overlay size.
+                        let dpi = win32::dpi_scale(place).max(1.0);
+                        place.x = area.left;
+                        place.y = area.top;
+                        place.width = (592.0 * dpi).round() as i32;
+                        place.height = (650.0 * dpi).round() as i32;
+                    }
+                    (Some(place), true)
                 } else {
                     let game = win32::find_game();
                     if game == 0 || win32::is_minimized(game) {
@@ -788,13 +829,15 @@ fn main() {
         None
     };
 
+    let mut settings_ui = SettingsUiState::new(cfg_path, ver_lbl);
+    settings_ui.open = cli.screenshot_settings;
     let shared = Arc::new(SharedUi {
         ctl: Arc::clone(&ctl),
         updater: updater.clone(),
         tray: tray_slot,
         imgs: Mutex::new(ImageCache::new()),
         latest_game: Mutex::new(None),
-        settings_ui: Mutex::new(SettingsUiState::new(cfg_path, ver_lbl)),
+        settings_ui: Mutex::new(settings_ui),
         egui_ctx: Mutex::new(None),
         panel_hwnd: AtomicIsize::new(0),
         game_hwnd: AtomicIsize::new(0),
@@ -803,7 +846,9 @@ fn main() {
         last_game_place: Mutex::new(None),
         always_show,
         screenshot: Mutex::new(cli.screenshot.clone()),
+        screenshot_settings: cli.screenshot_settings,
         screenshot_sent: AtomicBool::new(false),
+        screenshot_ready_at: Mutex::new(None),
         started_at: std::time::Instant::now(),
     });
 

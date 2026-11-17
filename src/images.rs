@@ -142,7 +142,7 @@ impl ImageCache {
         if ui.is_rect_visible(rect) {
             let p = ui.painter();
             let cr = CornerRadius::same(rounding.round().clamp(0.0, 255.0) as u8);
-            p.rect_filled(rect, cr, Color32::from_rgb(0x1B, 0x22, 0x2B));
+            p.rect_filled(rect, cr, crate::ui::theme::RAISED);
             if let Some(tex) = self.get(url) {
                 let tid = tex.id();
                 egui::Image::from_texture((tid, size))
@@ -160,7 +160,7 @@ impl ImageCache {
                     egui::Align2::CENTER_CENTER,
                     if abbr.is_empty() { "?" } else { &abbr },
                     egui::FontId::proportional((size.y * 0.42).max(9.0)),
-                    Color32::from_rgb(0xE6, 0xB8, 0x5C),
+                    crate::ui::theme::ACCENT,
                 );
             }
         }

@@ -1,4 +1,21 @@
+<div align="center">
+
+<img src="assets/icon.png" width="128" height="128" alt="LoL Companion icon">
+
 # LoL Companion
+
+### Your draft, with the numbers behind it.
+
+**Find your best pick**, understand the matchup, and plan your build.<br>
+One native Windows app, from champ select to the final item.
+
+[![Download for Windows](https://img.shields.io/badge/Download-Windows-ff8a72?style=for-the-badge&labelColor=211a2e)](https://github.com/angelotc/lol-companion/releases/latest/download/LoLCompanion-win-Setup.exe)&nbsp;&nbsp;
+[![Portable ZIP](https://img.shields.io/badge/Portable-ZIP-c4b5fd?style=for-the-badge&labelColor=211a2e)](https://github.com/angelotc/lol-companion/releases/latest/download/LoLCompanion.zip)&nbsp;&nbsp;
+[![Read the guide](https://img.shields.io/badge/Read-Guide-c4b5fd?style=for-the-badge&labelColor=211a2e)](#use)
+
+</div>
+
+---
 
 A window that ranks your best picks in champ select, using matchup and synergy stats, your team and
 theirs, and your own record. It is one 16:9 window that shows the blind-pick explorer between games
@@ -7,7 +24,10 @@ shows your build beside all 10 players.
 
 ![Champ select, best picks: your best picks top to bottom, every matchup and synergy beside them](docs/views/picks.png)
 
-The screenshots show the native Windows app using draft replays and a simulated match.
+The screenshots preview the lavender, coral, and plum theme across the native Windows app,
+using draft replays and a simulated match. Lavender marks selections and navigation; coral
+highlights the current draft stage and next purchase. Team colors and positive/negative scores
+keep their familiar meaning.
 
 ## Install
 Download **[LoLCompanion-win-Setup.exe](https://github.com/angelotc/lol-companion/releases/latest/download/LoLCompanion-win-Setup.exe)**
@@ -105,6 +125,9 @@ portrait, or a row in the best blind picks list, for its verdict and worst count
 - **In game** (Ctrl+X hides it) one window pinned to the game's right edge shows the players and your build side by side; it grows with the game's resolution (`ingame_scale` in the config enlarges it). It never takes focus from the game and needs borderless or windowed mode. Build: each item's win rate and its Δ vs each enemy, one column per lane (enemy icons on top); boots and item slots you've already filled are hidden; hover an item or row for details. Players: rank and season win rate, games/win rate/KDA on the champion they're playing (from their last ~20 games), last 10 results, and tags like "First time" or "3 losses in a row", read from the League client when the game starts.
 
 ## Settings
+
+<img src="docs/views/settings.png" width="480" alt="Settings in the plum and lavender theme">
+
 Tray → Settings (or the gear in the panel's title bar). Saved changes apply immediately. They live in `config.toml` (installed copy in `%LOCALAPPDATA%\league-analysis\`), which also holds what the window doesn't cover:
 
 | Key | Default | |
@@ -187,6 +210,10 @@ cargo test
 cargo build --release
 cargo install --path . --force
 ```
+
+To refresh all seven README screenshots on Windows, run `cargo build`, then
+`powershell -File scripts/capture-readme.ps1`. The script seeds a separate preview data
+folder from your existing cache and captures the app without using your live settings.
 
 Every push to `main` runs `cargo test`, builds the release binary, and publishes version `0.1.<run>` (Velopack installer + update feed) plus the portable zip.
 

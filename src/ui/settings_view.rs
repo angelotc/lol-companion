@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::domain::config::{SettingsValues, load_config_strict, save_settings_form};
 use crate::engine::controller::Controller;
 
-use crate::ui::theme::{GOLD, MUTED, NEG, POS, TEXT};
+use crate::ui::theme::{ACCENT, MUTED, NEG, POS, TEXT};
 use crate::win32;
 
 pub struct SettingsUiState {
@@ -56,7 +56,7 @@ impl SettingsUiState {
 }
 
 pub fn render_settings(ui: &mut Ui, st: &mut SettingsUiState, ctl: &Arc<Controller>) {
-    ui.label(RichText::new("Settings").size(16.0).strong().color(GOLD));
+    ui.label(RichText::new("Settings").size(16.0).strong().color(ACCENT));
     ui.label(RichText::new(&st.version_text).size(10.5).color(MUTED));
     ui.add_space(8.0);
     ui.separator();

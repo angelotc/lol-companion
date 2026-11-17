@@ -3,7 +3,7 @@ use egui::{Align, Color32, CornerRadius, Layout, RichText, Sense, Stroke, Ui, Ve
 use crate::engine::views::{BuildSectionView, BuildView, DamageSplitView, OptionView, RuneNodeView, RunePageView};
 
 use crate::images::ImageCache;
-use crate::ui::theme::{AD, AP, BG, BG2, DIM, GOLD, LINE, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, TEXT2, fmt_signed, left_label, strong};
+use crate::ui::theme::{ACCENT, AD, AP, BG, BG2, DIM, LINE, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, TEXT2, fmt_signed, left_label, strong};
 
 #[derive(Default)]
 pub struct BuildUiState {
@@ -251,7 +251,7 @@ fn render_build_footer(ui: &mut Ui, order: &str, offset: f32) {
                         ((ui.available_width() + 4.0) / count as f32 - 4.0).clamp(10.0, 21.0)
                     };
                     for (i, ch) in order.chars().take(15).enumerate() {
-                        let (bg, fg) = if ch == 'R' { (GOLD, BG) } else { (RAISED, TEXT2) };
+                        let (bg, fg) = if ch == 'R' { (ACCENT, BG) } else { (RAISED, TEXT2) };
                         let (cell, _) = ui.allocate_exact_size(Vec2::new(size, 30.0), Sense::hover());
                         let tile = egui::Rect::from_min_size(cell.min, Vec2::new(size, 20.0));
                         let p = ui.painter();
@@ -344,7 +344,7 @@ fn render_rune_card(ui: &mut Ui, d: &BuildView, st: &mut BuildUiState, imgs: &mu
                                             .strong()
                                             .color(if on { BG } else { MUTED }),
                                     )
-                                    .fill(if on { GOLD } else { Color32::TRANSPARENT })
+                                    .fill(if on { ACCENT } else { Color32::TRANSPARENT })
                                     .stroke(Stroke::NONE)
                                     .corner_radius(CornerRadius::same(10));
                                     if ui.add(btn).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
@@ -354,7 +354,7 @@ fn render_rune_card(ui: &mut Ui, d: &BuildView, st: &mut BuildUiState, imgs: &mu
                             });
                         });
                 } else {
-                    ui.label(RichText::new(&page.label).size(11.0).strong().color(GOLD));
+                    ui.label(RichText::new(&page.label).size(11.0).strong().color(ACCENT));
                 }
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     ui.label(

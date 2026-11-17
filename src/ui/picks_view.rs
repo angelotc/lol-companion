@@ -3,7 +3,7 @@ use egui::{Align, Align2, Color32, CornerRadius, FontId, Layout, Pos2, Rangef, R
 use crate::engine::views::{BlindView, ChampRef, ContribView, PicksView, RecView};
 
 use crate::images::ImageCache;
-use crate::ui::theme::{ALLY, DIM, ENEMY, GOLD, LINE, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, TEXT2, fmt_signed, heat_bg, short_lane, strong, strong_font};
+use crate::ui::theme::{ACCENT, ALLY, DIM, ENEMY, LINE, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, TEXT2, fmt_signed, heat_bg, short_lane, strong, strong_font};
 
 #[derive(Default)]
 pub struct PicksUiState {
@@ -339,7 +339,7 @@ pub fn render_best_picks(
             if let Some(locked) = &d.locked {
                 ui.horizontal(|ui| {
                     imgs.paint_icon(ui, &locked.name, &locked.icon, Vec2::splat(18.0), 4.0, Color32::WHITE);
-                    ui.label(strong(format!("Locked in: {}", locked.name)).size(12.0).color(GOLD));
+                    ui.label(strong(format!("Locked in: {}", locked.name)).size(12.0).color(ACCENT));
                     ui.label(RichText::new("picks as they were at lock-in").size(11.0).color(MUTED));
                 });
                 ui.add_space(4.0);
@@ -361,7 +361,7 @@ pub fn render_best_picks(
                     let (group_row, _) = columns.row(ui, group_height, Sense::hover());
                     columns.group(ui, group_row, FIRST_MATCHUP..FIRST_MATCHUP + n_vs, "AGAINST", ENEMY);
                     columns.group(ui, group_row, FIRST_MATCHUP + n_vs..own_idx, "WITH", ALLY);
-                    columns.group(ui, group_row, own_idx..own_idx + 1, "YOU", GOLD);
+                    columns.group(ui, group_row, own_idx..own_idx + 1, "YOU", ACCENT);
 
                     let (header, header_resp) = columns.row(ui, 30.0, Sense::hover());
                     columns.champion_heading(ui, header, "Pick");
@@ -394,8 +394,8 @@ pub fn render_best_picks(
                         if resp.clicked() {
                             state.selected_champ = Some(r.champ.id);
                         }
-                        paint_row(ui, row, selected.then_some(GOLD), resp.hovered(), is_locked);
-                        paint_rank(ui, columns.cell(row, 0), i, if selected { GOLD } else { DIM });
+                        paint_row(ui, row, selected.then_some(ACCENT), resp.hovered(), is_locked);
+                        paint_rank(ui, columns.cell(row, 0), i, if selected { ACCENT } else { DIM });
                         paint_table_champion(ui, imgs, columns.cell(row, 1), &r.champ);
                         table_text(ui, columns.champion_name(row), Align::Min, &r.champ.name, strong_font(14.0), TEXT);
                         let color = if r.score >= 0.0 { POS } else { NEG };
@@ -515,7 +515,7 @@ fn render_pick_detail(
         .inner_margin(egui::Margin::same(12))
         .show(ui, |ui| {
             ui.set_min_size(panel_size - Vec2::splat(26.0));
-            detail_heading(ui, imgs, &r.champ, &kicker, GOLD, &fmt_signed(r.score, 2), sc_col, "win-rate points");
+            detail_heading(ui, imgs, &r.champ, &kicker, ACCENT, &fmt_signed(r.score, 2), sc_col, "win-rate points");
             ui.add_space(8.0);
 
             let best = r
@@ -722,8 +722,8 @@ pub fn render_blind_picks(ui: &mut Ui, d: &PicksView, imgs: &mut ImageCache) {
                 let strength = r.score - r.value - r.synergy;
                 let top = i == 0;
                 let (row, response) = columns.row(ui, 48.0, Sense::hover());
-                paint_row(ui, row, top.then_some(GOLD), false, false);
-                paint_rank(ui, columns.cell(row, 0), i, if top { GOLD } else { DIM });
+                paint_row(ui, row, top.then_some(ACCENT), false, false);
+                paint_rank(ui, columns.cell(row, 0), i, if top { ACCENT } else { DIM });
                 paint_table_champion(ui, imgs, columns.cell(row, 1), &r.champ);
                 table_text(ui, columns.champion_name(row), Align::Min, &r.champ.name, strong_font(14.0), TEXT);
                 let color = if r.score >= 0.0 { POS } else { NEG };
@@ -754,7 +754,7 @@ pub fn render_blind_picks(ui: &mut Ui, d: &PicksView, imgs: &mut ImageCache) {
                 }
 
                 let coverage = columns.cell(row, 8);
-                let color = if r.coverage < 50 { GOLD } else { MUTED };
+                let color = if r.coverage < 50 { ACCENT } else { MUTED };
                 let bar = Rect::from_min_size(
                     Pos2::new(coverage.right() - 79.0, coverage.center().y - 2.0),
                     Vec2::new(38.0, 4.0),

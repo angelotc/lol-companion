@@ -7,7 +7,7 @@ use crate::ui::picks_view::{
     TableColumns, detail_heading, paint_rank, paint_row, paint_score, paint_table_champion, paint_value,
     table_divider, table_icon, table_panel_widths, table_text, table_with_note,
 };
-use crate::ui::theme::{ALLY, DIM, GOLD, LINE, MUTED, NEG, PANEL, RAISED, TEXT, fmt_signed, heat_bg, short_lane, strong, strong_font};
+use crate::ui::theme::{ACCENT, ALLY, DIM, LINE, MUTED, NEG, PANEL, RAISED, TEXT, fmt_signed, heat_bg, short_lane, strong, strong_font};
 
 pub fn render_bans(ui: &mut Ui, d: &BansView, imgs: &mut ImageCache) {
     if d.threats.is_empty() {
@@ -77,7 +77,7 @@ pub fn render_bans(ui: &mut Ui, d: &BansView, imgs: &mut ImageCache) {
                     if !pcols.is_empty() {
                         let group_height = if n_picks <= 2 || n_hovers == 1 { 28.0 } else { 19.0 };
                         let (group_row, _) = columns.row(ui, group_height, Sense::hover());
-                        columns.group(ui, group_row, FIRST_MATCHUP..hovers_start, "YOUR LIKELY PICKS", GOLD);
+                        columns.group(ui, group_row, FIRST_MATCHUP..hovers_start, "YOUR LIKELY PICKS", ACCENT);
                         columns.group(ui, group_row, hovers_start..FIRST_MATCHUP + pcols.len(), "TEAM HOVERS", ALLY);
                     }
 
@@ -123,7 +123,7 @@ pub fn render_bans(ui: &mut Ui, d: &BansView, imgs: &mut ImageCache) {
                         paint_score(ui, columns.cell(row, 2), &format!("{score:.1}"), NEG, (score.abs() / top_score) as f32);
 
                         let (base_bg, base_fg) = if t.strength >= 0.05 {
-                            (GOLD.gamma_multiply(0.12), TEXT)
+                            (ACCENT.gamma_multiply(0.12), TEXT)
                         } else {
                             (RAISED, MUTED)
                         };
@@ -238,7 +238,7 @@ fn render_ban_side(
                     ui.painter().rect_filled(r, CornerRadius::same(3), LINE);
                     let mut fill = r;
                     fill.set_width(r.width() * frac);
-                    ui.painter().rect_filled(fill, CornerRadius::same(3), GOLD);
+                    ui.painter().rect_filled(fill, CornerRadius::same(3), ACCENT);
                 });
             });
             ui.add_space(8.0);

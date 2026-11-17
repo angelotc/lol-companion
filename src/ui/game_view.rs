@@ -4,7 +4,7 @@ use crate::engine::views::{GameScreen, IngameBuildView, PartView, PlayerView, Te
 
 use crate::images::ImageCache;
 use crate::ui::build_view::render_damage_bar;
-use crate::ui::theme::{ALLY, BG, BG2, DIM, ENEMY, GOLD, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, fmt_signed, strong, strong_font, tier_color};
+use crate::ui::theme::{ACCENT, ALLY, BG, BG2, CORAL, DIM, ENEMY, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, fmt_signed, strong, strong_font, tier_color};
 
 fn fmt_clock(secs: i32) -> String {
     let m = secs.max(0) / 60;
@@ -140,13 +140,13 @@ fn render_roster(ui: &mut Ui, teams: &[TeamView], height: f32, imgs: &mut ImageC
 fn render_player_row(ui: &mut Ui, p: &PlayerView, ally: bool, height: f32, imgs: &mut ImageCache) {
     let (card, response) = ui.allocate_exact_size(Vec2::new(ui.available_width(), height), Sense::hover());
     let bg = if p.me {
-        Color32::from_rgba_unmultiplied(0xE6, 0xB8, 0x5C, 28)
+        Color32::from_rgba_unmultiplied(ACCENT.r(), ACCENT.g(), ACCENT.b(), 28)
     } else if ally {
         PANEL
     } else {
-        Color32::from_rgb(0x1C, 0x10, 0x12)
+        Color32::from_rgb(0x2B, 0x20, 0x2F)
     };
-    let accent = if p.me { GOLD } else if ally { ALLY } else { ENEMY };
+    let accent = if p.me { ACCENT } else if ally { ALLY } else { ENEMY };
     ui.painter().rect_filled(card, CornerRadius::same(4), bg);
     ui.painter().rect_filled(
         egui::Rect::from_min_size(card.left_top() + Vec2::new(0.0, 3.0), Vec2::new(2.0, height - 6.0)),
@@ -325,7 +325,7 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
             ui.label(strong(format!("{cname} · Lvl {}", s.level)).size(15.0).color(TEXT));
             ui.horizontal(|ui| {
                 ui.label(RichText::new(fmt_clock(s.time_secs)).size(10.0).color(MUTED));
-                ui.label(strong(format!("{} gold", fmt_k(s.gold))).size(11.5).color(GOLD))
+                ui.label(strong(format!("{} gold", fmt_k(s.gold))).size(11.5).color(ACCENT))
                     .on_hover_text(format!("{} gold available", s.gold));
             });
         });
@@ -364,18 +364,18 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
         let need = (next.gold - s.gold).max(0);
         ui.add_space(3.0);
         egui::Frame::new()
-            .fill(Color32::from_rgba_unmultiplied(0xFF, 0xD7, 0x5F, 17))
-            .stroke(Stroke::new(1.0, GOLD.gamma_multiply(0.5)))
+            .fill(Color32::from_rgba_unmultiplied(CORAL.r(), CORAL.g(), CORAL.b(), 17))
+            .stroke(Stroke::new(1.0, CORAL.gamma_multiply(0.5)))
             .corner_radius(CornerRadius::same(5))
             .inner_margin(egui::Margin::symmetric(6, 4))
             .show(ui, |ui| {
-                ui.label(strong("NEXT PURCHASE").size(9.0).color(GOLD));
+                ui.label(strong("NEXT PURCHASE").size(9.0).color(CORAL));
                 ui.allocate_ui_with_layout(
                     Vec2::new(ui.available_width(), 17.0),
                     Layout::right_to_left(Align::Center),
                     |ui| {
                         let (cost, color) = if need > 0 {
-                            (format!("{} gold more", fmt_k(need)), GOLD)
+                            (format!("{} gold more", fmt_k(need)), CORAL)
                         } else {
                             ("Affordable".into(), POS)
                         };
@@ -394,12 +394,12 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
         ui.add_space(4.0);
         let is_next = sec.state == "next";
         let bg = if is_next {
-            Color32::from_rgba_unmultiplied(0xFF, 0xD7, 0x5F, 18)
+            Color32::from_rgba_unmultiplied(CORAL.r(), CORAL.g(), CORAL.b(), 18)
         } else {
             Color32::TRANSPARENT
         };
         let stroke = if is_next {
-            Stroke::new(1.0, Color32::from_rgba_unmultiplied(0xFF, 0xD7, 0x5F, 140))
+            Stroke::new(1.0, Color32::from_rgba_unmultiplied(CORAL.r(), CORAL.g(), CORAL.b(), 140))
         } else {
             Stroke::NONE
         };
@@ -420,7 +420,7 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
                     ui.label(
                         strong(title)
                             .size(10.0)
-                            .color(if is_next { GOLD } else { MUTED }),
+                            .color(if is_next { CORAL } else { MUTED }),
                     );
                     if !opp_cols.is_empty() && sec.options.iter().any(|o| !o.vs.is_empty()) {
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -501,7 +501,7 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
             for (i, ch) in s.skill_order.chars().take(15).enumerate() {
                 let lvl = i as i32 + 1;
                 let (bg, fg) = if ch == 'R' {
-                    (GOLD, BG)
+                    (ACCENT, BG)
                 } else if lvl < s.level {
                     (BG2, DIM)
                 } else {
