@@ -6,6 +6,7 @@ mod engine;
 mod images;
 mod tray;
 mod ui;
+mod updater;
 mod win32;
 
 use clap::Parser;
@@ -29,11 +30,12 @@ use crate::engine::controller::{Controller, ScreenUpdate};
 use crate::engine::views::GameScreen;
 
 use images::ImageCache;
-use tray::{AppTray, TrayAction, TrayIds};
+use tray::{TrayAction, TrayHandle, TrayIds};
 use ui::client_view::{ClientUiState, render_client};
 use ui::game_view::render_game_overlay;
 use ui::settings_view::{SettingsUiState, render_settings};
 use ui::theme::apply_theme;
+use updater::Updater;
 
 const PANEL_TITLE: &str = "LoL Companion";
 const GAME_TITLE: &str = "LoL Companion — In game";
@@ -78,13 +80,14 @@ enum AppSignal {
     TogglePanel,
     ShowPanel,
     OpenSettings,
-    ToggleAutostart(bool),
     ToggleIngame,
     Quit,
 }
 
 struct SharedUi {
     ctl: Arc<Controller>,
+    updater: Updater,
+    tray: Arc<Mutex<Option<TrayHandle>>>,
     imgs: Mutex<ImageCache>,
     latest_game: Mutex<Option<GameScreen>>,
     settings_ui: Mutex<SettingsUiState>,
@@ -159,7 +162,6 @@ impl SharedUi {
 
 struct CompanionApp {
     shared: Arc<SharedUi>,
-    _tray: Option<AppTray>,
     screen_rx: watch::Receiver<ScreenUpdate>,
     sig_rx: mpsc::UnboundedReceiver<AppSignal>,
     client_ui: ClientUiState,
@@ -171,14 +173,12 @@ struct CompanionApp {
 impl CompanionApp {
     fn new(
         shared: Arc<SharedUi>,
-        tray: Option<AppTray>,
         screen_rx: watch::Receiver<ScreenUpdate>,
         sig_rx: mpsc::UnboundedReceiver<AppSignal>,
     ) -> Self {
         let initial = screen_rx.borrow().clone();
         Self {
             shared,
-            _tray: tray,
             screen_rx,
             sig_rx,
             client_ui: ClientUiState::default(),
@@ -254,11 +254,6 @@ impl eframe::App for CompanionApp {
                     st.reload_from_disk();
                     st.open = true;
                 }
-                AppSignal::ToggleAutostart(on) => {
-                    if let Some(t) = &self._tray {
-                        t.set_autostart_checked(on);
-                    }
-                }
                 AppSignal::ToggleIngame => {
                     let ctl_c = Arc::clone(&self.shared.ctl);
                     tokio::spawn(async move {
@@ -267,6 +262,7 @@ impl eframe::App for CompanionApp {
                 }
                 AppSignal::Quit => {
                     self.quitting = true;
+                    self.shared.updater.apply_on_exit();
                     ctx.send_viewport_cmd(ViewportCommand::Close);
                     std::process::exit(0);
                 }
@@ -418,14 +414,24 @@ fn spawn_tracker_and_tray(
                             sh_m.ensure_panel_visible();
                             let _ = tx_m.send(AppSignal::TogglePanel);
                         }
+                        TrayAction::UpdateClick => {
+                            if sh_m.updater.is_ready() {
+                                sh_m.updater.apply_and_restart();
+                            } else {
+                                sh_m.updater.check_async();
+                            }
+                        }
                         TrayAction::OpenSettings => {
                             sh_m.ensure_panel_visible();
                             let _ = tx_m.send(AppSignal::OpenSettings);
                         }
                         TrayAction::ToggleAutostart(on) => {
-                            let _ = tx_m.send(AppSignal::ToggleAutostart(on));
+                            if let Some(ref t) = *sh_m.tray.lock().unwrap() {
+                                t.set_autostart_checked(on);
+                            }
                         }
                         TrayAction::Quit => {
+                            sh_m.updater.apply_on_exit();
                             let _ = tx_m.send(AppSignal::Quit);
                             std::process::exit(0);
                         }
@@ -720,6 +726,8 @@ async fn run_simulate(ctl: Arc<Controller>, cli: Cli) {
 }
 
 fn main() {
+    updater::startup();
+
     let cli = Cli::parse();
     if cli.simulate && cli.role.is_none() {
         eprintln!("--simulate needs --role");
@@ -759,14 +767,34 @@ fn main() {
     let (ctl, screen_rx) = Controller::new(cfg, store);
     let (sig_tx, sig_rx) = mpsc::unbounded_channel();
 
+    let tray_slot: Arc<Mutex<Option<TrayHandle>>> = Arc::new(Mutex::new(None));
+    let tray_cb = Arc::clone(&tray_slot);
+    let updater = Updater::new(move |st| {
+        if let Some(ref t) = *tray_cb.lock().unwrap() {
+            t.set_update_state(st);
+        }
+    });
+    let ver = updater.current_version();
+    let ver_lbl = if ver == "dev" {
+        format!("Version {} (dev)", env!("CARGO_PKG_VERSION"))
+    } else {
+        format!("Version {ver}")
+    };
+
+    let tray_ids = if let Some((handle, ids)) = tray::spawn_tray(updater.state()) {
+        *tray_slot.lock().unwrap() = Some(handle);
+        Some(ids)
+    } else {
+        None
+    };
+
     let shared = Arc::new(SharedUi {
         ctl: Arc::clone(&ctl),
+        updater: updater.clone(),
+        tray: tray_slot,
         imgs: Mutex::new(ImageCache::new()),
         latest_game: Mutex::new(None),
-        settings_ui: Mutex::new(SettingsUiState::new(
-            cfg_path,
-            format!("Version {}", env!("CARGO_PKG_VERSION")),
-        )),
+        settings_ui: Mutex::new(SettingsUiState::new(cfg_path, ver_lbl)),
         egui_ctx: Mutex::new(None),
         panel_hwnd: AtomicIsize::new(0),
         game_hwnd: AtomicIsize::new(0),
@@ -780,6 +808,7 @@ fn main() {
     });
 
     if live {
+        updater.check_async();
         let tx_show = sig_tx.clone();
         let sh_show = Arc::clone(&shared);
         win32::wait_show_requests(move || {
@@ -796,8 +825,7 @@ fn main() {
     });
     spawn_ctrl_x_listener(Arc::clone(&shared), sig_tx.clone());
 
-    let tray = AppTray::new().ok();
-    spawn_tracker_and_tray(Arc::clone(&shared), tray.as_ref().map(AppTray::ids), sig_tx);
+    spawn_tracker_and_tray(Arc::clone(&shared), tray_ids, sig_tx);
 
     {
         let mut rx = screen_rx.clone();
@@ -853,7 +881,7 @@ fn main() {
         ..Default::default()
     };
 
-    let app = CompanionApp::new(shared, tray, screen_rx, sig_rx);
+    let app = CompanionApp::new(shared, screen_rx, sig_rx);
     if let Err(e) = eframe::run_native(PANEL_TITLE, native_options, Box::new(|_cc| Ok(Box::new(app)))) {
         error!("eframe exited with error: {e}");
     }

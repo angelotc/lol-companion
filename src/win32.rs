@@ -415,7 +415,8 @@ mod imp {
                 return;
             }
             if on {
-                if let Ok(exe) = std::env::current_exe() {
+                let exe = crate::updater::stable_exe_path();
+                if !exe.as_os_str().is_empty() {
                     let cmd = format!("\"{}\"", exe.display());
                     let wcmd = wide(&cmd);
                     RegSetValueExW(
