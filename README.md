@@ -7,6 +7,8 @@ shows your build beside all 10 players.
 
 ![Champ select, best picks: your best picks top to bottom, every matchup and synergy beside them](docs/views/picks.png)
 
+The screenshots show the native Windows app using draft replays and a simulated match.
+
 ## Install
 Download **[LoLCompanion-win-Setup.exe](https://github.com/angelotc/lol-companion/releases/latest/download/LoLCompanion-win-Setup.exe)**
 and run it. It installs for your Windows account (no admin) and updates itself.
@@ -81,7 +83,7 @@ the rest.
 
 ### 2 · In game
 
-<img src="docs/views/ingame.png" width="700" alt="In game: your build beside all 10 players">
+<img src="docs/views/ingame.png" width="592" alt="In game: your build beside all 10 players">
 
 Your build (next item, gold, win rate and Δ vs each enemy lane) beside all 10 players.
 

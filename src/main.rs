@@ -166,7 +166,7 @@ struct CompanionApp {
     sig_rx: mpsc::UnboundedReceiver<AppSignal>,
     client_ui: ClientUiState,
     quitting: bool,
-    theme_applied: bool,
+    initialized: bool,
     cached_screen: ScreenUpdate,
 }
 
@@ -183,7 +183,7 @@ impl CompanionApp {
             sig_rx,
             client_ui: ClientUiState::default(),
             quitting: false,
-            theme_applied: false,
+            initialized: false,
             cached_screen: initial,
         }
     }
@@ -222,9 +222,8 @@ impl CompanionApp {
 
 impl eframe::App for CompanionApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if !self.theme_applied {
-            apply_theme(ctx);
-            self.theme_applied = true;
+        if !self.initialized {
+            self.initialized = true;
             *self.shared.egui_ctx.lock().unwrap() = Some(ctx.clone());
             self.shared.imgs.lock().unwrap().bind_ctx(ctx);
             let shared_c = Arc::clone(&self.shared);
@@ -893,7 +892,10 @@ fn main() {
     };
 
     let app = CompanionApp::new(shared, screen_rx, sig_rx);
-    if let Err(e) = eframe::run_native(PANEL_TITLE, native_options, Box::new(|_cc| Ok(Box::new(app)))) {
+    if let Err(e) = eframe::run_native(PANEL_TITLE, native_options, Box::new(|cc| {
+        apply_theme(&cc.egui_ctx);
+        Ok(Box::new(app))
+    })) {
         error!("eframe exited with error: {e}");
     }
 }

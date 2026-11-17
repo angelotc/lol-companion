@@ -69,7 +69,8 @@ pub fn render_settings(ui: &mut Ui, st: &mut SettingsUiState, ctl: &Arc<Controll
     }
     ui.add_space(8.0);
 
-    ui.checkbox(&mut st.comfort_only, "Only recommend champions you've played or have mastery on");
+    ui.checkbox(&mut st.comfort_only, "Only recommend champions you've played or have mastery on")
+        .on_hover_cursor(egui::CursorIcon::PointingHand);
     ui.add_space(8.0);
 
     ui.label(RichText::new("Record and mastery weight (0 = off, up to 2)").size(12.0).color(TEXT));
@@ -92,7 +93,7 @@ pub fn render_settings(ui: &mut Ui, st: &mut SettingsUiState, ctl: &Arc<Controll
     }
 
     ui.horizontal(|ui| {
-        if ui.button("Save").clicked() {
+        if ui.button("Save").on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
             let vals = SettingsValues {
                 min_pick_rate: st.min_pick_rate.trim().parse::<f64>().unwrap_or(f64::NAN),
                 comfort_only: st.comfort_only,
@@ -119,15 +120,15 @@ pub fn render_settings(ui: &mut Ui, st: &mut SettingsUiState, ctl: &Arc<Controll
                 }
             }
         }
-        if ui.button("Reset defaults").clicked() {
+        if ui.button("Reset defaults").on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
             st.apply_values(&SettingsValues::defaults());
             st.errors.clear();
         }
-        if ui.button("Open config.toml").clicked() {
+        if ui.button("Open config.toml").on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
             win32::open_file(&st.path);
         }
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-            if ui.button("Close").clicked() {
+            if ui.button("Close").on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
                 st.open = false;
             }
         });

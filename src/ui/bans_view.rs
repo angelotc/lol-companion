@@ -1,9 +1,13 @@
-use egui::{Align, Color32, CornerRadius, Layout, RichText, Sense, Stroke, Ui, Vec2};
+use egui::{Align, Color32, CornerRadius, FontId, Layout, Rect, RichText, Sense, Stroke, Ui, Vec2};
 
 use crate::engine::views::{BansView, ChampRef, ThreatAgainstView, ThreatView};
 
 use crate::images::ImageCache;
-use crate::ui::theme::{ALLY, DIM, GOLD, LINE, LINE2, MUTED, NEG, PANEL, RAISED, TEXT, fmt_signed, heat_bg, left_label, short_lane};
+use crate::ui::picks_view::{
+    TableColumns, detail_heading, paint_rank, paint_row, paint_score, paint_table_champion, paint_value,
+    table_divider, table_icon, table_panel_widths, table_text, table_with_note,
+};
+use crate::ui::theme::{ALLY, DIM, GOLD, LINE, MUTED, NEG, PANEL, RAISED, TEXT, fmt_signed, heat_bg, short_lane, strong, strong_font};
 
 pub fn render_bans(ui: &mut Ui, d: &BansView, imgs: &mut ImageCache) {
     if d.threats.is_empty() {
@@ -13,7 +17,7 @@ pub fn render_bans(ui: &mut Ui, d: &BansView, imgs: &mut ImageCache) {
         return;
     }
 
-    let sel_id = ui.data_mut(|data| {
+    let mut sel_id = ui.data_mut(|data| {
         let id = egui::Id::new("bans_sel");
         let cur = data.get_temp::<i32>(id);
         if cur.is_some_and(|cid| d.threats.iter().any(|t| t.champ.id == cid)) {
@@ -56,198 +60,106 @@ pub fn render_bans(ui: &mut Ui, d: &BansView, imgs: &mut ImageCache) {
         .map(|t| t.pick_rate)
         .fold(1.0_f64, f64::max);
 
-    let avail_w = ui.available_width();
-    let avail_h = ui.available_height();
-    let side_w = (avail_w * 0.31).clamp(260.0, 340.0);
-    let main_w = (avail_w - side_w - 14.0).max(340.0);
-    let cell_w = if pcols.len() >= 8 { 42.0 } else { 48.0 };
+    let (main_w, side_w, gap) = table_panel_widths(ui);
+    let height = ui.available_height();
 
     ui.horizontal_top(|ui| {
-        ui.allocate_ui_with_layout(
-            Vec2::new(main_w, avail_h),
-            Layout::top_down(Align::Min),
-            |ui| {
-                let tbl_h = (avail_h - 26.0).max(120.0);
-                ui.allocate_ui(Vec2::new(main_w, tbl_h), |ui| {
-                    egui::ScrollArea::both().id_salt("bans_tbl").show(ui, |ui| {
-                        // Grouped header strip: YOUR LIKELY PICKS | TEAM HOVERS
-                        if n_picks > 0 || n_hovers > 0 {
-                            ui.horizontal(|ui| {
-                                ui.add_space(22.0 + 132.0 + 70.0 + 50.0);
-                                if n_picks > 0 {
-                                    let w = n_picks as f32 * cell_w + (n_picks.saturating_sub(1) as f32) * 8.0;
-                                    let (r, _) = ui.allocate_exact_size(Vec2::new(w, 16.0), Sense::hover());
-                                    ui.painter().text(r.left_center(), egui::Align2::LEFT_CENTER, "YOUR LIKELY PICKS", egui::FontId::proportional(9.5), MUTED);
-                                    ui.painter().line_segment(
-                                        [egui::pos2(r.left(), r.bottom() - 1.0), egui::pos2(r.right(), r.bottom() - 1.0)],
-                                        Stroke::new(1.5, LINE2),
-                                    );
-                                }
-                                if n_picks > 0 && n_hovers > 0 {
-                                    ui.add_space(6.0);
-                                }
-                                if n_hovers > 0 {
-                                    let w = n_hovers as f32 * cell_w + (n_hovers.saturating_sub(1) as f32) * 8.0;
-                                    let (r, _) = ui.allocate_exact_size(Vec2::new(w, 16.0), Sense::hover());
-                                    ui.painter().text(r.left_center(), egui::Align2::LEFT_CENTER, "TEAM HOVERS", egui::FontId::proportional(9.5), ALLY);
-                                    ui.painter().line_segment(
-                                        [egui::pos2(r.left(), r.bottom() - 1.0), egui::pos2(r.right(), r.bottom() - 1.0)],
-                                        Stroke::new(1.5, ALLY),
-                                    );
-                                }
-                            });
+        ui.allocate_ui_with_layout(Vec2::new(main_w, height), Layout::top_down(Align::Min), |ui| {
+            table_with_note(
+                ui,
+                "bans_tbl",
+                "Each cell is how that pick's win rate moves against the ban candidate, discounted for small samples and weighted by lane. Coral means it beats that pick, which is what makes it worth banning.",
+                |ui| {
+                    const FIRST_MATCHUP: usize = 4;
+                    let hovers_start = FIRST_MATCHUP + n_picks;
+                    let groups = if n_picks > 0 && n_hovers > 0 { &[hovers_start][..] } else { &[] };
+                    let columns = TableColumns::matchups(ui.available_width(), pcols.len() + 1, groups);
+                    if !pcols.is_empty() {
+                        let group_height = if n_picks <= 2 || n_hovers == 1 { 28.0 } else { 19.0 };
+                        let (group_row, _) = columns.row(ui, group_height, Sense::hover());
+                        columns.group(ui, group_row, FIRST_MATCHUP..hovers_start, "YOUR LIKELY PICKS", GOLD);
+                        columns.group(ui, group_row, hovers_start..FIRST_MATCHUP + pcols.len(), "TEAM HOVERS", ALLY);
+                    }
+
+                    let (header, header_resp) = columns.row(ui, 30.0, Sense::hover());
+                    columns.champion_heading(ui, header, "Ban");
+                    columns.heading(ui, header, 2, "Threat", Align::Max);
+                    columns.heading(ui, header, 3, "Base", Align::Center);
+                    for (idx, (champ, is_pick, lane)) in pcols.iter().enumerate() {
+                        let col = FIRST_MATCHUP + idx;
+                        let cell = columns.cell(header, col);
+                        table_icon(ui, imgs, champ, Rect::from_center_size(cell.center(), Vec2::splat(26.0)), Color32::WHITE);
+                        let tip = if *is_pick {
+                            format!("{}, one of your likely picks", champ.name)
+                        } else {
+                            format!("{}, {} hover", champ.name, short_lane(lane))
+                        };
+                        ui.interact(cell, header_resp.id.with(col), Sense::hover()).on_hover_text(tip);
+                    }
+                    table_divider(ui, header);
+
+                    for (i, t) in d.threats.iter().enumerate() {
+                        let selected = t.champ.id == sel_id;
+                        let (row, resp) = columns.row(ui, 55.0, Sense::click());
+                        let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
+                        if resp.clicked() {
+                            sel_id = t.champ.id;
+                            ui.data_mut(|data| data.insert_temp(egui::Id::new("bans_sel"), sel_id));
                         }
+                        paint_row(ui, row, selected.then_some(NEG), resp.hovered(), false);
+                        paint_rank(ui, columns.cell(row, 0), i, if selected { NEG } else { DIM });
+                        paint_table_champion(ui, imgs, columns.cell(row, 1), &t.champ);
+                        let name = columns.champion_name(row);
+                        table_text(ui, name.with_max_y(row.top() + 44.0), Align::Min, &t.champ.name, strong_font(14.0), TEXT);
+                        table_text(
+                            ui,
+                            name.with_min_y(row.top() + 26.0),
+                            Align::Min,
+                            &format!("{} · picked {:.1}%", short_lane(&t.lane), t.pick_rate),
+                            FontId::proportional(11.0),
+                            MUTED,
+                        );
+                        let score = t.score * 10.0;
+                        paint_score(ui, columns.cell(row, 2), &format!("{score:.1}"), NEG, (score.abs() / top_score) as f32);
 
-                        // Column headers + portrait icons
-                        ui.horizontal(|ui| {
-                            ui.add_sized([22.0, 28.0], egui::Label::new(RichText::new("").size(10.0)));
-                            left_label(ui, 136.0, 28.0, RichText::new("Ban").size(10.5).color(MUTED));
-                            ui.add_sized([70.0, 28.0], egui::Label::new(RichText::new("Threat").size(10.5).color(MUTED)));
-                            ui.add_sized([50.0, 28.0], egui::Label::new(RichText::new("Base").size(10.5).color(MUTED)));
-                            for (i, (c, is_pick, lane)) in pcols.iter().enumerate() {
-                                if i == n_picks && n_picks > 0 {
-                                    ui.add_space(6.0);
-                                }
-                                let (rect, resp) = ui.allocate_exact_size(Vec2::new(cell_w, 28.0), Sense::hover());
-                                let ico_r = egui::Rect::from_center_size(rect.center(), Vec2::splat(26.0));
-                                let mut sub = ui.new_child(egui::UiBuilder::new().max_rect(ico_r));
-                                imgs.paint_icon(&mut sub, &c.name, &c.icon, Vec2::splat(26.0), 5.0, Color32::WHITE);
-                                let tip = if *is_pick {
-                                    format!("{}, one of your likely picks", c.name)
-                                } else {
-                                    format!("{}, {} hover", c.name, short_lane(lane))
-                                };
-                                resp.on_hover_text(tip);
-                            }
-                        });
-                        ui.separator();
+                        let (base_bg, base_fg) = if t.strength >= 0.05 {
+                            (GOLD.gamma_multiply(0.12), TEXT)
+                        } else {
+                            (RAISED, MUTED)
+                        };
+                        paint_value(ui, columns.cell(row, 3), &fmt_signed(t.strength, 1), base_bg, base_fg);
 
-                        for (i, t) in d.threats.iter().enumerate() {
-                            let selected = t.champ.id == sel_id;
-                            let bg = if selected {
-                                Color32::from_rgba_unmultiplied(0xFF, 0x8A, 0x70, 20)
-                            } else {
-                                Color32::TRANSPARENT
-                            };
-                            let stroke = if selected {
-                                Stroke::new(1.0, NEG)
-                            } else {
-                                Stroke::NONE
-                            };
-                            let resp = egui::Frame::new()
-                                .fill(bg)
-                                .stroke(stroke)
-                                .corner_radius(CornerRadius::same(6))
-                                .inner_margin(egui::Margin::symmetric(4, 5))
-                                .show(ui, |ui| {
-                                    ui.horizontal(|ui| {
-                                        ui.add_sized(
-                                            [18.0, 34.0],
-                                            egui::Label::new(
-                                                RichText::new(format!("{}", i + 1))
-                                                    .size(11.5)
-                                                    .color(if selected { NEG } else { DIM }),
-                                            ),
-                                        );
-                                        imgs.paint_icon(ui, &t.champ.name, &t.champ.icon, Vec2::splat(32.0), 5.0, Color32::WHITE);
-                                        ui.allocate_ui_with_layout(Vec2::new(98.0, 34.0), Layout::top_down(Align::Min), |ui| {
-                                            ui.label(RichText::new(&t.champ.name).size(12.5).strong().color(TEXT));
-                                            ui.label(
-                                                RichText::new(format!("{} · picked {:.1}%", short_lane(&t.lane), t.pick_rate))
-                                                    .size(9.5)
-                                                    .color(MUTED),
-                                            );
-                                        });
-                                        // Threat score + bar
-                                        ui.allocate_ui_with_layout(Vec2::new(66.0, 32.0), Layout::top_down(Align::Max), |ui| {
-                                            let sc = t.score * 10.0;
-                                            ui.label(RichText::new(format!("{sc:.1}")).size(13.5).strong().color(NEG));
-                                            let frac = (sc.abs() / top_score).clamp(0.0, 1.0) as f32;
-                                            let (brect, _) = ui.allocate_exact_size(Vec2::new(58.0, 3.0), Sense::hover());
-                                            ui.painter().rect_filled(brect, CornerRadius::same(2), LINE);
-                                            let mut fill = brect;
-                                            fill.set_width(brect.width() * frac);
-                                            ui.painter().rect_filled(fill, CornerRadius::same(2), NEG);
-                                        });
-                                        // Base strength pill
-                                        let bbg = if t.strength >= 0.05 {
-                                            Color32::from_rgba_unmultiplied(0xE6, 0xB8, 0x5C, 28)
-                                        } else {
-                                            RAISED
-                                        };
-                                        let bfg = if t.strength >= 0.05 { TEXT } else { MUTED };
-                                        let (br, _) = ui.allocate_exact_size(Vec2::new(46.0, 24.0), Sense::hover());
-                                        ui.painter().rect_filled(br.shrink(2.0), CornerRadius::same(4), bbg);
-                                        ui.painter().text(
-                                            br.center(),
-                                            egui::Align2::CENTER_CENTER,
-                                            fmt_signed(t.strength, 1),
-                                            egui::FontId::proportional(11.5),
-                                            bfg,
-                                        );
-
-                                        // Against cells
-                                        for (ci, (c, _, _)) in pcols.iter().enumerate() {
-                                            if ci == n_picks && n_picks > 0 {
-                                                ui.add_space(6.0);
-                                            }
-                                            let found = t.against.iter().find(|a| a.champ.id == c.id);
-                                            paint_cell(ui, found, max_abs, cell_w, &t.champ.name, c);
-                                        }
-                                    });
-                                })
-                                .response
-                                .interact(Sense::click());
-                            if resp.clicked() {
-                                ui.data_mut(|data| data.insert_temp(egui::Id::new("bans_sel"), t.champ.id));
-                            }
-                            ui.add_space(2.0);
+                        for (idx, (champ, _, _)) in pcols.iter().enumerate() {
+                            let col = FIRST_MATCHUP + idx;
+                            let against = t.against.iter().find(|a| a.champ.id == champ.id);
+                            paint_cell(ui, columns.cell(row, col), resp.id.with(col), against, max_abs, &t.champ.name, champ);
                         }
-                    });
-                });
+                    }
+                },
+            );
+        });
 
-                ui.label(
-                    RichText::new("Each cell is how that pick's win rate moves against the ban candidate, discounted for small samples and weighted by lane. Coral means it beats that pick, which is what makes it worth banning.")
-                        .size(10.0)
-                        .color(DIM),
-                );
-            },
-        );
-
-        ui.add_space(12.0);
-        // Side panel
+        ui.add_space(gap);
         let sel_idx = d.threats.iter().position(|t| t.champ.id == sel_id).unwrap_or(0);
-        ui.allocate_ui_with_layout(
-            Vec2::new(side_w, avail_h),
-            Layout::top_down(Align::Min),
-            |ui| {
-                render_ban_side(ui, d, sel_idx, top_pr, &pcols, imgs);
-            },
-        );
+        ui.allocate_ui_with_layout(Vec2::new(side_w, height), Layout::top_down(Align::Min), |ui| {
+            render_ban_side(ui, d, sel_idx, top_pr, &pcols, imgs);
+        });
     });
 }
 
 fn paint_cell(
-    ui: &mut Ui,
-    a: Option<&ThreatAgainstView>,
+    ui: &Ui,
+    cell: Rect,
+    id: egui::Id,
+    against: Option<&ThreatAgainstView>,
     max_abs: f64,
-    cell_w: f32,
     threat_name: &str,
     col: &ChampRef,
 ) {
-    let size = Vec2::new(cell_w, 26.0);
-    let (rect, resp) = ui.allocate_exact_size(size, Sense::hover());
-    if let Some(x) = a {
+    if let Some(x) = against {
         let (bg, fg) = heat_bg(x.weighted, max_abs);
-        ui.painter().rect_filled(rect.shrink(1.0), CornerRadius::same(4), bg);
-        ui.painter().text(
-            rect.center(),
-            egui::Align2::CENTER_CENTER,
-            fmt_signed(x.weighted, 1),
-            egui::FontId::proportional(11.5),
-            fg,
-        );
-        resp.on_hover_text(format!(
+        paint_value(ui, cell, &fmt_signed(x.weighted, 1), bg, fg);
+        ui.interact(cell, id, Sense::hover()).on_hover_text(format!(
             "{} vs {}: {} win rate in {} games → {}",
             col.name,
             threat_name,
@@ -256,13 +168,7 @@ fn paint_cell(
             fmt_signed(x.weighted, 2)
         ));
     } else {
-        ui.painter().text(
-            rect.center(),
-            egui::Align2::CENTER_CENTER,
-            "0.0",
-            egui::FontId::proportional(11.0),
-            DIM,
-        );
+        table_text(ui, cell, Align::Center, "0.0", strong_font(12.0), DIM);
     }
 }
 
@@ -278,57 +184,36 @@ fn render_ban_side(
     let other_idx = if sel_idx == 0 { 1 } else { 0 };
     let nx = d.threats.get(other_idx);
 
+    let panel_size = ui.available_size();
     egui::Frame::new()
         .fill(PANEL)
         .stroke(Stroke::new(1.0, LINE))
         .corner_radius(CornerRadius::same(8))
         .inner_margin(egui::Margin::same(12))
         .show(ui, |ui| {
-            ui.set_min_height((ui.available_height() - 4.0).max(160.0));
-            ui.horizontal(|ui| {
-                imgs.paint_icon(ui, &t.champ.name, &t.champ.icon, Vec2::splat(48.0), 8.0, Color32::WHITE);
-                ui.add_space(6.0);
-                ui.vertical(|ui| {
-                    ui.label(
-                        RichText::new(if sel_idx == 0 {
-                            "BAN THIS".to_string()
-                        } else {
-                            format!("BAN #{}", sel_idx + 1)
-                        })
-                        .size(9.5)
-                        .strong()
-                        .color(NEG),
-                    );
-                    ui.label(RichText::new(&t.champ.name).size(16.0).strong().color(TEXT));
-                    if sel_idx == 0
-                        && let Some(nx) = nx
-                        && nx.score > 0.0
-                        && t.score > 0.0
-                    {
-                        let ratio = t.score / nx.score;
-                        let sub = if ratio >= 1.15 {
-                            format!("{ratio:.1}× the threat of {}", nx.champ.name)
-                        } else {
-                            format!("Close to {} ({:.1})", nx.champ.name, nx.score * 10.0)
-                        };
-                        ui.label(RichText::new(sub).size(10.5).color(MUTED));
-                    }
-                });
-                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    ui.vertical(|ui| {
-                        ui.label(RichText::new(format!("{:.1}", t.score * 10.0)).size(20.0).strong().color(NEG));
-                        ui.label(RichText::new("threat").size(9.5).color(MUTED));
-                    });
-                });
-            });
+            ui.set_min_size(panel_size - Vec2::splat(26.0));
+            let kicker = if sel_idx == 0 { "BAN THIS".to_owned() } else { format!("BAN #{}", sel_idx + 1) };
+            detail_heading(ui, imgs, &t.champ, &kicker, NEG, &format!("{:.1}", t.score * 10.0), NEG, "threat");
+            if sel_idx == 0
+                && let Some(nx) = nx
+                && nx.score > 0.0
+                && t.score > 0.0
+            {
+                let ratio = t.score / nx.score;
+                let sub = if ratio >= 1.15 {
+                    format!("{ratio:.1}× the threat of {}", nx.champ.name)
+                } else {
+                    format!("Close to {} ({:.1})", nx.champ.name, nx.score * 10.0)
+                };
+                ui.label(RichText::new(sub).size(11.5).color(MUTED));
+            }
 
             ui.add_space(8.0);
             ui.separator();
             ui.add_space(6.0);
             ui.label(
-                RichText::new("THREAT = HOW OFTEN YOU FACE IT × HOW MUCH IT HURTS")
-                    .size(9.5)
-                    .strong()
+                strong("THREAT = HOW OFTEN YOU FACE IT × HOW MUCH IT HURTS")
+                    .size(10.0)
                     .color(MUTED),
             );
             ui.add_space(6.0);
@@ -336,7 +221,7 @@ fn render_ban_side(
             // Pick rate row with horizontal bar
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    ui.label(RichText::new(format!("Picked in {:.1}% of games", t.pick_rate)).size(12.0).strong().color(TEXT));
+                    ui.label(strong(format!("Picked in {:.1}% of games", t.pick_rate)).size(13.0).color(TEXT));
                     ui.label(
                         RichText::new(if (t.pick_rate - top_pr).abs() < 0.05 {
                             "Most picked on this list".to_string()
@@ -431,11 +316,11 @@ fn render_ban_side(
 fn reason_line(ui: &mut Ui, title: &str, sub: &str, val: String, col: Color32) {
     ui.horizontal(|ui| {
         ui.vertical(|ui| {
-            ui.label(RichText::new(title).size(12.0).strong().color(TEXT));
+            ui.label(strong(title).size(13.0).color(TEXT));
             ui.label(RichText::new(sub).size(10.0).color(MUTED));
         });
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-            ui.label(RichText::new(val).size(13.0).strong().color(col));
+            ui.label(strong(val).size(16.0).color(col));
         });
     });
     ui.add_space(8.0);

@@ -20,7 +20,44 @@ pub const NEG: Color32 = Color32::from_rgb(0xFF, 0x8A, 0x70);
 pub const AD: Color32 = Color32::from_rgb(0xF2, 0xA2, 0x5C);
 pub const AP: Color32 = Color32::from_rgb(0x7F, 0xA8, 0xFF);
 
+const STRONG_FAMILY: &str = "ui-semibold";
+
+pub fn strong(text: impl Into<String>) -> egui::RichText {
+    egui::RichText::new(text)
+        .family(egui::FontFamily::Name(STRONG_FAMILY.into()))
+        .strong()
+}
+
+pub fn strong_font(size: f32) -> egui::FontId {
+    egui::FontId::new(size, egui::FontFamily::Name(STRONG_FAMILY.into()))
+}
+
+fn apply_fonts(ctx: &egui::Context) {
+    let mut fonts = egui::FontDefinitions::default();
+    #[cfg(target_os = "windows")]
+    {
+        let font_dir = std::path::PathBuf::from(
+            std::env::var_os("WINDIR").unwrap_or_else(|| r"C:\Windows".into()),
+        ).join("Fonts");
+        for (name, file) in [("ui-regular", "segoeui.ttf"), (STRONG_FAMILY, "seguisb.ttf")] {
+            if let Ok(bytes) = std::fs::read(font_dir.join(file)) {
+                fonts.font_data.insert(name.into(), egui::FontData::from_owned(bytes).into());
+            }
+        }
+        if fonts.font_data.contains_key("ui-regular") {
+            fonts.families.entry(egui::FontFamily::Proportional).or_default().insert(0, "ui-regular".into());
+        }
+    }
+    let mut emphasis = fonts.families[&egui::FontFamily::Proportional].clone();
+    if fonts.font_data.contains_key(STRONG_FAMILY) {
+        emphasis.insert(0, STRONG_FAMILY.into());
+    }
+    fonts.families.insert(egui::FontFamily::Name(STRONG_FAMILY.into()), emphasis);
+    ctx.set_fonts(fonts);
+}
+
 pub fn apply_theme(ctx: &egui::Context) {
+    apply_fonts(ctx);
     let mut style = Style::default();
     let mut v = Visuals::dark();
     v.panel_fill = BG;

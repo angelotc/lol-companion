@@ -10,7 +10,7 @@ use crate::ui::bans_view::render_bans;
 use crate::ui::build_view::{BuildUiState, render_build};
 use crate::ui::explore_view::{ExploreUiState, render_explore};
 use crate::ui::picks_view::{PicksUiState, render_best_picks, render_blind_picks};
-use crate::ui::theme::{AD, ALLY, ALLY_TEXT, AP, BG, BG2, DIM, ENEMY, ENEMY_TEXT, GOLD, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, fmt_signed, short_lane};
+use crate::ui::theme::{AD, ALLY, ALLY_TEXT, AP, BG, BG2, DIM, ENEMY, ENEMY_TEXT, GOLD, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, fmt_signed, short_lane, strong};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DraftTab {
@@ -64,7 +64,7 @@ pub fn render_client(
         .inner_margin(egui::Margin::symmetric(14, 7))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("LOL COMPANION").size(12.5).strong().color(GOLD));
+                ui.label(strong("LOL COMPANION").size(12.5).color(GOLD));
                 let mut parts = Vec::new();
                 if !s.header.role.is_empty() && !(s.explore && s.picks.is_none()) {
                     parts.push(cap_first(&s.header.role));
@@ -78,6 +78,7 @@ pub fn render_client(
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     if ui
                         .add(egui::Button::new(RichText::new("⚙").size(14.0).color(MUTED)).frame(false))
+                        .on_hover_cursor(egui::CursorIcon::PointingHand)
                         .on_hover_text("Settings")
                         .clicked()
                     {
@@ -115,7 +116,7 @@ pub fn render_client(
                     if TIERS.len() > 1 {
                         for &(tid, label) in TIERS {
                             let on = s.header.tier_id == tid;
-                            if ui.selectable_label(on, label).clicked() && !on {
+                            if ui.selectable_label(on, label).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() && !on {
                                 let ctl_c = Arc::clone(ctl);
                                 let t = tid.to_string();
                                 tokio::spawn(async move {
@@ -201,7 +202,7 @@ pub fn render_client(
                                         .color(if active { GOLD } else if enabled { MUTED } else { DIM }),
                                 );
                                 ui.label(
-                                    RichText::new(lbl)
+                                    strong(lbl)
                                         .size(12.0)
                                         .strong()
                                         .color(if active { TEXT } else if enabled { MUTED } else { DIM }),
@@ -217,7 +218,8 @@ pub fn render_client(
                                 }
                             })
                             .response
-                            .interact(Sense::click());
+                            .interact(Sense::click())
+                            .on_hover_cursor(egui::CursorIcon::PointingHand);
                             if active {
                                 let y = resp.rect.bottom() + 4.0;
                                 ui.painter().line_segment(
@@ -435,7 +437,7 @@ fn render_draft_bar(
                                 let on = e.lane == l;
                                 let r = e.rates.get(l).copied().unwrap_or(0);
                                 let lbl = format!("{} ({r}%)", short_lane(l));
-                                if ui.selectable_label(on, lbl).clicked() {
+                                if ui.selectable_label(on, lbl).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
                                     st.lane_picker_enemy = None;
                                     let ctl_c = Arc::clone(ctl);
                                     let lane_s = l.to_string();
@@ -444,7 +446,7 @@ fn render_draft_bar(
                                     });
                                 }
                             }
-                            if ui.selectable_label(!e.manual, "AUTO").clicked() {
+                            if ui.selectable_label(!e.manual, "AUTO").on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
                                 st.lane_picker_enemy = None;
                                 if e.manual {
                                     let ctl_c = Arc::clone(ctl);
@@ -515,6 +517,7 @@ fn paint_enemy_slot(
             let mut sub = ui.new_child(egui::UiBuilder::new().max_rect(rect.shrink(2.0)));
             imgs.paint_icon(&mut sub, &e.champ.name, &e.champ.icon, Vec2::splat(40.0), 5.0, Color32::WHITE);
             ui.painter().rect_stroke(rect, CornerRadius::same(6), Stroke::new(1.5, border), egui::StrokeKind::Inside);
+            let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
             clicked = resp.clicked();
             let cap = format!("{}{}", short_lane(&e.lane), if e.flex && !e.manual { "?" } else { "" });
             let cap_col = if e.manual { TEXT } else if e.flex { GOLD } else { MUTED };
@@ -538,21 +541,21 @@ fn render_odds(ui: &mut Ui, o: Option<&OddsView>, note: &str) {
     let w = ui.available_width();
     ui.vertical_centered(|ui| {
         ui.horizontal(|ui| {
-            let side_lbl = 86.0_f32.min(w * 0.28);
+            let side_lbl = 116.0_f32.min(w * 0.28);
             let mid_w = (w - side_lbl * 2.0 - 16.0).max(80.0);
             ui.add_sized(
-                [side_lbl, 20.0],
-                egui::Label::new(RichText::new(format!("{win:.1}% you")).size(14.5).strong().color(ALLY_TEXT)),
+                [side_lbl, 24.0],
+                egui::Label::new(strong(format!("{win:.1}% you")).size(20.0).color(ALLY_TEXT)),
             );
             let mid = if pending > 0 {
                 format!("draft estimate · {known} of 10 · loading {pending}")
             } else {
                 format!("draft estimate · {known} of 10 picked")
             };
-            ui.add_sized([mid_w, 20.0], egui::Label::new(RichText::new(mid).size(10.0).color(MUTED)));
+            ui.add_sized([mid_w, 24.0], egui::Label::new(RichText::new(mid).size(10.0).color(MUTED)));
             ui.add_sized(
-                [side_lbl, 20.0],
-                egui::Label::new(RichText::new(format!("{:.1}% them", 100.0 - win)).size(14.5).strong().color(ENEMY_TEXT)),
+                [side_lbl, 24.0],
+                egui::Label::new(strong(format!("{:.1}% them", 100.0 - win)).size(20.0).color(ENEMY_TEXT)),
             );
         });
 
