@@ -4,7 +4,7 @@ use crate::engine::views::{GameScreen, IngameBuildView, PartView, PlayerView, Te
 
 use crate::images::ImageCache;
 use crate::ui::build_view::render_damage_bar;
-use crate::ui::theme::{ALLY, BG, BG2, DIM, ENEMY, GOLD, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, fmt_signed, short_lane, tier_color};
+use crate::ui::theme::{ALLY, BG, BG2, DIM, ENEMY, GOLD, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, fmt_signed, tier_color};
 
 fn fmt_clock(secs: i32) -> String {
     let m = secs.max(0) / 60;
@@ -225,12 +225,15 @@ fn paint_item_icon(ui: &mut Ui, p: &PartView, sz: f32, imgs: &mut ImageCache) {
     };
     let resp = imgs.paint_icon(ui, &p.name, &p.icon, Vec2::splat(sz), 3.0, tint);
     if p.owned {
-        ui.painter().text(
-            resp.rect.center(),
-            egui::Align2::CENTER_CENTER,
-            "✓",
-            egui::FontId::proportional(sz * 0.55),
-            POS,
+        let c = resp.rect.center();
+        let stroke = Stroke::new(2.0, POS);
+        ui.painter().line_segment(
+            [egui::pos2(c.x - sz * 0.22, c.y + sz * 0.02), egui::pos2(c.x - sz * 0.04, c.y + sz * 0.20)],
+            stroke,
+        );
+        ui.painter().line_segment(
+            [egui::pos2(c.x - sz * 0.04, c.y + sz * 0.20), egui::pos2(c.x + sz * 0.24, c.y - sz * 0.18)],
+            stroke,
         );
     }
     let tip = if p.gold > 0 {
@@ -300,6 +303,7 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
         }
     }
 
+    let opp_cols: Vec<_> = s.opponents.iter().take(4).collect();
     for sec in &s.sections {
         ui.add_space(5.0);
         let is_next = sec.state == "next";
@@ -317,19 +321,33 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
             .fill(bg)
             .stroke(stroke)
             .corner_radius(CornerRadius::same(4))
-            .inner_margin(egui::Margin::same(3))
+            .inner_margin(egui::Margin::same(4))
             .show(ui, |ui| {
                 let title = if is_next {
                     format!("{} · NEXT", sec.title.to_uppercase())
                 } else {
                     sec.title.to_uppercase()
                 };
-                ui.label(
-                    RichText::new(title)
-                        .size(9.0)
-                        .strong()
-                        .color(if is_next { GOLD } else { DIM }),
-                );
+                ui.horizontal(|ui| {
+                    ui.label(
+                        RichText::new(title)
+                            .size(9.0)
+                            .strong()
+                            .color(if is_next { GOLD } else { DIM }),
+                    );
+                    if !opp_cols.is_empty() && sec.options.iter().any(|o| !o.vs.is_empty()) {
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.add_space(34.0);
+                            for (e, lane) in opp_cols.iter().rev() {
+                                let (r, resp) = ui.allocate_exact_size(Vec2::new(28.0, 14.0), Sense::hover());
+                                let ico_r = egui::Rect::from_center_size(r.center(), Vec2::splat(14.0));
+                                let mut sub = ui.new_child(egui::UiBuilder::new().max_rect(ico_r));
+                                imgs.paint_icon(&mut sub, &e.name, &e.icon, Vec2::splat(14.0), 3.0, Color32::WHITE);
+                                resp.on_hover_text(format!("{} ({lane})", e.name));
+                            }
+                        });
+                    }
+                });
                 for o in &sec.options {
                     ui.horizontal(|ui| {
                         for p in &o.parts {
@@ -353,11 +371,29 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
                                 } else {
                                     fmt_signed(o.matchup, 1)
                                 };
-                                ui.label(RichText::new(txt).size(10.5).strong().color(col));
-                                for v in o.vs.iter().take(2) {
-                                    let vc = if v.weighted >= 0.0 { POS } else { NEG };
-                                    ui.label(RichText::new(fmt_signed(v.weighted, 1)).size(9.5).color(vc))
-                                        .on_hover_text(format!("{} ({}): {}", v.champ.name, short_lane(&v.lane), fmt_signed(v.weighted, 1)));
+                                ui.add_sized([30.0, 20.0], egui::Label::new(RichText::new(txt).size(10.5).strong().color(col)));
+                                for (e, _) in opp_cols.iter().rev() {
+                                    if let Some(v) = o.vs.iter().find(|v| v.champ.id == e.id) {
+                                        let vc = if v.weighted >= 0.05 {
+                                            POS
+                                        } else if v.weighted <= -0.05 {
+                                            NEG
+                                        } else {
+                                            DIM
+                                        };
+                                        ui.add_sized(
+                                            [28.0, 20.0],
+                                            egui::Label::new(RichText::new(fmt_signed(v.weighted, 1)).size(9.5).color(vc)),
+                                        )
+                                        .on_hover_text(format!(
+                                            "{} ({}): {} of this option's edge",
+                                            v.champ.name,
+                                            v.lane,
+                                            fmt_signed(v.weighted, 1)
+                                        ));
+                                    } else {
+                                        ui.add_sized([28.0, 20.0], egui::Label::new(RichText::new("·").size(9.5).color(DIM)));
+                                    }
                                 }
                             });
                         }
@@ -370,7 +406,7 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
         ui.add_space(5.0);
         ui.label(RichText::new("SKILLS").size(9.0).strong().color(DIM));
         ui.horizontal(|ui| {
-            for (i, ch) in s.skill_order.chars().enumerate() {
+            for (i, ch) in s.skill_order.chars().take(15).enumerate() {
                 let lvl = i as i32 + 1;
                 let (bg, fg) = if ch == 'R' {
                     (GOLD, BG)
@@ -392,6 +428,18 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
                     fg,
                 );
             }
+        });
+    }
+
+    if !opp_cols.is_empty() {
+        ui.add_space(4.0);
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("Δ vs").size(9.0).color(DIM));
+            for (e, lane) in &opp_cols {
+                imgs.paint_icon(ui, &e.name, &e.icon, Vec2::splat(14.0), 3.0, Color32::WHITE)
+                    .on_hover_text(format!("{} ({lane})", e.name));
+            }
+            ui.label(RichText::new("· from before the game").size(9.0).color(DIM));
         });
     }
 }

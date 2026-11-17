@@ -94,9 +94,21 @@ pub fn qwik_build(html: &str) -> Option<Value> {
     None
 }
 
+fn json_f64(v: &Value) -> Option<f64> {
+    v.as_f64()
+        .or_else(|| v.as_i64().map(|n| n as f64))
+        .or_else(|| v.as_str().and_then(|s| s.trim().parse::<f64>().ok()))
+}
+
+fn json_u32(v: &Value) -> Option<u32> {
+    v.as_u64()
+        .map(|n| n as u32)
+        .or_else(|| json_f64(v).map(|f| f.max(0.0).round() as u32))
+}
+
 fn games_estimate(stats: &Value) -> u32 {
-    let analysed = stats.get("analysed").and_then(|v| v.as_f64()).unwrap_or(0.0);
-    let pr = stats.get("pr").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let analysed = stats.get("analysed").and_then(json_f64).unwrap_or(0.0);
+    let pr = stats.get("pr").and_then(json_f64).unwrap_or(0.0);
     ((analysed * pr) / 100.0).round().max(0.0) as u32
 }
 
@@ -223,7 +235,7 @@ impl Lolalytics {
             .and_then(|l| l.as_object())
         {
             for (k, v) in lanes {
-                if let Some(f) = v.as_f64() {
+                if let Some(f) = json_f64(v) {
                     out.insert(k.clone(), f);
                 }
             }
@@ -243,9 +255,9 @@ impl Lolalytics {
                 if !row.is_object() {
                     continue;
                 }
-                let pr = row.get("pr").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                let games = row.get("games").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-                let avg_wr_delta = row.get("avgWrDelta").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                let pr = row.get("pr").and_then(json_f64).unwrap_or(0.0);
+                let games = row.get("games").and_then(json_u32).unwrap_or(0);
+                let avg_wr_delta = row.get("avgWrDelta").and_then(json_f64).unwrap_or(0.0);
                 out.insert(cid, TierRow { pr, games, avg_wr_delta });
             }
         }
@@ -338,9 +350,9 @@ impl Lolalytics {
                     let Some(cid) = row.get("cid").and_then(|v| v.as_i64()).map(|n| n as i32) else {
                         continue;
                     };
-                    let vs_wr = row.get("vsWr").and_then(|v| v.as_f64()).unwrap_or(50.0);
-                    let n = row.get("n").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-                    let d2 = row.get("d2").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                    let vs_wr = row.get("vsWr").and_then(json_f64).unwrap_or(50.0);
+                    let n = row.get("n").and_then(json_u32).unwrap_or(0);
+                    let d2 = row.get("d2").and_then(json_f64).unwrap_or(0.0);
                     map.insert(cid, Pair::with_delta(vs_wr, n, d2));
                 }
             }
@@ -349,8 +361,8 @@ impl Lolalytics {
 
         let stats = stats_val?;
         let cid = stats.get("cid").and_then(|v| v.as_i64())? as i32;
-        let wr = stats.get("wr").and_then(|v| v.as_f64()).unwrap_or(50.0);
-        let avg_wr = stats.get("avgWr").and_then(|v| v.as_f64()).unwrap_or(50.0);
+        let wr = stats.get("wr").and_then(json_f64).unwrap_or(50.0);
+        let avg_wr = stats.get("avgWr").and_then(json_f64).unwrap_or(50.0);
 
         let cols: Vec<&str> = team
             .get("team_h")
@@ -380,9 +392,9 @@ impl Lolalytics {
                         continue;
                     }
                     let aid = row[i_id].as_i64().unwrap_or(0) as i32;
-                    let awr = row[i_wr].as_f64().unwrap_or(50.0);
-                    let an = row[i_n].as_u64().unwrap_or(0) as u32;
-                    let ad2 = row[i_d2].as_f64().unwrap_or(0.0);
+                    let awr = json_f64(&row[i_wr]).unwrap_or(50.0);
+                    let an = json_u32(&row[i_n]).unwrap_or(0);
+                    let ad2 = json_f64(&row[i_d2]).unwrap_or(0.0);
                     lane_syn.insert(aid, Pair::with_delta(awr, an, ad2));
                 }
                 synergies.insert(ally_lane.clone(), lane_syn);

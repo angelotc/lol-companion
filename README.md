@@ -161,30 +161,38 @@ your games are weighted 0.5^(age / half_life), half_life = 90 days
 
 Nothing is injected into the client or the game.
 
+## Performance: Python + WebView2 vs. Native Rust
+
+Rewritten from Python + `pywebview` (Edge WebView2) to native Rust (`egui` / `eframe`). Measured on Windows 11 with a 5-second settle and 5-second sample:
+
+| Runtime | Processes | Working Set | Private Mem | Idle CPU (% of 1 core) |
+|---|---:|---:|---:|---:|
+| **Python + WebView2** *(live tree, idle)* | 8 | 149.5–309.7 MB | 580.4–641.5 MB | 7.17% |
+| **Rust (`egui`)** — Out of game *(draft)* | 1 | 126.9 MB | 116.4 MB | 3.43% (`0.21%` total) |
+| **Rust (`egui`)** — In game *(overlay)* | 1 | 107.1 MB | 120.5 MB | 0.00% |
+
+The Rust build ships as a single native executable with zero Edge WebView2 child processes, ~5× lower private memory, and 0% idle CPU overhead while the in-game overlay is open.
+
 ## Develop
-```
-uv sync
-uv run app.py                                  # live
-uv run app.py --record drafts/x.jsonl          # live + record
-uv run app.py --replay drafts/x.jsonl          # replay
-uv run app.py --simulate --role support --allies jinx --enemies nautilus
-uv run app.py --simulate --items 3158,3109     # in-game window: build for the items you hold
-uv run app.py --simulate --players             # in-game window: players, from tests/fixtures/players
-uv run scripts/dump_players.py                 # in a game: save the client's raw player data
-uv run python -m data.leaderboard              # prototype: a champion's best players, with op.gg links
-uv run pytest
-uv run --group build pyinstaller league_helper.spec --noconfirm   # → dist/LoLCompanion/
+```powershell
+cargo run --release                                               # live
+cargo run -- --record drafts/x.jsonl                              # live + record
+cargo run -- --replay drafts/x.jsonl                              # replay
+cargo run -- --simulate --role support --allies jinx --enemies nautilus
+cargo run -- --simulate --role support --items 3158,3109          # in-game window: build for items held
+cargo run -- --simulate --role support --players                  # in-game window: players from tests/fixtures/players
+cargo test
+cargo build --release
+cargo install --path . --force
 ```
 
-Every push to `main` runs the tests, builds, and publishes version `0.1.<run>` (installer +
-update feed) plus the portable zip.
+Every push to `main` runs `cargo test`, builds the release binary, and publishes version `0.1.<run>` (Velopack installer + update feed) plus the portable zip.
 
 | Path | |
 |---|---|
-| `app.py` | Entry point: panel and in-game windows, hotkeys, draft sources |
-| `config.py`, `paths.py` | Settings (`config.toml`) and file locations |
-| `draft/` | `controller.py` + `state.py` (client updates → the two screens), `engine.py` + `scoring.py` (candidates and scores), `views.py` (screen payloads) |
-| `desktop/` | Tray icon, auto-updates, settings window, placing the windows (the panel's 16:9 resize lock, the in-game window over the game) |
-| `data/` | League client (`lcu.py`), lolalytics, Data Dragon, fetcher/cache, `store.py` (SQLite of drafts and games), `leaderboard.py` (best players on a champion, prototype) |
-| `panel/` | The panel UI: `index.html` (client screen; `views/draftbar.js` is the team strip, `js/matrix.js` champ select's ranked tables) and `game.html` (in game); `index.html?demo` and `game.html?demo` run in a browser |
-| `scripts/` | `simulate_views.py` (README screenshots), `render_panel.py`, `make_icon.py` |
+| [src/main.rs](src/main.rs) | Entry point: `eframe` windows, deferred overlay viewport, CLI simulation/replay, hotkeys |
+| [src/domain/](src/domain/) | Config (`config.toml`), LCU/live state parsing, builds, scoring, blind-pick report |
+| [src/data/](src/data/) | League client (`lcu.rs`), lolalytics, Data Dragon, op.gg, HTTP/disk cache, SQLite `store.rs` |
+| [src/engine/](src/engine/) | `controller.rs` (client updates → screen updates), `recommender.rs`, `views.rs` |
+| [src/ui/](src/ui/) | Native `egui` views: `client_view.rs`, `explore_view.rs`, `bans_view.rs`, `picks_view.rs`, `build_view.rs`, `game_view.rs`, `settings_view.rs` |
+| [src/win32.rs](src/win32.rs), [src/tray.rs](src/tray.rs), [src/images.rs](src/images.rs) | Win32 window placement/16:9 lock/hotkeys, system tray, async image cache |

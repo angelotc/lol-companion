@@ -7,7 +7,7 @@ use crate::engine::controller::Controller;
 use crate::engine::views::{ExploreChampView, ExploreReportView};
 
 use crate::images::ImageCache;
-use crate::ui::theme::{DIM, GOLD, LINE, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, fmt_signed};
+use crate::ui::theme::{BG, BG2, DIM, GOLD, LINE, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, TEXT2, fmt_signed};
 
 pub struct ExploreUiState {
     pub role: String,
@@ -107,27 +107,44 @@ pub fn render_explore(
 ) {
     st.poll(ctl, current_tier, ui.ctx());
 
-    // Header row: title + role pills
+    // Header row: inline title + guide on left, segmented role pill on right
     ui.horizontal(|ui| {
-        ui.vertical(|ui| {
-            ui.label(RichText::new("What can you pick blind?").size(15.0).strong().color(TEXT));
-            ui.label(
-                RichText::new("Right = stronger. Up = loses less when the enemy counters it.")
-                    .size(10.5)
-                    .color(MUTED),
-            );
-        });
+        ui.label(RichText::new("What can you pick blind?").size(16.0).strong().color(TEXT));
+        ui.add_space(6.0);
+        ui.label(
+            RichText::new("Right = stronger. Up = loses less when the enemy counters it.")
+                .size(11.0)
+                .color(MUTED),
+        );
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-            for &r in LANES.iter().rev() {
-                let on = st.role == r;
-                if ui.selectable_label(on, role_label(r)).clicked() && !on {
-                    st.role = r.to_string();
-                    st.trigger_load(ctl, ui.ctx());
-                }
-            }
+            egui::Frame::new()
+                .fill(BG2)
+                .stroke(Stroke::new(1.0, LINE2))
+                .corner_radius(CornerRadius::same(16))
+                .inner_margin(egui::Margin::symmetric(3, 2))
+                .show(ui, |ui| {
+                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                        for &r in LANES {
+                            let on = st.role == r;
+                            let btn = egui::Button::new(
+                                RichText::new(role_label(r))
+                                    .size(11.0)
+                                    .strong()
+                                    .color(if on { BG } else { MUTED }),
+                            )
+                            .fill(if on { GOLD } else { Color32::TRANSPARENT })
+                            .stroke(Stroke::NONE)
+                            .corner_radius(CornerRadius::same(14));
+                            if ui.add(btn).clicked() && !on {
+                                st.role = r.to_string();
+                                st.trigger_load(ctl, ui.ctx());
+                            }
+                        }
+                    });
+                });
         });
     });
-    ui.add_space(6.0);
+    ui.add_space(8.0);
 
     if st.loading {
         ui.centered_and_justified(|ui| {
@@ -169,25 +186,31 @@ pub fn render_explore(
     let med = tails[tails.len() / 2];
 
     let avail_w = ui.available_width();
-    let side_w = (avail_w * 0.32).clamp(240.0, 310.0);
+    let side_w = (avail_w * 0.28).clamp(260.0, 320.0);
     let chart_w = (avail_w - side_w - 10.0).max(320.0);
     let avail_h = ui.available_height().max(260.0);
 
     ui.horizontal_top(|ui| {
-        // Scatter plot card
-        egui::Frame::new()
-            .fill(PANEL)
-            .stroke(Stroke::new(1.0, LINE))
-            .corner_radius(CornerRadius::same(6))
-            .inner_margin(egui::Margin::same(8))
-            .show(ui, |ui| {
-                ui.set_min_size(Vec2::new(chart_w - 18.0, avail_h - 18.0));
-                render_scatter(ui, &rep, med, &mut st.selected, imgs);
-            });
+        // Left: Scatter plot card constrained strictly to chart_w x avail_h
+        ui.allocate_ui_with_layout(
+            Vec2::new(chart_w, avail_h),
+            Layout::top_down(Align::Min),
+            |ui| {
+                egui::Frame::new()
+                    .fill(PANEL)
+                    .stroke(Stroke::new(1.0, LINE))
+                    .corner_radius(CornerRadius::same(8))
+                    .inner_margin(egui::Margin::same(10))
+                    .show(ui, |ui| {
+                        let inner = Vec2::new((chart_w - 22.0).max(100.0), (avail_h - 22.0).max(100.0));
+                        render_scatter(ui, inner, &rep, med, &mut st.selected, imgs);
+                    });
+            },
+        );
 
-        ui.add_space(8.0);
+        ui.add_space(10.0);
 
-        // Right side: detail + top list
+        // Right: selected detail card + best blind picks list
         ui.allocate_ui_with_layout(
             Vec2::new(side_w, avail_h),
             Layout::top_down(Align::Min),
@@ -200,44 +223,87 @@ pub fn render_explore(
                 {
                     render_explore_detail(ui, sel, med, imgs);
                 }
-                ui.add_space(6.0);
-                egui::Frame::new()
-                    .fill(PANEL)
-                    .stroke(Stroke::new(1.0, LINE))
-                    .corner_radius(CornerRadius::same(6))
-                    .inner_margin(egui::Margin::same(8))
-                    .show(ui, |ui| {
-                        ui.horizontal(|ui| {
-                            ui.label(RichText::new("BEST BLIND PICKS").size(10.0).strong().color(GOLD));
-                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                ui.label(RichText::new("Str · If cnt").size(9.5).color(MUTED));
-                            });
-                        });
-                        ui.separator();
-                        egui::ScrollArea::vertical().id_salt("exp_list").show(ui, |ui| {
-                            for (i, c) in rep.champs.iter().take(18).enumerate() {
-                                let on = st.selected == Some(c.champ.id);
-                                let resp = ui
-                                    .horizontal(|ui| {
-                                        ui.add_sized([18.0, 22.0], egui::Label::new(RichText::new(format!("{}", i + 1)).size(10.5).color(DIM)));
-                                        imgs.paint_icon(ui, &c.champ.name, &c.champ.icon, Vec2::splat(20.0), 3.0, Color32::WHITE);
-                                        ui.add_sized([92.0, 22.0], egui::Label::new(RichText::new(&c.champ.name).size(11.0).strong().color(if on { GOLD } else { TEXT })).truncate());
-                                        let sc = if c.base > 0.0 { POS } else { NEG };
-                                        let tc = if c.tail < 0.0 { NEG } else { POS };
-                                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                            ui.label(RichText::new(fmt_signed(c.tail, 1)).size(10.5).color(tc));
-                                            ui.label(RichText::new("·").color(DIM));
-                                            ui.label(RichText::new(fmt_signed(c.base, 1)).size(10.5).color(sc));
-                                        });
-                                    })
-                                    .response
-                                    .interact(Sense::click());
-                                if resp.clicked() {
-                                    st.selected = Some(c.champ.id);
+                ui.add_space(8.0);
+                let rem_h = ui.available_height().max(120.0);
+                ui.allocate_ui_with_layout(
+                    Vec2::new(side_w, rem_h),
+                    Layout::top_down(Align::Min),
+                    |ui| {
+                        egui::Frame::new()
+                            .fill(PANEL)
+                            .stroke(Stroke::new(1.0, LINE))
+                            .corner_radius(CornerRadius::same(8))
+                            .inner_margin(egui::Margin::same(10))
+                            .show(ui, |ui| {
+                                ui.set_min_height((rem_h - 22.0).max(80.0));
+                                ui.horizontal(|ui| {
+                                    ui.label(RichText::new("BEST BLIND PICKS").size(10.0).strong().color(MUTED));
+                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                        ui.label(RichText::new("STRENGTH · IF COUNTERED").size(9.5).color(DIM));
+                                    });
+                                });
+                                ui.add_space(4.0);
+                                ui.separator();
+                                ui.add_space(4.0);
+
+                                let row_h = 30.0;
+                                let max_rows = ((ui.available_height() / row_h).floor() as usize).clamp(5, 14);
+                                for (i, c) in rep.champs.iter().take(max_rows).enumerate() {
+                                    let on = st.selected == Some(c.champ.id);
+                                    let resp = egui::Frame::new()
+                                        .fill(if on {
+                                            Color32::from_rgba_unmultiplied(0xE6, 0xB8, 0x5C, 22)
+                                        } else {
+                                            Color32::TRANSPARENT
+                                        })
+                                        .stroke(if on {
+                                            Stroke::new(1.0, Color32::from_rgba_unmultiplied(0xE6, 0xB8, 0x5C, 120))
+                                        } else {
+                                            Stroke::NONE
+                                        })
+                                        .corner_radius(CornerRadius::same(4))
+                                        .inner_margin(egui::Margin::symmetric(6, 3))
+                                        .show(ui, |ui| {
+                                            ui.horizontal(|ui| {
+                                                ui.add_sized(
+                                                    [16.0, 22.0],
+                                                    egui::Label::new(RichText::new(format!("{}", i + 1)).size(11.0).color(DIM)),
+                                                );
+                                                imgs.paint_icon(ui, &c.champ.name, &c.champ.icon, Vec2::splat(22.0), 4.0, Color32::WHITE);
+                                                ui.add_sized(
+                                                    [(side_w - 145.0).max(60.0), 22.0],
+                                                    egui::Label::new(
+                                                        RichText::new(&c.champ.name)
+                                                            .size(12.0)
+                                                            .strong()
+                                                            .color(if on { GOLD } else { TEXT }),
+                                                    )
+                                                    .truncate(),
+                                                );
+                                                let sc = if c.base > 0.0 { POS } else { NEG };
+                                                let tc = if c.tail < 0.0 { NEG } else { POS };
+                                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                                    ui.add_sized(
+                                                        [36.0, 22.0],
+                                                        egui::Label::new(RichText::new(fmt_signed(c.tail, 1)).size(11.5).strong().color(tc)),
+                                                    );
+                                                    ui.add_sized(
+                                                        [38.0, 22.0],
+                                                        egui::Label::new(RichText::new(fmt_signed(c.base, 1)).size(11.5).strong().color(sc)),
+                                                    );
+                                                });
+                                            });
+                                        })
+                                        .response
+                                        .interact(Sense::click());
+                                    if resp.clicked() {
+                                        st.selected = Some(c.champ.id);
+                                    }
+                                    resp.on_hover_text(format!("blind score {}", fmt_signed(c.score, 2)));
                                 }
-                            }
-                        });
-                    });
+                            });
+                    },
+                );
             },
         );
     });
@@ -245,15 +311,18 @@ pub fn render_explore(
 
 fn render_scatter(
     ui: &mut Ui,
+    size: Vec2,
     rep: &ExploreReportView,
     med: f64,
     selected: &mut Option<i32>,
     imgs: &mut ImageCache,
 ) {
-    let size = ui.available_size();
     let (rect, _) = ui.allocate_exact_size(size, Sense::hover());
-    let plot = rect.shrink2(Vec2::new(34.0, 22.0));
-    if plot.width() <= 20.0 || plot.height() <= 20.0 {
+    let plot = Rect::from_min_max(
+        Pos2::new(rect.left() + 48.0, rect.top() + 8.0),
+        Pos2::new(rect.right() - 12.0, rect.bottom() - 24.0),
+    );
+    if plot.width() <= 40.0 || plot.height() <= 40.0 {
         return;
     }
 
@@ -299,81 +368,191 @@ fn render_scatter(
     let ym = y_of(med).clamp(plot.top(), plot.bottom());
 
     // Top-right "BLIND THESE" quadrant highlight
-    p.rect_filled(
-        Rect::from_min_max(Pos2::new(xz, plot.top()), Pos2::new(plot.right(), ym)),
-        CornerRadius::ZERO,
-        Color32::from_rgba_unmultiplied(0x3D, 0xDC, 0x97, 14),
-    );
-
-    // Dividers
-    p.line_segment([Pos2::new(xz, plot.top()), Pos2::new(xz, plot.bottom())], Stroke::new(1.0, LINE2));
-    p.line_segment([Pos2::new(plot.left(), ym), Pos2::new(plot.right(), ym)], Stroke::new(1.0, LINE2));
-    p.rect_stroke(plot, CornerRadius::ZERO, Stroke::new(1.0, LINE), egui::StrokeKind::Inside);
-
-    // Quadrant captions
-    p.text(Pos2::new(plot.right() - 6.0, plot.top() + 6.0), Align2::RIGHT_TOP, "BLIND THESE", FontId::proportional(9.5), POS);
-    p.text(Pos2::new(plot.left() + 6.0, plot.top() + 6.0), Align2::LEFT_TOP, "SAFE BUT WEAK", FontId::proportional(9.5), DIM);
-    p.text(Pos2::new(plot.right() - 6.0, plot.bottom() - 6.0), Align2::RIGHT_BOTTOM, "STRONG, PICK LATE", FontId::proportional(9.5), DIM);
-    p.text(Pos2::new(plot.left() + 6.0, plot.bottom() - 6.0), Align2::LEFT_BOTTOM, "AVOID BLIND", FontId::proportional(9.5), DIM);
-
-    // Axis tick labels
-    let sx = if x1 - x0 > 8.0 { 2.0 } else { 1.0 };
-    let mut vx = (x0 / sx).ceil() * sx;
-    while vx <= x1 + 1e-9 {
-        let px = x_of(vx);
-        let lbl = if vx.abs() < 1e-9 { "0".into() } else { fmt_signed(vx, 0) };
-        p.text(Pos2::new(px, plot.bottom() + 4.0), Align2::CENTER_TOP, lbl, FontId::proportional(9.5), MUTED);
-        vx += sx;
+    if xz < plot.right() && ym > plot.top() {
+        p.rect_filled(
+            Rect::from_min_max(Pos2::new(xz, plot.top()), Pos2::new(plot.right(), ym)),
+            CornerRadius::ZERO,
+            Color32::from_rgba_unmultiplied(0x3D, 0xDC, 0x97, 15),
+        );
     }
+
+    // Horizontal grid lines + y-axis ticks
     let sy = if y1 - y0 > 4.0 { 1.0 } else { 0.5 };
     let mut vy = (y0 / sy).ceil() * sy;
     while vy <= y1 + 1e-9 {
         let py = y_of(vy);
-        p.text(Pos2::new(plot.left() - 4.0, py), Align2::RIGHT_CENTER, fmt_signed(vy, 1), FontId::proportional(9.5), MUTED);
+        p.line_segment(
+            [Pos2::new(plot.left(), py), Pos2::new(plot.right(), py)],
+            Stroke::new(1.0, LINE),
+        );
+        p.text(
+            Pos2::new(plot.left() - 8.0, py),
+            Align2::RIGHT_CENTER,
+            fmt_signed(vy, 1),
+            FontId::proportional(10.0),
+            MUTED,
+        );
         vy += sy;
     }
 
-    // Draw unselected first, selected last so it stays on top
+    // Dividers (x = 0 if inside plot, y = median)
+    if x0 < 0.0 && x1 > 0.0 {
+        p.line_segment([Pos2::new(xz, plot.top()), Pos2::new(xz, plot.bottom())], Stroke::new(1.0, LINE2));
+    }
+    p.line_segment([Pos2::new(plot.left(), ym), Pos2::new(plot.right(), ym)], Stroke::new(1.0, LINE2));
+
+    // Left / bottom axes
+    p.line_segment([Pos2::new(plot.left(), plot.top()), Pos2::new(plot.left(), plot.bottom())], Stroke::new(1.0, LINE2));
+    p.line_segment([Pos2::new(plot.left(), plot.bottom()), Pos2::new(plot.right(), plot.bottom())], Stroke::new(1.0, LINE2));
+
+    // Quadrant captions
+    p.text(Pos2::new(plot.right() - 8.0, plot.top() + 8.0), Align2::RIGHT_TOP, "BLIND THESE", FontId::proportional(10.0), POS);
+    p.text(Pos2::new(plot.left() + 8.0, plot.top() + 8.0), Align2::LEFT_TOP, "SAFE BUT WEAK", FontId::proportional(10.0), DIM);
+    p.text(Pos2::new(plot.right() - 8.0, plot.bottom() - 8.0), Align2::RIGHT_BOTTOM, "STRONG, PICK LATE", FontId::proportional(10.0), DIM);
+    p.text(Pos2::new(plot.left() + 8.0, plot.bottom() - 8.0), Align2::LEFT_BOTTOM, "AVOID BLIND", FontId::proportional(10.0), DIM);
+
+    // X-axis tick labels (drop ticks near the right axis title)
+    p.text(
+        Pos2::new(plot.right(), plot.bottom() + 6.0),
+        Align2::RIGHT_TOP,
+        "strength ->",
+        FontId::proportional(10.0),
+        DIM,
+    );
+    let sx = if x1 - x0 > 8.0 { 2.0 } else { 1.0 };
+    let mut vx = (x0 / sx).ceil() * sx;
+    while vx <= x1 + 1e-9 {
+        let px = x_of(vx);
+        if px < plot.right() - 68.0 {
+            let is_zero = vx.abs() < 1e-9;
+            let lbl = if is_zero { "0 · average".into() } else { fmt_signed(vx, 0) };
+            p.text(
+                Pos2::new(px, plot.bottom() + 6.0),
+                Align2::CENTER_TOP,
+                lbl,
+                FontId::proportional(10.0),
+                if is_zero { TEXT2 } else { MUTED },
+            );
+        }
+        vx += sx;
+    }
+
+    // Rotated vertical Y-axis title along left margin
+    let galley = p.layout_no_wrap(
+        "if countered (higher = safer) ->".into(),
+        FontId::proportional(10.0),
+        DIM,
+    );
+    let text_w = galley.rect.width();
+    let y_title_pos = Pos2::new(rect.left() + 2.0, plot.bottom() - (plot.height() - text_w) * 0.5);
+    p.add(egui::epaint::TextShape {
+        pos: y_title_pos,
+        galley,
+        underline: Stroke::NONE,
+        fallback_color: DIM,
+        override_text_color: None,
+        opacity_factor: 1.0,
+        angle: -std::f32::consts::FRAC_PI_2,
+    });
+
+    // Draw unselected first, selected last
     let mut order: Vec<&ExploreChampView> = rep.champs.iter().collect();
     order.sort_by_key(|c| i32::from(Some(c.champ.id) == *selected));
 
-    for c in order {
+    let mut pt_boxes: Vec<(i32, Rect)> = Vec::with_capacity(order.len());
+    for c in &order {
+        let on = Some(c.champ.id) == *selected;
+        let pt_sz = if on { 30.0 } else { 24.0 };
         let cx = x_of(c.base);
         let cy = y_of(c.tail);
+        pt_boxes.push((c.champ.id, Rect::from_center_size(Pos2::new(cx, cy), Vec2::splat(pt_sz))));
+    }
+
+    for (idx, c) in order.iter().enumerate() {
+        let (_, pt_rect) = pt_boxes[idx];
         let on = Some(c.champ.id) == *selected;
         let good = c.base > 0.0 && c.tail >= med;
-        let pt_sz = if on { 26.0 } else { 22.0 };
-        let pt_rect = Rect::from_center_size(Pos2::new(cx, cy), Vec2::splat(pt_sz));
+        let pt_sz = pt_rect.width();
 
         let resp = ui.interact(pt_rect, ui.id().with(("exp_pt", c.champ.id)), Sense::click());
         if resp.clicked() {
             *selected = Some(c.champ.id);
         }
         if on {
-            ui.painter().circle_stroke(Pos2::new(cx, cy), pt_sz * 0.56, Stroke::new(2.0, GOLD));
+            ui.painter().circle_stroke(pt_rect.center(), pt_sz * 0.55, Stroke::new(2.0, GOLD));
         } else if good {
-            ui.painter().circle_stroke(Pos2::new(cx, cy), pt_sz * 0.54, Stroke::new(1.5, POS));
+            ui.painter().circle_stroke(pt_rect.center(), pt_sz * 0.53, Stroke::new(1.5, POS));
         }
 
         let mut sub = ui.new_child(egui::UiBuilder::new().max_rect(pt_rect));
         imgs.paint_icon(&mut sub, &c.champ.name, &c.champ.icon, Vec2::splat(pt_sz), pt_sz * 0.5, Color32::WHITE);
-        if on || good {
-            ui.painter().text(
-                Pos2::new(cx, cy + pt_sz * 0.5 + 2.0),
-                Align2::CENTER_TOP,
-                &c.champ.name,
-                FontId::proportional(if on { 10.5 } else { 9.0 }),
-                if on { GOLD } else { TEXT },
-            );
-        }
-        resp.on_hover_text(format!(
+
+        let w3: String = c
+            .opps
+            .iter()
+            .filter(|o| o.games > 0 && o.d < 0.0)
+            .take(3)
+            .map(|o| format!("{} {}", o.champ.name, fmt_signed(o.d, 1)))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let mut tip = format!(
             "{} · blind score {}\nstrength {} · if countered {} · avg matchup {}",
             c.champ.name,
             fmt_signed(c.score, 2),
             fmt_signed(c.base, 2),
             fmt_signed(c.tail, 2),
             fmt_signed(c.mean, 2)
-        ));
+        );
+        if !w3.is_empty() {
+            tip.push_str(&format!("\nworst: {w3}"));
+        }
+        resp.on_hover_text(tip);
+    }
+
+    // Greedy non-overlapping name labels for "blind these" and selected (selected first)
+    let mut want: Vec<(usize, &ExploreChampView)> = order
+        .iter()
+        .enumerate()
+        .filter(|(_, c)| Some(c.champ.id) == *selected || (c.base > 0.0 && c.tail >= med))
+        .map(|(i, &c)| (i, c))
+        .collect();
+    want.sort_by(|a, b| {
+        let ao = Some(a.1.champ.id) == *selected;
+        let bo = Some(b.1.champ.id) == *selected;
+        bo.cmp(&ao).then_with(|| b.1.score.total_cmp(&a.1.score))
+    });
+
+    let mut placed: Vec<Rect> = Vec::new();
+    for (idx, c) in want {
+        let on = Some(c.champ.id) == *selected;
+        let (_, pt_rect) = pt_boxes[idx];
+        let font = FontId::proportional(if on { 10.5 } else { 9.5 });
+        let galley = ui.painter().layout_no_wrap(c.champ.name.clone(), font, if on { GOLD } else { TEXT });
+        let lw = galley.rect.width() + 4.0;
+        let lh = galley.rect.height() + 2.0;
+
+        let below = Rect::from_center_size(Pos2::new(pt_rect.center().x, pt_rect.bottom() + lh * 0.5 + 2.0), Vec2::new(lw, lh));
+        let above = Rect::from_center_size(Pos2::new(pt_rect.center().x, pt_rect.top() - lh * 0.5 - 2.0), Vec2::new(lw, lh));
+        let clashes = |r: Rect| {
+            !plot.contains_rect(r)
+                || placed.iter().any(|p| p.intersects(r))
+                || pt_boxes.iter().any(|(id, pb)| *id != c.champ.id && pb.shrink(2.0).intersects(r))
+        };
+
+        let chosen = if !clashes(below) {
+            Some(below)
+        } else if !clashes(above) {
+            Some(above)
+        } else if on {
+            Some(below)
+        } else {
+            None
+        };
+
+        if let Some(lr) = chosen {
+            ui.painter().galley(Pos2::new(lr.left() + 2.0, lr.top() + 1.0), galley, TEXT);
+            placed.push(lr);
+        }
     }
 }
 
@@ -389,37 +568,40 @@ fn render_explore_detail(ui: &mut Ui, d: &ExploreChampView, med: f64, imgs: &mut
 
     egui::Frame::new()
         .fill(PANEL)
-        .stroke(Stroke::new(1.0, LINE))
-        .corner_radius(CornerRadius::same(6))
-        .inner_margin(egui::Margin::same(8))
+        .stroke(Stroke::new(1.0, GOLD))
+        .corner_radius(CornerRadius::same(8))
+        .inner_margin(egui::Margin::same(10))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
-                imgs.paint_icon(ui, &d.champ.name, &d.champ.icon, Vec2::splat(34.0), 6.0, Color32::WHITE);
+                imgs.paint_icon(ui, &d.champ.name, &d.champ.icon, Vec2::splat(38.0), 6.0, Color32::WHITE);
+                ui.add_space(4.0);
                 ui.vertical(|ui| {
-                    ui.label(RichText::new(&d.champ.name).size(14.0).strong().color(TEXT));
+                    ui.label(RichText::new(&d.champ.name).size(15.0).strong().color(TEXT));
                     ui.label(RichText::new(verdict).size(10.5).strong().color(vcol));
                 });
             });
-            ui.add_space(6.0);
+            ui.add_space(8.0);
             ui.columns(2, |cols| {
-                egui::Frame::new().fill(RAISED).corner_radius(4).inner_margin(6).show(&mut cols[0], |ui| {
+                egui::Frame::new().fill(RAISED).corner_radius(6).inner_margin(8).show(&mut cols[0], |ui| {
                     ui.label(RichText::new("STRENGTH").size(9.0).color(MUTED));
-                    ui.label(RichText::new(fmt_signed(d.base, 1)).size(14.0).strong().color(if d.base > 0.0 { POS } else { NEG }));
+                    ui.label(RichText::new(fmt_signed(d.base, 1)).size(16.0).strong().color(if d.base > 0.0 { POS } else { NEG }));
                 });
-                egui::Frame::new().fill(RAISED).corner_radius(4).inner_margin(6).show(&mut cols[1], |ui| {
+                egui::Frame::new().fill(RAISED).corner_radius(6).inner_margin(8).show(&mut cols[1], |ui| {
                     ui.label(RichText::new("IF COUNTERED").size(9.0).color(MUTED));
-                    ui.label(RichText::new(fmt_signed(d.tail, 1)).size(14.0).strong().color(if d.tail < 0.0 { NEG } else { POS }));
+                    ui.label(RichText::new(fmt_signed(d.tail, 1)).size(16.0).strong().color(if d.tail < 0.0 { NEG } else { POS }));
                 });
             });
             let worst: Vec<_> = d.opps.iter().filter(|o| o.games > 0 && o.d < 0.0).take(3).collect();
             if !worst.is_empty() {
-                ui.add_space(4.0);
+                ui.add_space(8.0);
                 ui.horizontal_wrapped(|ui| {
-                    ui.label(RichText::new("Worst:").size(10.0).color(MUTED));
+                    ui.label(RichText::new("Worst counters").size(10.0).color(MUTED));
+                    ui.add_space(4.0);
                     for w in worst {
                         imgs.paint_icon(ui, &w.champ.name, &w.champ.icon, Vec2::splat(16.0), 3.0, Color32::WHITE)
                             .on_hover_text(format!("{}: {}", w.champ.name, fmt_signed(w.d, 1)));
-                        ui.label(RichText::new(&w.champ.name).size(10.0).color(TEXT));
+                        ui.label(RichText::new(&w.champ.name).size(10.5).color(TEXT2));
+                        ui.add_space(4.0);
                     }
                 });
             }

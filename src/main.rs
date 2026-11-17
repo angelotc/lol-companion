@@ -70,6 +70,8 @@ struct Cli {
     level: i32,
     #[arg(long, default_value_t = 650.0)]
     gold: f64,
+    #[arg(long)]
+    screenshot: Option<PathBuf>,
 }
 
 enum AppSignal {
@@ -93,6 +95,42 @@ struct SharedUi {
     game_shown: AtomicBool,
     last_game_place: Mutex<Option<win32::Placement>>,
     always_show: bool,
+    screenshot: Mutex<Option<PathBuf>>,
+    screenshot_sent: AtomicBool,
+    started_at: std::time::Instant,
+}
+
+fn check_screenshot(ctx: &egui::Context, shared: &SharedUi, ready: bool) {
+    let shot = ctx.input(|i| {
+        i.events.iter().find_map(|e| match e {
+            egui::Event::Screenshot { image, .. } => Some(Arc::clone(image)),
+            _ => None,
+        })
+    });
+    if let Some(img) = shot
+        && let Some(path) = shared.screenshot.lock().unwrap().take()
+    {
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let _ = image::save_buffer(
+            &path,
+            img.as_raw(),
+            img.size[0] as u32,
+            img.size[1] as u32,
+            image::ColorType::Rgba8,
+        );
+        std::process::exit(0);
+    }
+    if shared.screenshot.lock().unwrap().is_some() {
+        if ready && shared.started_at.elapsed() >= Duration::from_secs(6) {
+            if !shared.screenshot_sent.swap(true, Ordering::Relaxed) {
+                ctx.send_viewport_cmd(ViewportCommand::Screenshot(Default::default()));
+            }
+        } else {
+            ctx.request_repaint_after(Duration::from_millis(250));
+        }
+    }
 }
 
 impl SharedUi {
@@ -280,6 +318,15 @@ impl eframe::App for CompanionApp {
                     });
                 }
             });
+            let panel_ready = matches!(
+                &self.cached_screen,
+                ScreenUpdate::Client(c)
+                    if c.bans.is_some()
+                        || c.picks.is_some()
+                        || c.build.is_some()
+                        || (c.explore && self.client_ui.explore.report.is_some())
+            );
+            check_screenshot(ctx, &self.shared, panel_ready);
         }
         if open_settings {
             let mut st = self.shared.settings_ui.lock().unwrap();
@@ -330,6 +377,7 @@ impl eframe::App for CompanionApp {
                 egui::CentralPanel::default().show(ctx, |ui| {
                     render_game_overlay(ui, &g, &mut imgs);
                 });
+                check_screenshot(ctx, &shared_ig, true);
             }
         });
 
@@ -726,6 +774,9 @@ fn main() {
         game_shown: AtomicBool::new(false),
         last_game_place: Mutex::new(None),
         always_show,
+        screenshot: Mutex::new(cli.screenshot.clone()),
+        screenshot_sent: AtomicBool::new(false),
+        started_at: std::time::Instant::now(),
     });
 
     if live {

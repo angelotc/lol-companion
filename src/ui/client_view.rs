@@ -61,7 +61,7 @@ pub fn render_client(
     // 1. Title bar
     egui::Frame::new()
         .fill(BG)
-        .inner_margin(egui::Margin::symmetric(12, 6))
+        .inner_margin(egui::Margin::symmetric(14, 7))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.label(RichText::new("LOL COMPANION").size(12.5).strong().color(GOLD));
@@ -75,24 +75,43 @@ pub fn render_client(
                 parts.push(format!("last {} days", s.header.days));
                 ui.label(RichText::new(parts.join(" · ")).size(11.5).color(MUTED));
 
-                if !s.message.is_empty() && s.explore {
-                    ui.add_space(12.0);
-                    let dot_col = if s.status == "error" { NEG } else { GOLD };
-                    let (r, _) = ui.allocate_exact_size(Vec2::splat(7.0), Sense::hover());
-                    ui.painter().circle_filled(r.center(), 3.5, dot_col);
-                    let txt = if s.detail.is_empty() {
-                        s.message.clone()
-                    } else {
-                        format!("{} · {}", s.message, s.detail)
-                    };
-                    ui.label(RichText::new(txt).size(11.0).color(MUTED));
-                }
-
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if ui.button("⚙").on_hover_text("Settings").clicked() {
+                    if ui
+                        .add(egui::Button::new(RichText::new("⚙").size(14.0).color(MUTED)).frame(false))
+                        .on_hover_text("Settings")
+                        .clicked()
+                    {
                         *open_settings = true;
                     }
-                    ui.label(RichText::new("Ctrl+X toggle").size(10.5).color(DIM));
+                    ui.label(RichText::new("hide").size(10.5).color(DIM));
+                    egui::Frame::new()
+                        .stroke(Stroke::new(1.0, LINE2))
+                        .corner_radius(CornerRadius::same(3))
+                        .inner_margin(egui::Margin::symmetric(4, 1))
+                        .show(ui, |ui| {
+                            ui.label(RichText::new("Ctrl+X").size(10.0).strong().color(MUTED));
+                        });
+
+                    if s.explore && !s.message.is_empty() && s.picks.is_none() {
+                        ui.add_space(6.0);
+                        let txt = if s.detail.is_empty() {
+                            s.message.clone()
+                        } else {
+                            format!("{} · {}", s.message, s.detail)
+                        };
+                        ui.label(RichText::new(txt).size(11.0).color(MUTED));
+                        let dot_col = if s.status == "error" { NEG } else { GOLD };
+                        let (r, _) = ui.allocate_exact_size(Vec2::splat(7.0), Sense::hover());
+                        ui.painter().circle_filled(r.center(), 3.5, dot_col);
+                    } else if !s.updated_hms.is_empty() && s.picks.is_some() {
+                        ui.add_space(6.0);
+                        ui.label(
+                            RichText::new(format!("lolalytics · updated {}", s.updated_hms))
+                                .size(10.5)
+                                .color(MUTED),
+                        );
+                    }
+
                     if TIERS.len() > 1 {
                         for &(tid, label) in TIERS {
                             let on = s.header.tier_id == tid;
@@ -157,7 +176,7 @@ pub fn render_client(
     if auto_tab.is_some() {
         egui::Frame::new()
             .fill(BG)
-            .inner_margin(egui::Margin::symmetric(12, 4))
+            .inner_margin(egui::Margin::symmetric(14, 5))
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
                     let tabs = [
@@ -175,40 +194,64 @@ pub fn render_client(
                         let active = active_tab == Some(tab);
                         let is_auto = auto_tab == Some(tab);
                         ui.add_enabled_ui(enabled, |ui| {
-                            let label_txt = if is_auto {
-                                format!("{num}. {lbl}  •")
-                            } else {
-                                format!("{num}. {lbl}")
-                            };
-                            let resp = ui.selectable_label(
-                                active,
-                                RichText::new(label_txt)
-                                    .size(11.5)
-                                    .color(if active { GOLD } else if enabled { TEXT } else { DIM }),
-                            );
-                            if resp.clicked() {
+                            let resp = ui.horizontal(|ui| {
+                                ui.label(
+                                    RichText::new(num)
+                                        .size(11.0)
+                                        .color(if active { GOLD } else if enabled { MUTED } else { DIM }),
+                                );
+                                ui.label(
+                                    RichText::new(lbl)
+                                        .size(12.0)
+                                        .strong()
+                                        .color(if active { TEXT } else if enabled { MUTED } else { DIM }),
+                                );
+                                if is_auto {
+                                    egui::Frame::new()
+                                        .fill(GOLD)
+                                        .corner_radius(CornerRadius::same(8))
+                                        .inner_margin(egui::Margin::symmetric(6, 1))
+                                        .show(ui, |ui| {
+                                            ui.label(RichText::new("DRAFT IS HERE").size(9.5).strong().color(BG));
+                                        });
+                                }
+                            })
+                            .response
+                            .interact(Sense::click());
+                            if active {
+                                let y = resp.rect.bottom() + 4.0;
+                                ui.painter().line_segment(
+                                    [egui::pos2(resp.rect.left(), y), egui::pos2(resp.rect.right(), y)],
+                                    Stroke::new(2.0, GOLD),
+                                );
+                            }
+                            if resp.clicked() && enabled {
                                 st.chosen_tab = if is_auto { None } else { Some(tab) };
                             }
                         });
+                        ui.add_space(10.0);
                     }
 
                     if let Some(p) = &s.picks {
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                             for b in p.bans.iter().rev() {
-                                imgs.paint_icon(ui, &b.name, &b.icon, Vec2::splat(18.0), 3.0, Color32::from_rgba_unmultiplied(255, 255, 255, 160))
+                                imgs.paint_icon(ui, &b.name, &b.icon, Vec2::splat(20.0), 3.0, Color32::from_rgba_unmultiplied(255, 255, 255, 170))
                                     .on_hover_text(format!("Banned: {}", b.name));
                             }
                             if !p.bans.is_empty() {
-                                ui.label(RichText::new("Bans").size(10.0).color(DIM));
+                                ui.label(RichText::new("Bans").size(10.5).color(MUTED));
                             }
                             if let Some(ad) = p.enemy_ad_pct {
-                                ui.add_space(10.0);
+                                ui.add_space(12.0);
                                 let ap = 100 - ad;
-                                let (bar_r, resp) = ui.allocate_exact_size(Vec2::new(72.0, 6.0), Sense::hover());
+                                ui.label(RichText::new(format!("{ap}% AP")).size(10.5).strong().color(AP));
+                                ui.label(RichText::new("·").size(10.5).color(DIM));
+                                ui.label(RichText::new(format!("{ad}% AD")).size(10.5).strong().color(AD));
+                                let (bar_r, resp) = ui.allocate_exact_size(Vec2::new(72.0, 5.0), Sense::hover());
                                 let w_ad = bar_r.width() * (ad as f32 / 100.0);
                                 ui.painter().rect_filled(
                                     egui::Rect::from_min_size(bar_r.min, Vec2::new(w_ad, bar_r.height())),
-                                    CornerRadius::ZERO,
+                                    CornerRadius::same(2),
                                     AD,
                                 );
                                 ui.painter().rect_filled(
@@ -216,11 +259,11 @@ pub fn render_client(
                                         egui::pos2(bar_r.left() + w_ad, bar_r.top()),
                                         Vec2::new(bar_r.width() - w_ad, bar_r.height()),
                                     ),
-                                    CornerRadius::ZERO,
+                                    CornerRadius::same(2),
                                     AP,
                                 );
                                 resp.on_hover_text(format!("Enemy damage estimate: {ad}% AD / {ap}% AP"));
-                                ui.label(RichText::new("Their dmg").size(10.0).color(MUTED));
+                                ui.label(RichText::new("Their damage").size(10.5).color(MUTED));
                             }
                         });
                     }
@@ -232,9 +275,9 @@ pub fn render_client(
     // 4. Main content area
     egui::Frame::new()
         .fill(BG)
-        .inner_margin(egui::Margin::same(10))
+        .inner_margin(egui::Margin::symmetric(12, 8))
         .show(ui, |ui| {
-            let content_h = (ui.available_height() - 20.0).max(160.0);
+            let content_h = ui.available_height().max(160.0);
             ui.allocate_ui(Vec2::new(ui.available_width(), content_h), |ui| {
                 if !s.message.is_empty() && !s.explore && active_tab.is_none() {
                     ui.centered_and_justified(|ui| {
@@ -273,16 +316,6 @@ pub fn render_client(
                     render_explore(ui, ctl, &s.header.tier_id, &mut st.explore, imgs);
                 }
             });
-
-            if !( !s.message.is_empty() && s.explore ) {
-                ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
-                    ui.label(
-                        RichText::new(format!("lolalytics · updated {}", s.updated_hms))
-                            .size(10.0)
-                            .color(DIM),
-                    );
-                });
-            }
         });
 }
 
@@ -352,9 +385,9 @@ fn render_draft_bar(
                     paint_ally_slot(ui, slot.as_ref(), i, imgs);
                 }
 
-                // Odds center bar
-                let rem_w = (ui.available_width() - 250.0).max(160.0);
-                ui.allocate_ui(Vec2::new(rem_w, 56.0), |ui| {
+                // Odds center bar (enemies occupy ~255px on the right)
+                let rem_w = (ui.available_width() - 260.0).max(160.0);
+                ui.allocate_ui(Vec2::new(rem_w, 58.0), |ui| {
                     render_odds(ui, p.odds.as_ref(), &p.note);
                 });
 
@@ -428,8 +461,7 @@ fn render_draft_bar(
 
 fn paint_ally_slot(ui: &mut Ui, slot: Option<&AllySlotView>, idx: usize, imgs: &mut ImageCache) {
     let default_lanes = ["TOP", "JG", "MID", "BOT", "SUP"];
-    ui.vertical(|ui| {
-        ui.set_width(42.0);
+    ui.allocate_ui_with_layout(Vec2::new(42.0, 58.0), Layout::top_down(Align::Center), |ui| {
         if let Some(a) = slot {
             let border = if a.is_me { GOLD } else { ALLY };
             let tint = if a.tentative {
@@ -475,8 +507,7 @@ fn paint_enemy_slot(
 ) -> bool {
     let default_lanes = ["TOP", "JG", "MID", "BOT", "SUP"];
     let mut clicked = false;
-    ui.vertical(|ui| {
-        ui.set_width(42.0);
+    ui.allocate_ui_with_layout(Vec2::new(42.0, 58.0), Layout::top_down(Align::Center), |ui| {
         if let Some(e) = slot {
             let border = if selected { GOLD } else { ENEMY };
             let (rect, resp) = ui.allocate_exact_size(Vec2::splat(38.0), Sense::click());
@@ -504,23 +535,28 @@ fn render_odds(ui: &mut Ui, o: Option<&OddsView>, note: &str) {
     let known = o.map_or(0, |x| x.known);
     let pending = o.map_or(0, |x| x.pending);
 
+    let w = ui.available_width();
     ui.vertical_centered(|ui| {
         ui.horizontal(|ui| {
-            ui.label(RichText::new(format!("{win:.1}% you")).size(14.5).strong().color(ALLY_TEXT));
-            ui.with_layout(Layout::centered_and_justified(egui::Direction::LeftToRight), |ui| {
-                let mid = if pending > 0 {
-                    format!("draft estimate · {known}/10 · loading {pending}")
-                } else {
-                    format!("draft estimate · {known} of 10 picked")
-                };
-                ui.label(RichText::new(mid).size(10.0).color(MUTED));
-            });
-            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                ui.label(RichText::new(format!("{:.1}% them", 100.0 - win)).size(14.5).strong().color(ENEMY_TEXT));
-            });
+            let side_lbl = 86.0_f32.min(w * 0.28);
+            let mid_w = (w - side_lbl * 2.0 - 16.0).max(80.0);
+            ui.add_sized(
+                [side_lbl, 20.0],
+                egui::Label::new(RichText::new(format!("{win:.1}% you")).size(14.5).strong().color(ALLY_TEXT)),
+            );
+            let mid = if pending > 0 {
+                format!("draft estimate · {known} of 10 · loading {pending}")
+            } else {
+                format!("draft estimate · {known} of 10 picked")
+            };
+            ui.add_sized([mid_w, 20.0], egui::Label::new(RichText::new(mid).size(10.0).color(MUTED)));
+            ui.add_sized(
+                [side_lbl, 20.0],
+                egui::Label::new(RichText::new(format!("{:.1}% them", 100.0 - win)).size(14.5).strong().color(ENEMY_TEXT)),
+            );
         });
 
-        let (bar, _) = ui.allocate_exact_size(Vec2::new(ui.available_width(), 6.0), Sense::hover());
+        let (bar, _) = ui.allocate_exact_size(Vec2::new(w, 5.0), Sense::hover());
         ui.painter().rect_filled(bar, CornerRadius::same(3), ENEMY);
         let fill_w = bar.width() * (win as f32 / 100.0).clamp(0.0, 1.0);
         ui.painter().rect_filled(
@@ -533,8 +569,8 @@ fn render_odds(ui: &mut Ui, o: Option<&OddsView>, note: &str) {
         if let Some(ov) = o
             && (!ov.reasons.is_empty() || !note.is_empty())
         {
-            ui.horizontal_wrapped(|ui| {
-                for r in ov.reasons.iter().take(3) {
+            ui.horizontal(|ui| {
+                for r in ov.reasons.iter().take(4) {
                     let col = if r.value >= 0.0 { POS } else { NEG };
                     egui::Frame::new()
                         .fill(RAISED)
