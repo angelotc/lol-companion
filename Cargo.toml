@@ -1,0 +1,45 @@
+[package]
+name = "lol-companion"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+base64 = "0.22"
+clap = { version = "4", features = ["derive"] }
+eframe = "0.33.3"
+egui = "0.33.3"
+flate2 = "1"
+futures-util = "0.3"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+regex = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "gzip", "brotli"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+rustls = "0.23"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha1 = "0.10"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs"] }
+tokio-rustls = "0.26"
+tokio-tungstenite = { version = "0.26", features = ["rustls-tls-webpki-roots"] }
+toml = "0.8"
+toml_edit = "0.22"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tray-icon = "0.21"
+urlencoding = "2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_Security",
+    "Win32_System_Console",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_ProcessStatus",
+    "Win32_System_Registry",
+    "Win32_System_Threading",
+    "Win32_UI_HiDpi",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+] }
