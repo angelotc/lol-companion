@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod domain;
 mod data;
+mod domain;
 mod engine;
 mod images;
 mod tray;
@@ -12,23 +12,24 @@ use clap::Parser;
 use egui::{ViewportBuilder, ViewportCommand, ViewportId};
 use std::collections::HashSet;
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use tokio::sync::{mpsc, watch};
 use tracing::{error, info};
 
+use crate::data::lcu::{LcuClient, LcuUpdate, read_lockfile, watch_session};
+use crate::data::players::{FixtureClient, PlayerClient, game_refs, load_all};
+use crate::data::store::Store;
 use crate::domain::config::{Config, data_dir, default_config_path, load_config, load_ui_settings, save_ui_settings};
 use crate::domain::lcu::Slot;
 use crate::domain::live::LiveGame;
 use crate::domain::scoring::LANES;
-use crate::data::lcu::{LcuClient, LcuUpdate, read_lockfile, watch_session};
-use crate::data::players::{FixtureClient, PlayerClient, game_refs, load_all};
-use crate::data::store::Store;
 use crate::engine::controller::{Controller, ScreenUpdate};
 use crate::engine::views::GameScreen;
 
 use images::ImageCache;
-use tray::{AppTray, TrayAction};
+use tray::{AppTray, TrayAction, TrayIds};
 use ui::client_view::{ClientUiState, render_client};
 use ui::game_view::render_game_overlay;
 use ui::settings_view::{SettingsUiState, render_settings};
@@ -74,70 +75,94 @@ struct Cli {
 enum AppSignal {
     TogglePanel,
     ShowPanel,
+    OpenSettings,
+    ToggleAutostart(bool),
     ToggleIngame,
+    Quit,
+}
+
+struct SharedUi {
+    ctl: Arc<Controller>,
+    imgs: Mutex<ImageCache>,
+    latest_game: Mutex<Option<GameScreen>>,
+    settings_ui: Mutex<SettingsUiState>,
+    egui_ctx: Mutex<Option<egui::Context>>,
+    panel_hwnd: AtomicIsize,
+    game_hwnd: AtomicIsize,
+    panel_shown: AtomicBool,
+    game_shown: AtomicBool,
+    last_game_place: Mutex<Option<win32::Placement>>,
+    always_show: bool,
+}
+
+impl SharedUi {
+    fn wake_root(&self) {
+        if let Some(ctx) = self.egui_ctx.lock().unwrap().as_ref() {
+            ctx.request_repaint_of(ViewportId::ROOT);
+        }
+    }
+
+    fn wake_ingame(&self) {
+        if let Some(ctx) = self.egui_ctx.lock().unwrap().as_ref() {
+            ctx.request_repaint_of(ViewportId::from_hash_of("ingame_overlay"));
+        }
+    }
+
+    fn ensure_panel_visible(&self) {
+        let hwnd = self.panel_hwnd.load(Ordering::Relaxed);
+        if hwnd != 0 {
+            win32::show_window(hwnd, true);
+            win32::bring_to_front(hwnd);
+        }
+        self.panel_shown.store(true, Ordering::Relaxed);
+        self.wake_root();
+    }
 }
 
 struct CompanionApp {
-    ctl: Arc<Controller>,
+    shared: Arc<SharedUi>,
+    _tray: Option<AppTray>,
     screen_rx: watch::Receiver<ScreenUpdate>,
     sig_rx: mpsc::UnboundedReceiver<AppSignal>,
-    tray: Option<AppTray>,
-    imgs: ImageCache,
     client_ui: ClientUiState,
-    settings_ui: SettingsUiState,
-    always_show: bool,
     quitting: bool,
-    panel_shown: bool,
-    game_shown: bool,
-    panel_hwnd: isize,
-    game_hwnd: isize,
-    last_game_place: Option<win32::Placement>,
-    last_panel_rect: Option<win32::Rect>,
-    last_track_at: Instant,
     theme_applied: bool,
-    latest_game: Option<GameScreen>,
+    cached_screen: ScreenUpdate,
 }
 
 impl CompanionApp {
     fn new(
-        ctl: Arc<Controller>,
+        shared: Arc<SharedUi>,
+        tray: Option<AppTray>,
         screen_rx: watch::Receiver<ScreenUpdate>,
         sig_rx: mpsc::UnboundedReceiver<AppSignal>,
-        tray: Option<AppTray>,
-        cfg_path: PathBuf,
-        always_show: bool,
     ) -> Self {
+        let initial = screen_rx.borrow().clone();
         Self {
-            ctl,
+            shared,
+            _tray: tray,
             screen_rx,
             sig_rx,
-            tray,
-            imgs: ImageCache::new(),
             client_ui: ClientUiState::default(),
-            settings_ui: SettingsUiState::new(cfg_path, format!("Version {}", env!("CARGO_PKG_VERSION"))),
-            always_show,
             quitting: false,
-            panel_shown: always_show,
-            game_shown: false,
-            panel_hwnd: 0,
-            game_hwnd: 0,
-            last_game_place: None,
-            last_panel_rect: None,
-            last_track_at: Instant::now() - Duration::from_secs(1),
             theme_applied: false,
-            latest_game: None,
+            cached_screen: initial,
         }
     }
 
     fn toggle_panel(&mut self, ctx: &egui::Context) {
-        if self.panel_hwnd == 0 {
-            self.panel_hwnd = win32::find_window_by_title(PANEL_TITLE);
+        let mut hwnd = self.shared.panel_hwnd.load(Ordering::Relaxed);
+        if hwnd == 0 {
+            hwnd = win32::find_window_by_title(PANEL_TITLE);
+            if hwnd != 0 {
+                self.shared.panel_hwnd.store(hwnd, Ordering::Relaxed);
+            }
         }
-        let minimized = self.panel_hwnd != 0 && win32::is_minimized(self.panel_hwnd);
-        let hide = !self.ctl.user_hidden() && !minimized;
-        self.ctl.set_user_hidden(hide);
+        let minimized = hwnd != 0 && win32::is_minimized(hwnd);
+        let hide = !self.shared.ctl.user_hidden() && !minimized;
+        self.shared.ctl.set_user_hidden(hide);
         if hide {
-            self.panel_shown = false;
+            self.shared.panel_shown.store(false, Ordering::Relaxed);
             ctx.send_viewport_cmd(ViewportCommand::Visible(false));
         } else {
             self.show_panel(ctx);
@@ -145,93 +170,15 @@ impl CompanionApp {
     }
 
     fn show_panel(&mut self, ctx: &egui::Context) {
-        self.ctl.set_user_hidden(false);
-        self.panel_shown = true;
+        self.shared.ctl.set_user_hidden(false);
+        self.shared.panel_shown.store(true, Ordering::Relaxed);
+        let hwnd = self.shared.panel_hwnd.load(Ordering::Relaxed);
+        if hwnd != 0 {
+            win32::show_window(hwnd, true);
+            win32::bring_to_front(hwnd);
+        }
         ctx.send_viewport_cmd(ViewportCommand::Visible(true));
         ctx.send_viewport_cmd(ViewportCommand::Focus);
-        if self.panel_hwnd != 0 {
-            win32::bring_to_front(self.panel_hwnd);
-        }
-    }
-
-    fn tick_tracker(&mut self, ctx: &egui::Context, screen: &ScreenUpdate) {
-        if let ScreenUpdate::Game(g) = screen {
-            self.latest_game = Some(g.clone());
-        }
-
-        if self.panel_hwnd == 0 {
-            self.panel_hwnd = win32::find_window_by_title(PANEL_TITLE);
-            if self.panel_hwnd != 0 {
-                win32::lock_aspect(self.panel_hwnd);
-                if let Some(saved) = load_ui_settings().window_rect {
-                    let r = win32::Rect {
-                        left: saved[0],
-                        top: saved[1],
-                        right: saved[2],
-                        bottom: saved[3],
-                    };
-                    if win32::on_screen(r) {
-                        win32::set_rect(self.panel_hwnd, r);
-                        self.last_panel_rect = Some(r);
-                    }
-                }
-            }
-        }
-
-        let want_game = self.ctl.ingame_screen_active();
-        let want_panel = if self.always_show && want_game {
-            false
-        } else {
-            !self.ctl.user_hidden()
-        };
-
-        if want_panel != self.panel_shown {
-            self.panel_shown = want_panel;
-            ctx.send_viewport_cmd(ViewportCommand::Visible(want_panel));
-            if want_panel && self.panel_hwnd != 0 {
-                win32::bring_to_front(self.panel_hwnd);
-            }
-        }
-
-        if want_game {
-            let scale = self.ctl.config_snapshot().ingame_scale as f32;
-            let (placement, focused) = if self.always_show {
-                (Some(win32::place_ingame(win32::primary_work_area(), scale)), true)
-            } else {
-                let game = win32::find_game();
-                if game == 0 || win32::is_minimized(game) {
-                    (None, false)
-                } else {
-                    let front = win32::foreground_root();
-                    let p = win32::place_ingame(win32::window_rect(game), scale);
-                    (Some(p), front == game || (self.game_hwnd != 0 && front == self.game_hwnd))
-                }
-            };
-            let show = placement.is_some() && focused;
-            self.game_shown = show;
-            if show && let Some(p) = placement {
-                if self.game_hwnd == 0 {
-                    self.game_hwnd = win32::find_window_by_title(GAME_TITLE);
-                    if self.game_hwnd != 0 {
-                        win32::set_no_activate(self.game_hwnd, true);
-                    }
-                }
-                if self.game_hwnd != 0 && self.last_game_place != Some(p) {
-                    win32::move_topmost(self.game_hwnd, p);
-                    self.last_game_place = Some(p);
-                }
-            }
-        } else {
-            self.game_shown = false;
-        }
-
-        if self.panel_shown && self.panel_hwnd != 0 && win32::is_normal(self.panel_hwnd) {
-            let r = win32::window_rect(self.panel_hwnd);
-            if self.last_panel_rect != Some(r) {
-                self.last_panel_rect = Some(r);
-                save_ui_settings(|s| s.window_rect = Some([r.left, r.top, r.right, r.bottom]));
-            }
-        }
     }
 }
 
@@ -240,116 +187,324 @@ impl eframe::App for CompanionApp {
         if !self.theme_applied {
             apply_theme(ctx);
             self.theme_applied = true;
-            let ctx_c = ctx.clone();
-            self.ctl.set_repaint_hook(move || ctx_c.request_repaint());
+            *self.shared.egui_ctx.lock().unwrap() = Some(ctx.clone());
+            self.shared.imgs.lock().unwrap().bind_ctx(ctx);
+            let shared_c = Arc::clone(&self.shared);
+            self.shared.ctl.set_repaint_hook(move || {
+                if shared_c.panel_shown.load(Ordering::Relaxed) {
+                    shared_c.wake_root();
+                }
+                if shared_c.game_shown.load(Ordering::Relaxed) {
+                    shared_c.wake_ingame();
+                }
+            });
         }
 
-        // Handle close-to-tray on root window
         if !self.quitting && ctx.input(|i| i.viewport().close_requested()) {
             ctx.send_viewport_cmd(ViewportCommand::CancelClose);
-            self.ctl.set_user_hidden(true);
-            self.panel_shown = false;
+            self.shared.ctl.set_user_hidden(true);
+            self.shared.panel_shown.store(false, Ordering::Relaxed);
             ctx.send_viewport_cmd(ViewportCommand::Visible(false));
         }
 
-        // Poll tray & hotkey signals
-        let tray_actions = self.tray.as_ref().map(|t| t.poll_actions()).unwrap_or_default();
-        for act in tray_actions {
-            match act {
-                TrayAction::TogglePanel => self.toggle_panel(ctx),
-                TrayAction::OpenSettings => {
-                    self.settings_ui.reload_from_disk();
-                    self.settings_ui.open = true;
+        while let Ok(sig) = self.sig_rx.try_recv() {
+            match sig {
+                AppSignal::TogglePanel => self.toggle_panel(ctx),
+                AppSignal::ShowPanel => self.show_panel(ctx),
+                AppSignal::OpenSettings => {
+                    let mut st = self.shared.settings_ui.lock().unwrap();
+                    st.reload_from_disk();
+                    st.open = true;
                 }
-                TrayAction::ToggleAutostart => {}
-                TrayAction::Quit => {
+                AppSignal::ToggleAutostart(on) => {
+                    if let Some(t) = &self._tray {
+                        t.set_autostart_checked(on);
+                    }
+                }
+                AppSignal::ToggleIngame => {
+                    let ctl_c = Arc::clone(&self.shared.ctl);
+                    tokio::spawn(async move {
+                        ctl_c.toggle_ingame().await;
+                    });
+                }
+                AppSignal::Quit => {
                     self.quitting = true;
                     ctx.send_viewport_cmd(ViewportCommand::Close);
                     std::process::exit(0);
                 }
             }
         }
-        while let Ok(sig) = self.sig_rx.try_recv() {
-            match sig {
-                AppSignal::TogglePanel => self.toggle_panel(ctx),
-                AppSignal::ShowPanel => self.show_panel(ctx),
-                AppSignal::ToggleIngame => {
-                    let ctl_c = Arc::clone(&self.ctl);
-                    tokio::spawn(async move {
-                        ctl_c.toggle_ingame().await;
-                    });
+
+        self.shared.imgs.lock().unwrap().poll(ctx);
+
+        if self.screen_rx.has_changed().unwrap_or(false) {
+            self.cached_screen = self.screen_rx.borrow_and_update().clone();
+            if let ScreenUpdate::Game(g) = &self.cached_screen {
+                *self.shared.latest_game.lock().unwrap() = Some(g.clone());
+            }
+        }
+
+        let want_game = self.shared.ctl.ingame_screen_active();
+        let want_panel = if self.shared.always_show && want_game {
+            false
+        } else {
+            !self.shared.ctl.user_hidden()
+        };
+        if want_panel != self.shared.panel_shown.load(Ordering::Relaxed) {
+            self.shared.panel_shown.store(want_panel, Ordering::Relaxed);
+            ctx.send_viewport_cmd(ViewportCommand::Visible(want_panel));
+            if want_panel {
+                let hwnd = self.shared.panel_hwnd.load(Ordering::Relaxed);
+                if hwnd != 0 {
+                    win32::bring_to_front(hwnd);
                 }
             }
         }
 
-        self.imgs.poll(ctx);
-
-        let screen = self.screen_rx.borrow_and_update().clone();
-        if self.last_track_at.elapsed() >= Duration::from_millis(250) {
-            self.last_track_at = Instant::now();
-            self.tick_tracker(ctx, &screen);
+        let mut open_settings = false;
+        if self.shared.panel_shown.load(Ordering::Relaxed) {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                if let ScreenUpdate::Client(c) = &self.cached_screen {
+                    let mut imgs = self.shared.imgs.lock().unwrap();
+                    render_client(
+                        ui,
+                        c,
+                        &mut self.client_ui,
+                        &self.shared.ctl,
+                        &mut imgs,
+                        &mut open_settings,
+                    );
+                } else {
+                    ui.centered_and_justified(|ui| {
+                        ui.label("In game — press Ctrl+X over League to toggle the overlay.");
+                    });
+                }
+            });
+        }
+        if open_settings {
+            let mut st = self.shared.settings_ui.lock().unwrap();
+            st.reload_from_disk();
+            st.open = true;
         }
 
-        // Root client panel
-        egui::CentralPanel::default().show(ctx, |ui| {
-            if let ScreenUpdate::Client(c) = &screen {
-                render_client(
-                    ui,
-                    c,
-                    &mut self.client_ui,
-                    &self.ctl,
-                    &mut self.imgs,
-                    &mut self.settings_ui.open,
-                );
-            } else {
-                ui.centered_and_justified(|ui| {
-                    ui.label("In game — press Ctrl+X over League to toggle the overlay.");
+        // In-game frameless overlay (always registered as a deferred viewport so it can be shown/hidden without touching ROOT)
+        let game_shown = self.shared.game_shown.load(Ordering::Relaxed);
+        let has_game_data = self.shared.latest_game.lock().unwrap().is_some();
+        let place = self
+            .shared
+            .last_game_place
+            .lock()
+            .unwrap()
+            .unwrap_or_else(|| {
+                win32::place_ingame(
+                    win32::primary_work_area(),
+                    self.shared.ctl.config_snapshot().ingame_scale as f32,
+                )
+            });
+        let dpi = win32::dpi_scale(place).max(1.0);
+        let builder = ViewportBuilder::default()
+            .with_title(GAME_TITLE)
+            .with_decorations(false)
+            .with_always_on_top()
+            .with_resizable(false)
+            .with_taskbar(false)
+            .with_visible(game_shown && has_game_data)
+            .with_inner_size([place.width as f32 / dpi, place.height as f32 / dpi])
+            .with_position([place.x as f32 / dpi, place.y as f32 / dpi]);
+        let shared_ig = Arc::clone(&self.shared);
+        ctx.show_viewport_deferred(ViewportId::from_hash_of("ingame_overlay"), builder, move |ctx, _| {
+            if shared_ig.game_hwnd.load(Ordering::Relaxed) == 0 {
+                let hwnd = win32::find_window_by_title(GAME_TITLE);
+                if hwnd != 0 {
+                    win32::set_no_activate(hwnd, true);
+                    shared_ig.game_hwnd.store(hwnd, Ordering::Relaxed);
+                }
+            }
+            if !shared_ig.game_shown.load(Ordering::Relaxed) {
+                return;
+            }
+            let maybe_g = shared_ig.latest_game.lock().unwrap().clone();
+            if let Some(g) = maybe_g {
+                let mut imgs = shared_ig.imgs.lock().unwrap();
+                imgs.poll(ctx);
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    render_game_overlay(ui, &g, &mut imgs);
                 });
             }
         });
 
-        // In-game frameless overlay viewport
-        if self.game_shown && let Some(g) = &self.latest_game {
-            let g_clone = g.clone();
-            let place = self.last_game_place.unwrap_or_else(|| {
-                win32::place_ingame(win32::primary_work_area(), self.ctl.config_snapshot().ingame_scale as f32)
-            });
-            let dpi = win32::dpi_scale(place).max(1.0);
-            let builder = ViewportBuilder::default()
-                .with_title(GAME_TITLE)
-                .with_decorations(false)
-                .with_always_on_top()
-                .with_resizable(false)
-                .with_inner_size([place.width as f32 / dpi, place.height as f32 / dpi])
-                .with_position([place.x as f32 / dpi, place.y as f32 / dpi]);
-            ctx.show_viewport_immediate(ViewportId::from_hash_of("ingame_overlay"), builder, |ctx, _| {
-                egui::CentralPanel::default().show(ctx, |ui| {
-                    render_game_overlay(ui, &g_clone, &mut self.imgs);
-                });
-            });
-        }
-
-        // Settings viewport
-        if self.settings_ui.open {
+        // Settings deferred viewport
+        let settings_open = self.shared.settings_ui.lock().unwrap().open;
+        if settings_open {
             let builder = ViewportBuilder::default()
                 .with_title(SETTINGS_TITLE)
                 .with_inner_size([480.0, 440.0])
                 .with_min_inner_size([420.0, 340.0]);
-            ctx.show_viewport_immediate(ViewportId::from_hash_of("settings_win"), builder, |ctx, _| {
+            let shared_st = Arc::clone(&self.shared);
+            ctx.show_viewport_deferred(ViewportId::from_hash_of("settings_win"), builder, move |ctx, _| {
+                let mut st = shared_st.settings_ui.lock().unwrap();
                 if ctx.input(|i| i.viewport().close_requested()) {
-                    self.settings_ui.open = false;
+                    st.open = false;
                 }
                 egui::CentralPanel::default().show(ctx, |ui| {
-                    render_settings(ui, &mut self.settings_ui, &self.ctl);
+                    render_settings(ui, &mut st, &shared_st.ctl);
                 });
             });
         }
-
-        ctx.request_repaint_after(Duration::from_millis(250));
     }
 }
 
-fn spawn_ctrl_x_listener(ctl: Arc<Controller>, sig_tx: mpsc::UnboundedSender<AppSignal>) {
+fn spawn_tracker_and_tray(
+    shared: Arc<SharedUi>,
+    tray_ids: Option<TrayIds>,
+    sig_tx: mpsc::UnboundedSender<AppSignal>,
+) {
+    if let Some(ids) = tray_ids {
+        let sh_m = Arc::clone(&shared);
+        let tx_m = sig_tx.clone();
+        std::thread::spawn(move || {
+            while let Some(id) = tray::recv_menu_event() {
+                if let Some(act) = ids.classify(&id) {
+                    match act {
+                        TrayAction::TogglePanel => {
+                            sh_m.ensure_panel_visible();
+                            let _ = tx_m.send(AppSignal::TogglePanel);
+                        }
+                        TrayAction::OpenSettings => {
+                            sh_m.ensure_panel_visible();
+                            let _ = tx_m.send(AppSignal::OpenSettings);
+                        }
+                        TrayAction::ToggleAutostart(on) => {
+                            let _ = tx_m.send(AppSignal::ToggleAutostart(on));
+                        }
+                        TrayAction::Quit => {
+                            let _ = tx_m.send(AppSignal::Quit);
+                            std::process::exit(0);
+                        }
+                    }
+                }
+            }
+        });
+
+        let sh_t = Arc::clone(&shared);
+        let tx_t = sig_tx.clone();
+        std::thread::spawn(move || {
+            loop {
+                if tray::recv_tray_double_click() {
+                    sh_t.ensure_panel_visible();
+                    let _ = tx_t.send(AppSignal::TogglePanel);
+                } else {
+                    std::thread::sleep(Duration::from_millis(200));
+                }
+            }
+        });
+    }
+
+    std::thread::spawn(move || {
+        let mut last_panel_rect: Option<win32::Rect> = None;
+        let mut last_overlay_vis = false;
+        loop {
+            std::thread::sleep(Duration::from_millis(250));
+
+            if shared.panel_hwnd.load(Ordering::Relaxed) == 0 {
+                let hwnd = win32::find_window_by_title(PANEL_TITLE);
+                if hwnd != 0 {
+                    shared.panel_hwnd.store(hwnd, Ordering::Relaxed);
+                    win32::lock_aspect(hwnd);
+                    if let Some(saved) = load_ui_settings().window_rect {
+                        let r = win32::Rect {
+                            left: saved[0],
+                            top: saved[1],
+                            right: saved[2],
+                            bottom: saved[3],
+                        };
+                        if win32::on_screen(r) {
+                            win32::set_rect(hwnd, r);
+                            last_panel_rect = Some(r);
+                        }
+                    }
+                }
+            }
+            if shared.game_hwnd.load(Ordering::Relaxed) == 0 {
+                let hwnd = win32::find_window_by_title(GAME_TITLE);
+                if hwnd != 0 {
+                    win32::set_no_activate(hwnd, true);
+                    shared.game_hwnd.store(hwnd, Ordering::Relaxed);
+                }
+            }
+
+            let want_game = shared.ctl.ingame_screen_active();
+            let want_panel = if shared.always_show && want_game {
+                false
+            } else {
+                !shared.ctl.user_hidden()
+            };
+            if want_panel != shared.panel_shown.load(Ordering::Relaxed) {
+                if want_panel {
+                    shared.ensure_panel_visible();
+                } else {
+                    shared.wake_root();
+                }
+            }
+
+            let gh = shared.game_hwnd.load(Ordering::Relaxed);
+            let has_data = shared.latest_game.lock().unwrap().is_some();
+            let (placement, focused) = if want_game {
+                let scale = shared.ctl.config_snapshot().ingame_scale as f32;
+                if shared.always_show {
+                    (Some(win32::place_ingame(win32::primary_work_area(), scale)), true)
+                } else {
+                    let game = win32::find_game();
+                    if game == 0 || win32::is_minimized(game) {
+                        (None, false)
+                    } else {
+                        let front = win32::foreground_root();
+                        let p = win32::place_ingame(win32::window_rect(game), scale);
+                        (Some(p), front == game || (gh != 0 && front == gh))
+                    }
+                }
+            } else {
+                (None, false)
+            };
+
+            let vis = want_game && has_data && placement.is_some() && focused;
+            shared.game_shown.store(vis, Ordering::Relaxed);
+            if vis && let Some(p) = placement {
+                let mut lp = shared.last_game_place.lock().unwrap();
+                if *lp != Some(p) {
+                    *lp = Some(p);
+                    if gh != 0 {
+                        win32::move_topmost(gh, p);
+                    }
+                }
+            }
+            if vis != last_overlay_vis && gh != 0 {
+                if vis {
+                    win32::set_no_activate(gh, true);
+                    if let Some(p) = placement {
+                        win32::move_topmost(gh, p);
+                    }
+                    win32::show_window_na(gh);
+                    shared.wake_ingame();
+                } else {
+                    win32::show_window(gh, false);
+                }
+                last_overlay_vis = vis;
+            }
+
+            let ph = shared.panel_hwnd.load(Ordering::Relaxed);
+            if shared.panel_shown.load(Ordering::Relaxed) && ph != 0 && win32::is_normal(ph) {
+                let r = win32::window_rect(ph);
+                if last_panel_rect != Some(r) {
+                    last_panel_rect = Some(r);
+                    save_ui_settings(|s| s.window_rect = Some([r.left, r.top, r.right, r.bottom]));
+                }
+            }
+        }
+    });
+}
+
+fn spawn_ctrl_x_listener(shared: Arc<SharedUi>, sig_tx: mpsc::UnboundedSender<AppSignal>) {
     std::thread::spawn(move || {
         let mut was = false;
         loop {
@@ -372,11 +527,12 @@ fn spawn_ctrl_x_listener(ctl: Arc<Controller>, sig_tx: mpsc::UnboundedSender<App
             if front != 0 && (front == game || front == client || front == panel || front == game_panel) {
                 if game != 0 {
                     let _ = sig_tx.send(AppSignal::ToggleIngame);
+                    shared.wake_root();
                 } else {
+                    shared.ensure_panel_visible();
                     let _ = sig_tx.send(AppSignal::TogglePanel);
                 }
             }
-            let _ = &ctl;
         }
     });
 }
@@ -555,18 +711,60 @@ fn main() {
     let (ctl, screen_rx) = Controller::new(cfg, store);
     let (sig_tx, sig_rx) = mpsc::unbounded_channel();
 
+    let shared = Arc::new(SharedUi {
+        ctl: Arc::clone(&ctl),
+        imgs: Mutex::new(ImageCache::new()),
+        latest_game: Mutex::new(None),
+        settings_ui: Mutex::new(SettingsUiState::new(
+            cfg_path,
+            format!("Version {}", env!("CARGO_PKG_VERSION")),
+        )),
+        egui_ctx: Mutex::new(None),
+        panel_hwnd: AtomicIsize::new(0),
+        game_hwnd: AtomicIsize::new(0),
+        panel_shown: AtomicBool::new(always_show),
+        game_shown: AtomicBool::new(false),
+        last_game_place: Mutex::new(None),
+        always_show,
+    });
+
     if live {
         let tx_show = sig_tx.clone();
+        let sh_show = Arc::clone(&shared);
         win32::wait_show_requests(move || {
+            sh_show.ensure_panel_visible();
             let _ = tx_show.send(AppSignal::ShowPanel);
         });
     }
 
     let tx_hotkey = sig_tx.clone();
+    let sh_hk = Arc::clone(&shared);
     win32::register_toggle_hotkey(move || {
+        sh_hk.ensure_panel_visible();
         let _ = tx_hotkey.send(AppSignal::TogglePanel);
     });
-    spawn_ctrl_x_listener(Arc::clone(&ctl), sig_tx);
+    spawn_ctrl_x_listener(Arc::clone(&shared), sig_tx.clone());
+
+    let tray = AppTray::new().ok();
+    spawn_tracker_and_tray(Arc::clone(&shared), tray.as_ref().map(AppTray::ids), sig_tx);
+
+    {
+        let mut rx = screen_rx.clone();
+        let sh = Arc::clone(&shared);
+        tokio::spawn(async move {
+            while rx.changed().await.is_ok() {
+                if let ScreenUpdate::Game(g) = rx.borrow_and_update().clone() {
+                    *sh.latest_game.lock().unwrap() = Some(g);
+                }
+                if sh.panel_shown.load(Ordering::Relaxed) {
+                    sh.wake_root();
+                }
+                if sh.game_shown.load(Ordering::Relaxed) {
+                    sh.wake_ingame();
+                }
+            }
+        });
+    }
 
     if cli.items.is_empty() && !cli.players {
         let ctl_live = Arc::clone(&ctl);
@@ -592,7 +790,6 @@ fn main() {
         }
     });
 
-    let tray = AppTray::new().ok();
     let work = win32::primary_work_area();
     let w = (win32::PAGE_SIZE.0 as f32).min(work.width() as f32 * 0.9);
     let h = w / (16.0 / 9.0);
@@ -605,7 +802,7 @@ fn main() {
         ..Default::default()
     };
 
-    let app = CompanionApp::new(ctl, screen_rx, sig_rx, tray, cfg_path, always_show);
+    let app = CompanionApp::new(shared, tray, screen_rx, sig_rx);
     if let Err(e) = eframe::run_native(PANEL_TITLE, native_options, Box::new(|_cc| Ok(Box::new(app)))) {
         error!("eframe exited with error: {e}");
     }

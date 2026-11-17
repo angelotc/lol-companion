@@ -30,31 +30,37 @@ pub fn render_game_overlay(ui: &mut Ui, g: &GameScreen, imgs: &mut ImageCache) {
             ui.columns(2, |cols| {
                 // Left column: Players
                 cols[0].allocate_ui(Vec2::new(cols[0].available_width(), avail_h), |ui| {
-                    egui::ScrollArea::vertical().id_salt("ig_players").show(ui, |ui| {
-                        if let Some(teams) = &g.teams {
-                            for t in teams {
-                                render_team(ui, t, imgs);
-                                ui.add_space(6.0);
+                    egui::ScrollArea::vertical()
+                        .id_salt("ig_players")
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| {
+                            if let Some(teams) = &g.teams {
+                                for t in teams {
+                                    render_team(ui, t, imgs);
+                                    ui.add_space(6.0);
+                                }
+                            } else {
+                                ui.centered_and_justified(|ui| {
+                                    ui.label(RichText::new(&g.players_note).size(11.0).color(MUTED));
+                                });
                             }
-                        } else {
-                            ui.centered_and_justified(|ui| {
-                                ui.label(RichText::new(&g.players_note).size(11.0).color(MUTED));
-                            });
-                        }
-                    });
+                        });
                 });
 
                 // Right column: Build
                 cols[1].allocate_ui(Vec2::new(cols[1].available_width(), avail_h), |ui| {
-                    egui::ScrollArea::vertical().id_salt("ig_build").show(ui, |ui| {
-                        if let Some(b) = &g.build {
-                            render_ig_build(ui, b, imgs);
-                        } else {
-                            ui.centered_and_justified(|ui| {
-                                ui.label(RichText::new(&g.build_note).size(11.0).color(MUTED));
-                            });
-                        }
-                    });
+                    egui::ScrollArea::vertical()
+                        .id_salt("ig_build")
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| {
+                            if let Some(b) = &g.build {
+                                render_ig_build(ui, b, imgs);
+                            } else {
+                                ui.centered_and_justified(|ui| {
+                                    ui.label(RichText::new(&g.build_note).size(11.0).color(MUTED));
+                                });
+                            }
+                        });
                 });
             });
 

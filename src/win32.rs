@@ -18,6 +18,7 @@ mod imp {
         SWP_NOSIZE, SWP_NOZORDER, SetWindowLongPtrW, SetWindowLongW, SetWindowPos, ShowWindow, SystemParametersInfoW,
         TranslateMessage, WM_HOTKEY, WM_SIZING, WMSZ_BOTTOM, WMSZ_BOTTOMLEFT, WMSZ_BOTTOMRIGHT, WMSZ_LEFT,
         WMSZ_TOP, WMSZ_TOPLEFT, WMSZ_TOPRIGHT, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TRANSPARENT,
+        SW_HIDE, SW_SHOW, SW_SHOWNA,
     };
 
     pub const CLIENT_CLASS: &str = "RCLIENT";
@@ -332,6 +333,24 @@ mod imp {
         }
     }
 
+    pub fn show_window(hwnd: isize, show: bool) {
+        if hwnd == 0 {
+            return;
+        }
+        unsafe {
+            ShowWindow(hwnd as HWND, if show { SW_SHOW } else { SW_HIDE });
+        }
+    }
+
+    pub fn show_window_na(hwnd: isize) {
+        if hwnd == 0 {
+            return;
+        }
+        unsafe {
+            ShowWindow(hwnd as HWND, SW_SHOWNA);
+        }
+    }
+
     pub fn bring_to_front(hwnd: isize) {
         if hwnd == 0 {
             return;
@@ -577,6 +596,8 @@ mod imp {
     pub fn place_ingame(_: Rect, _: f32) -> Placement { Placement { x: 0, y: 0, width: 620, height: 600, scale: 1.0 } }
     pub fn dpi_scale(_: Placement) -> f32 { 1.0 }
     pub fn set_no_activate(_: isize, _: bool) {}
+    pub fn show_window(_: isize, _: bool) {}
+    pub fn show_window_na(_: isize) {}
     pub fn move_topmost(_: isize, _: Placement) {}
     pub fn set_rect(_: isize, _: Rect) {}
     pub fn bring_to_front(_: isize) {}

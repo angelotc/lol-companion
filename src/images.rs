@@ -54,6 +54,11 @@ impl ImageCache {
         }
     }
 
+    pub fn repaint_all(ctx: &egui::Context) {
+        ctx.request_repaint_of(egui::ViewportId::ROOT);
+        ctx.request_repaint_of(egui::ViewportId::from_hash_of("ingame_overlay"));
+    }
+
     pub fn poll(&mut self, ctx: &egui::Context) {
         self.bind_ctx(ctx);
         while let Ok(item) = self.rx.try_recv() {
@@ -117,7 +122,7 @@ impl ImageCache {
                 });
                 let _ = tx.send(LoadedTex { url: url_s, img });
                 if let Some(ctx) = ctx_hold.lock().unwrap().as_ref() {
-                    ctx.request_repaint();
+                    Self::repaint_all(ctx);
                 }
             });
         }

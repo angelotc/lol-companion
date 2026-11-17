@@ -8,16 +8,39 @@ const ICON_PNG: &[u8] = include_bytes!("../assets/icon.png");
 pub enum TrayAction {
     TogglePanel,
     OpenSettings,
-    ToggleAutostart,
+    ToggleAutostart(bool),
     Quit,
+}
+
+#[derive(Clone)]
+pub struct TrayIds {
+    pub id_toggle: MenuId,
+    pub id_settings: MenuId,
+    pub id_autostart: MenuId,
+    pub id_quit: MenuId,
+}
+
+impl TrayIds {
+    pub fn classify(&self, id: &MenuId) -> Option<TrayAction> {
+        if id == &self.id_toggle {
+            Some(TrayAction::TogglePanel)
+        } else if id == &self.id_settings {
+            Some(TrayAction::OpenSettings)
+        } else if id == &self.id_autostart {
+            let new_val = !win32::autostart_enabled();
+            win32::set_autostart(new_val);
+            Some(TrayAction::ToggleAutostart(new_val))
+        } else if id == &self.id_quit {
+            Some(TrayAction::Quit)
+        } else {
+            None
+        }
+    }
 }
 
 pub struct AppTray {
     _tray: TrayIcon,
-    id_toggle: MenuId,
-    id_settings: MenuId,
-    id_autostart: MenuId,
-    id_quit: MenuId,
+    ids: TrayIds,
     autostart_item: CheckMenuItem,
 }
 
@@ -34,10 +57,12 @@ impl AppTray {
         let autostart = CheckMenuItem::new("Start with Windows", true, win32::autostart_enabled(), None);
         let quit = MenuItem::new("Quit", true, None);
 
-        let id_toggle = toggle.id().clone();
-        let id_settings = settings.id().clone();
-        let id_autostart = autostart.id().clone();
-        let id_quit = quit.id().clone();
+        let ids = TrayIds {
+            id_toggle: toggle.id().clone(),
+            id_settings: settings.id().clone(),
+            id_autostart: autostart.id().clone(),
+            id_quit: quit.id().clone(),
+        };
 
         let _ = menu.append(&toggle);
         let _ = menu.append(&settings);
@@ -54,35 +79,24 @@ impl AppTray {
 
         Ok(Self {
             _tray: tray,
-            id_toggle,
-            id_settings,
-            id_autostart,
-            id_quit,
+            ids,
             autostart_item: autostart,
         })
     }
 
-    pub fn poll_actions(&self) -> Vec<TrayAction> {
-        let mut actions = Vec::new();
-        while let Ok(ev) = MenuEvent::receiver().try_recv() {
-            if ev.id == self.id_toggle {
-                actions.push(TrayAction::TogglePanel);
-            } else if ev.id == self.id_settings {
-                actions.push(TrayAction::OpenSettings);
-            } else if ev.id == self.id_autostart {
-                let new_val = !win32::autostart_enabled();
-                win32::set_autostart(new_val);
-                self.autostart_item.set_checked(new_val);
-                actions.push(TrayAction::ToggleAutostart);
-            } else if ev.id == self.id_quit {
-                actions.push(TrayAction::Quit);
-            }
-        }
-        while let Ok(ev) = TrayIconEvent::receiver().try_recv() {
-            if let TrayIconEvent::DoubleClick { .. } = ev {
-                actions.push(TrayAction::TogglePanel);
-            }
-        }
-        actions
+    pub fn ids(&self) -> TrayIds {
+        self.ids.clone()
     }
+
+    pub fn set_autostart_checked(&self, on: bool) {
+        self.autostart_item.set_checked(on);
+    }
+}
+
+pub fn recv_menu_event() -> Option<MenuId> {
+    MenuEvent::receiver().recv().ok().map(|e| e.id)
+}
+
+pub fn recv_tray_double_click() -> bool {
+    matches!(TrayIconEvent::receiver().recv(), Ok(TrayIconEvent::DoubleClick { .. }))
 }
