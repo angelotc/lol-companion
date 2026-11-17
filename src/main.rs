@@ -727,6 +727,7 @@ async fn run_simulate(ctl: Arc<Controller>, cli: Cli) {
 
 fn main() {
     updater::startup();
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
 
     let cli = Cli::parse();
     if cli.simulate && cli.role.is_none() {
