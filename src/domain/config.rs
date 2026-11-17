@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use toml_edit::{DocumentMut, Item, Table, Value};
 use tracing::warn;
@@ -26,24 +27,49 @@ pub fn cache_dir() -> PathBuf {
 }
 
 pub fn default_config_path() -> PathBuf {
-    let local = PathBuf::from("config.toml");
-    if local.exists() {
-        return local;
-    }
-    if let Ok(exe) = std::env::current_exe()
-        && let Some(dir) = exe.parent()
-    {
-        let beside = dir.join("config.toml");
-        if beside.exists() {
-            return beside;
+    let exe = std::env::current_exe().ok();
+    select_config_path(
+        Path::new("config.toml"),
+        exe.as_deref().and_then(Path::parent),
+        &data_dir(),
+    )
+}
+
+fn select_config_path(local: &Path, exe_dir: Option<&Path>, user_dir: &Path) -> PathBuf {
+    // Use the same per-user config as the previous Windows release.
+    if !exe_dir.is_some_and(is_velopack_install) {
+        if local.exists() {
+            return local.to_path_buf();
+        }
+        if let Some(dir) = exe_dir {
+            let beside = dir.join("config.toml");
+            if beside.exists() {
+                return beside;
+            }
         }
     }
-    let user = data_dir().join("config.toml");
-    if !user.exists() {
-        let _ = fs::create_dir_all(data_dir());
-        let _ = fs::write(&user, DEFAULT_CONFIG_TOML);
+
+    let user = user_dir.join("config.toml");
+    if !user.exists()
+        && fs::create_dir_all(user_dir).is_ok()
+        && let Ok(mut file) = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&user)
+    {
+        let _ = file.write_all(DEFAULT_CONFIG_TOML.as_bytes());
     }
     user
+}
+
+fn is_velopack_install(exe_dir: &Path) -> bool {
+    exe_dir
+        .file_name()
+        .is_some_and(|name| name.eq_ignore_ascii_case("current"))
+        && exe_dir.join("sq.version").is_file()
+        && exe_dir
+            .parent()
+            .is_some_and(|root| root.join("Update.exe").is_file())
 }
 
 fn duo_partner(role: &str) -> Option<&'static str> {
@@ -414,6 +440,97 @@ pub fn save_ui_settings(patch: impl FnOnce(&mut UiSettings)) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    struct ConfigPaths {
+        root: PathBuf,
+        local: PathBuf,
+        exe_dir: PathBuf,
+        user_dir: PathBuf,
+    }
+
+    impl ConfigPaths {
+        fn new() -> Self {
+            static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
+            let root = std::env::temp_dir().join(format!(
+                "lol_companion_config_paths_{}_{}",
+                std::process::id(),
+                NEXT_ID.fetch_add(1, Ordering::Relaxed)
+            ));
+            let cwd = root.join("cwd");
+            let exe_dir = root.join("app").join("current");
+            fs::create_dir_all(&cwd).unwrap();
+            fs::create_dir_all(&exe_dir).unwrap();
+            Self {
+                local: cwd.join("config.toml"),
+                exe_dir,
+                user_dir: root.join("league-analysis"),
+                root,
+            }
+        }
+
+        fn make_velopack_install(&self) {
+            fs::write(self.exe_dir.join("sq.version"), "").unwrap();
+            fs::write(self.root.join("app").join("Update.exe"), "").unwrap();
+        }
+
+        fn select(&self) -> PathBuf {
+            select_config_path(&self.local, Some(&self.exe_dir), &self.user_dir)
+        }
+    }
+
+    impl Drop for ConfigPaths {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.root);
+        }
+    }
+
+    #[test]
+    fn packaged_config_preserves_legacy_user_settings() {
+        let paths = ConfigPaths::new();
+        paths.make_velopack_install();
+        fs::write(&paths.local, "min_pick_rate = 4.0").unwrap();
+        fs::write(paths.exe_dir.join("config.toml"), DEFAULT_CONFIG_TOML).unwrap();
+        fs::create_dir_all(&paths.user_dir).unwrap();
+        let user_config = paths.user_dir.join("config.toml");
+        let legacy = "# My settings\nmin_pick_rate = 2.5\ncomfort_only = true\n";
+        fs::write(&user_config, legacy).unwrap();
+
+        let selected = paths.select();
+
+        assert_eq!(selected, user_config);
+        assert_eq!(fs::read_to_string(&selected).unwrap(), legacy);
+        assert!(load_config_strict(Some(&selected)).unwrap().comfort_only);
+    }
+
+    #[test]
+    fn packaged_config_initializes_new_user_settings_from_defaults() {
+        let paths = ConfigPaths::new();
+        paths.make_velopack_install();
+        fs::write(&paths.local, "min_pick_rate = 4.0").unwrap();
+        fs::write(paths.exe_dir.join("config.toml"), "min_pick_rate = 3.0").unwrap();
+
+        let selected = paths.select();
+
+        assert_eq!(selected, paths.user_dir.join("config.toml"));
+        assert_eq!(fs::read_to_string(&selected).unwrap(), DEFAULT_CONFIG_TOML);
+        assert!(load_config_strict(Some(&selected)).is_ok());
+    }
+
+    #[test]
+    fn loose_config_prefers_working_directory_then_executable_directory() {
+        let paths = ConfigPaths::new();
+        fs::write(paths.exe_dir.join("sq.version"), "").unwrap();
+        let beside = paths.exe_dir.join("config.toml");
+        fs::write(&beside, "min_pick_rate = 3.0").unwrap();
+        fs::write(&paths.local, "min_pick_rate = 4.0").unwrap();
+
+        assert_eq!(paths.select(), paths.local);
+        fs::remove_file(&paths.local).unwrap();
+        assert_eq!(paths.select(), beside);
+        assert!(!paths.user_dir.exists());
+    }
+
 
     #[test]
     fn test_default_weights_by_role() {
