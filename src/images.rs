@@ -144,12 +144,11 @@ impl ImageCache {
             let cr = CornerRadius::same(rounding.round().clamp(0.0, 255.0) as u8);
             p.rect_filled(rect, cr, Color32::from_rgb(0x1B, 0x22, 0x2B));
             if let Some(tex) = self.get(url) {
-                p.image(
-                    tex.id(),
-                    rect,
-                    egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
-                    tint,
-                );
+                let tid = tex.id();
+                egui::Image::from_texture((tid, size))
+                    .tint(tint)
+                    .corner_radius(cr)
+                    .paint_at(ui, rect);
             } else {
                 let abbr: String = name
                     .chars()

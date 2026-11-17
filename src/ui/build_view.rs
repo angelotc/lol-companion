@@ -3,7 +3,7 @@ use egui::{Align, Color32, CornerRadius, Layout, RichText, Sense, Stroke, Ui, Ve
 use crate::engine::views::{BuildSectionView, BuildView, DamageSplitView, OptionView, RuneNodeView, RunePageView};
 
 use crate::images::ImageCache;
-use crate::ui::theme::{AD, AP, BG, BG2, DIM, GOLD, LINE, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, TEXT2, fmt_signed};
+use crate::ui::theme::{AD, AP, BG, BG2, DIM, GOLD, LINE, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, TEXT2, fmt_signed, left_label};
 
 #[derive(Default)]
 pub struct BuildUiState {
@@ -61,9 +61,9 @@ pub fn render_build(ui: &mut Ui, d: &BuildView, st: &mut BuildUiState, imgs: &mu
 
         ui.horizontal_top(|ui| {
             // Left champ card
-            ui.allocate_ui(Vec2::new(left_top_w, 58.0), |ui| {
+            ui.allocate_ui(Vec2::new(left_top_w, 62.0), |ui| {
                 ui.horizontal(|ui| {
-                    imgs.paint_icon(ui, &d.champ.name, &d.champ.icon, Vec2::splat(46.0), 6.0, Color32::WHITE);
+                    imgs.paint_icon(ui, &d.champ.name, &d.champ.icon, Vec2::splat(52.0), 8.0, Color32::WHITE);
                     ui.add_space(4.0);
                     ui.vertical(|ui| {
                         ui.label(RichText::new(&d.champ.name).size(16.0).strong().color(TEXT));
@@ -388,7 +388,7 @@ fn render_rune_card(ui: &mut Ui, d: &BuildView, st: &mut BuildUiState, imgs: &mu
 }
 
 fn rune_tree_row(ui: &mut Ui, row: &[RuneNodeView], is_keystone: bool, imgs: &mut ImageCache) {
-    let sz = if is_keystone { 28.0 } else { 22.0 };
+    let sz = if is_keystone { 34.0 } else { 24.0 };
     ui.horizontal(|ui| {
         let mut chosen_node = None;
         for r in row {
@@ -448,11 +448,11 @@ fn rune_shard_row(ui: &mut Ui, row: &[RuneNodeView], imgs: &mut ImageCache) {
             if r.chosen {
                 chosen_node = Some(r);
             }
-            let (rect, resp) = ui.allocate_exact_size(Vec2::splat(16.0), Sense::hover());
+            let (rect, resp) = ui.allocate_exact_size(Vec2::splat(18.0), Sense::hover());
             let mut sub = ui.new_child(egui::UiBuilder::new().max_rect(rect));
-            imgs.paint_icon(&mut sub, &r.name, &r.icon, Vec2::splat(16.0), 8.0, tint);
+            imgs.paint_icon(&mut sub, &r.name, &r.icon, Vec2::splat(18.0), 9.0, tint);
             if r.chosen {
-                ui.painter().circle_stroke(rect.center(), 8.5, Stroke::new(1.2, POS));
+                ui.painter().circle_stroke(rect.center(), 9.5, Stroke::new(1.2, POS));
             }
             let mut tip = r.name.clone();
             if let (Some(wr), Some(pr), Some(g)) = (r.wr, r.pr, r.games) {
@@ -496,11 +496,11 @@ fn render_spells_card(ui: &mut Ui, spells: &[OptionView], width: f32, imgs: &mut
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
                             for p in &o.parts {
-                                imgs.paint_icon(ui, &p.name, &p.icon, Vec2::splat(20.0), 3.0, Color32::WHITE)
+                                imgs.paint_icon(ui, &p.name, &p.icon, Vec2::splat(24.0), 4.0, Color32::WHITE)
                                     .on_hover_text(&p.name);
                             }
                             let names = o.parts.iter().map(|p| p.name.as_str()).collect::<Vec<_>>().join(" + ");
-                            ui.add_sized([102.0, 20.0], egui::Label::new(RichText::new(names).size(10.5).strong().color(TEXT)).truncate());
+                            left_label(ui, 102.0, 24.0, RichText::new(names).size(10.5).strong().color(TEXT));
                             ui.label(RichText::new(format!("{:.1}%", o.wr)).size(10.5).strong().color(TEXT2));
                             ui.label(RichText::new(format!("{:.1}%", o.pr)).size(10.0).color(MUTED));
                             if o.has_vs {
@@ -574,7 +574,7 @@ fn render_item_section(ui: &mut Ui, sec: &BuildSectionView, col_w: f32, imgs: &m
                 }
                 ui.horizontal(|ui| {
                     for p in &o.parts {
-                        imgs.paint_icon(ui, &p.name, &p.icon, Vec2::splat(28.0), 4.0, Color32::WHITE)
+                        imgs.paint_icon(ui, &p.name, &p.icon, Vec2::splat(32.0), 5.0, Color32::WHITE)
                             .on_hover_text(if p.plaintext.is_empty() {
                                 p.name.clone()
                             } else {
@@ -583,10 +583,7 @@ fn render_item_section(ui: &mut Ui, sec: &BuildSectionView, col_w: f32, imgs: &m
                     }
                     ui.vertical(|ui| {
                         let name = o.parts.iter().map(|p| p.name.as_str()).collect::<Vec<_>>().join(" + ");
-                        ui.add_sized(
-                            [(col_w - 108.0).max(60.0), 16.0],
-                            egui::Label::new(RichText::new(name).size(11.0).strong().color(TEXT)).truncate(),
-                        );
+                        left_label(ui, (col_w - 114.0).max(60.0), 17.0, RichText::new(name).size(11.0).strong().color(TEXT));
                         ui.horizontal(|ui| {
                             ui.label(RichText::new(format!("{:.1}%", o.wr)).size(10.0).strong().color(TEXT2));
                             let (bar, _) = ui.allocate_exact_size(Vec2::new(30.0, 3.0), Sense::hover());

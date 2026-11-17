@@ -3,7 +3,7 @@ use egui::{Align, Align2, Color32, CornerRadius, FontId, Layout, Pos2, Rect, Ric
 use crate::engine::views::{BlindView, ChampRef, ContribView, PicksView, RecView};
 
 use crate::images::ImageCache;
-use crate::ui::theme::{ALLY, DIM, ENEMY, GOLD, LINE, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, TEXT2, fmt_signed, heat_bg, short_lane};
+use crate::ui::theme::{ALLY, DIM, ENEMY, GOLD, LINE, LINE2, MUTED, NEG, PANEL, POS, RAISED, TEXT, TEXT2, fmt_signed, heat_bg, left_label, short_lane};
 
 #[derive(Default)]
 pub struct PicksUiState {
@@ -170,10 +170,10 @@ pub fn render_best_picks(
 
                         // Column headers + portrait icons
                         ui.horizontal(|ui| {
-                            ui.add_sized([18.0, 26.0], egui::Label::new(RichText::new("").size(10.0)));
-                            ui.add_sized([122.0, 26.0], egui::Label::new(RichText::new("Pick").size(10.5).color(MUTED)));
-                            ui.add_sized([62.0, 26.0], egui::Label::new(RichText::new("Score").size(10.5).color(MUTED)));
-                            ui.add_sized([cell_w, 26.0], egui::Label::new(RichText::new("Base").size(10.5).color(MUTED)));
+                            ui.add_sized([18.0, 28.0], egui::Label::new(RichText::new("").size(10.0)));
+                            left_label(ui, 128.0, 28.0, RichText::new("Pick").size(10.5).color(MUTED));
+                            ui.add_sized([62.0, 28.0], egui::Label::new(RichText::new("Score").size(10.5).color(MUTED)));
+                            ui.add_sized([cell_w, 28.0], egui::Label::new(RichText::new("Base").size(10.5).color(MUTED)));
                             for (idx, tc) in tcols.iter().enumerate() {
                                 if idx == n_vs && n_vs > 0 {
                                     ui.add_space(8.0);
@@ -183,10 +183,10 @@ pub fn render_best_picks(
                                 } else {
                                     Color32::WHITE
                                 };
-                                let (rect, resp) = ui.allocate_exact_size(Vec2::new(cell_w, 26.0), Sense::hover());
-                                let ico_r = Rect::from_center_size(rect.center(), Vec2::splat(22.0));
+                                let (rect, resp) = ui.allocate_exact_size(Vec2::new(cell_w, 28.0), Sense::hover());
+                                let ico_r = Rect::from_center_size(rect.center(), Vec2::splat(26.0));
                                 let mut sub = ui.new_child(egui::UiBuilder::new().max_rect(ico_r));
-                                imgs.paint_icon(&mut sub, &tc.champ.name, &tc.champ.icon, Vec2::splat(22.0), 4.0, tint);
+                                imgs.paint_icon(&mut sub, &tc.champ.name, &tc.champ.icon, Vec2::splat(26.0), 5.0, tint);
                                 resp.on_hover_text(format!(
                                     "{} {} ({}){}",
                                     if tc.kind == "vs" { "vs" } else { "with" },
@@ -223,18 +223,15 @@ pub fn render_best_picks(
                                 .show(ui, |ui| {
                                     ui.horizontal(|ui| {
                                         ui.add_sized(
-                                            [16.0, 28.0],
+                                            [16.0, 32.0],
                                             egui::Label::new(
                                                 RichText::new(format!("{}", i + 1))
                                                     .size(11.5)
                                                     .color(if selected { GOLD } else { DIM }),
                                             ),
                                         );
-                                        imgs.paint_icon(ui, &r.champ.name, &r.champ.icon, Vec2::splat(26.0), 4.0, Color32::WHITE);
-                                        ui.add_sized(
-                                            [88.0, 28.0],
-                                            egui::Label::new(RichText::new(&r.champ.name).size(12.5).strong().color(TEXT)).truncate(),
-                                        );
+                                        imgs.paint_icon(ui, &r.champ.name, &r.champ.icon, Vec2::splat(32.0), 5.0, Color32::WHITE);
+                                        left_label(ui, 88.0, 32.0, RichText::new(&r.champ.name).size(13.0).strong().color(TEXT));
                                         let sc_col = if r.score >= 0.0 { POS } else { NEG };
                                         ui.allocate_ui_with_layout(Vec2::new(60.0, 28.0), Layout::top_down(Align::Max), |ui| {
                                             ui.label(RichText::new(fmt_signed(r.score, 2)).size(13.0).strong().color(sc_col));
@@ -395,8 +392,8 @@ fn render_pick_detail(
         .show(ui, |ui| {
             ui.set_min_height((ui.available_height() - 4.0).max(160.0));
             ui.horizontal(|ui| {
-                imgs.paint_icon(ui, &r.champ.name, &r.champ.icon, Vec2::splat(42.0), 6.0, Color32::WHITE);
-                ui.add_space(4.0);
+                imgs.paint_icon(ui, &r.champ.name, &r.champ.icon, Vec2::splat(48.0), 8.0, Color32::WHITE);
+                ui.add_space(6.0);
                 ui.vertical(|ui| {
                     ui.label(RichText::new(kicker).size(9.5).strong().color(GOLD));
                     ui.label(RichText::new(&r.champ.name).size(16.0).strong().color(TEXT));
@@ -494,11 +491,11 @@ fn detail_row(
 ) {
     ui.horizontal(|ui| {
         if let Some(c) = champ {
-            imgs.paint_icon(ui, &c.name, &c.icon, Vec2::splat(16.0), 3.0, Color32::WHITE);
+            imgs.paint_icon(ui, &c.name, &c.icon, Vec2::splat(18.0), 4.0, Color32::WHITE);
         } else {
-            ui.add_space(20.0);
+            ui.add_space(22.0);
         }
-        ui.add_sized([96.0, 20.0], egui::Label::new(RichText::new(label).size(11.0).color(TEXT2)).truncate());
+        left_label(ui, 94.0, 20.0, RichText::new(label).size(11.0).color(TEXT2));
         ui.add_sized([52.0, 20.0], egui::Label::new(RichText::new(raw).size(10.5).color(MUTED)));
         let col = if adds.abs() < 0.05 {
             DIM
@@ -599,9 +596,9 @@ pub fn render_blind_picks(ui: &mut Ui, d: &PicksView, imgs: &mut ImageCache) {
                     .inner_margin(egui::Margin::symmetric(4, 4))
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
-                            ui.add_sized([18.0, 30.0], egui::Label::new(RichText::new(format!("{}", i + 1)).size(11.5).color(if top { GOLD } else { DIM })));
-                            imgs.paint_icon(ui, &r.champ.name, &r.champ.icon, Vec2::splat(26.0), 4.0, Color32::WHITE);
-                            ui.add_sized([124.0, 30.0], egui::Label::new(RichText::new(&r.champ.name).size(12.5).strong().color(TEXT)).truncate());
+                            ui.add_sized([18.0, 32.0], egui::Label::new(RichText::new(format!("{}", i + 1)).size(11.5).color(if top { GOLD } else { DIM })));
+                            imgs.paint_icon(ui, &r.champ.name, &r.champ.icon, Vec2::splat(30.0), 5.0, Color32::WHITE);
+                            left_label(ui, 120.0, 32.0, RichText::new(&r.champ.name).size(13.0).strong().color(TEXT));
                             let sc_col = if r.score >= 0.0 { POS } else { NEG };
                             ui.allocate_ui_with_layout(Vec2::new(66.0, 30.0), Layout::top_down(Align::Max), |ui| {
                                 ui.label(RichText::new(fmt_signed(r.score, 2)).size(13.0).strong().color(sc_col));
@@ -644,9 +641,9 @@ pub fn render_blind_picks(ui: &mut Ui, d: &PicksView, imgs: &mut ImageCache) {
 
                             paint_heat(ui, Some(r.value), max_risk, 66.0, "Blind risk contribution");
 
-                            ui.allocate_ui_with_layout(Vec2::new(90.0, 28.0), Layout::left_to_right(Align::Center), |ui| {
+                            ui.allocate_ui_with_layout(Vec2::new(94.0, 30.0), Layout::left_to_right(Align::Center), |ui| {
                                 for c in r.counters.iter().take(3) {
-                                    imgs.paint_icon(ui, &c.champ.name, &c.champ.icon, Vec2::splat(22.0), 4.0, Color32::WHITE)
+                                    imgs.paint_icon(ui, &c.champ.name, &c.champ.icon, Vec2::splat(26.0), 5.0, Color32::WHITE)
                                         .on_hover_text(format!("{} {} ({} games)", c.champ.name, fmt_signed(c.delta, 1), c.games));
                                 }
                             });

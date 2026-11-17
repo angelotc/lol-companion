@@ -98,3 +98,13 @@ pub fn tier_color(tier: &str) -> Color32 {
         _ => DIM,
     }
 }
+
+pub fn left_label(ui: &mut egui::Ui, w: f32, h: f32, text: egui::RichText) {
+    ui.allocate_ui_with_layout(
+        egui::Vec2::new(w, h),
+        egui::Layout::left_to_right(egui::Align::Center),
+        |ui| {
+            ui.add(egui::Label::new(text).truncate());
+        },
+    );
+}

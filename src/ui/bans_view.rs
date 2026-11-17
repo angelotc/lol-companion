@@ -3,7 +3,7 @@ use egui::{Align, Color32, CornerRadius, Layout, RichText, Sense, Stroke, Ui, Ve
 use crate::engine::views::{BansView, ChampRef, ThreatAgainstView, ThreatView};
 
 use crate::images::ImageCache;
-use crate::ui::theme::{ALLY, DIM, GOLD, LINE, LINE2, MUTED, NEG, PANEL, RAISED, TEXT, fmt_signed, heat_bg, short_lane};
+use crate::ui::theme::{ALLY, DIM, GOLD, LINE, LINE2, MUTED, NEG, PANEL, RAISED, TEXT, fmt_signed, heat_bg, left_label, short_lane};
 
 pub fn render_bans(ui: &mut Ui, d: &BansView, imgs: &mut ImageCache) {
     if d.threats.is_empty() {
@@ -100,18 +100,18 @@ pub fn render_bans(ui: &mut Ui, d: &BansView, imgs: &mut ImageCache) {
 
                         // Column headers + portrait icons
                         ui.horizontal(|ui| {
-                            ui.add_sized([22.0, 26.0], egui::Label::new(RichText::new("").size(10.0)));
-                            ui.add_sized([132.0, 26.0], egui::Label::new(RichText::new("Ban").size(10.5).color(MUTED)));
-                            ui.add_sized([70.0, 26.0], egui::Label::new(RichText::new("Threat").size(10.5).color(MUTED)));
-                            ui.add_sized([50.0, 26.0], egui::Label::new(RichText::new("Base").size(10.5).color(MUTED)));
+                            ui.add_sized([22.0, 28.0], egui::Label::new(RichText::new("").size(10.0)));
+                            left_label(ui, 136.0, 28.0, RichText::new("Ban").size(10.5).color(MUTED));
+                            ui.add_sized([70.0, 28.0], egui::Label::new(RichText::new("Threat").size(10.5).color(MUTED)));
+                            ui.add_sized([50.0, 28.0], egui::Label::new(RichText::new("Base").size(10.5).color(MUTED)));
                             for (i, (c, is_pick, lane)) in pcols.iter().enumerate() {
                                 if i == n_picks && n_picks > 0 {
                                     ui.add_space(6.0);
                                 }
-                                let (rect, resp) = ui.allocate_exact_size(Vec2::new(cell_w, 26.0), Sense::hover());
-                                let ico_r = egui::Rect::from_center_size(rect.center(), Vec2::splat(22.0));
+                                let (rect, resp) = ui.allocate_exact_size(Vec2::new(cell_w, 28.0), Sense::hover());
+                                let ico_r = egui::Rect::from_center_size(rect.center(), Vec2::splat(26.0));
                                 let mut sub = ui.new_child(egui::UiBuilder::new().max_rect(ico_r));
-                                imgs.paint_icon(&mut sub, &c.name, &c.icon, Vec2::splat(22.0), 4.0, Color32::WHITE);
+                                imgs.paint_icon(&mut sub, &c.name, &c.icon, Vec2::splat(26.0), 5.0, Color32::WHITE);
                                 let tip = if *is_pick {
                                     format!("{}, one of your likely picks", c.name)
                                 } else {
@@ -142,15 +142,15 @@ pub fn render_bans(ui: &mut Ui, d: &BansView, imgs: &mut ImageCache) {
                                 .show(ui, |ui| {
                                     ui.horizontal(|ui| {
                                         ui.add_sized(
-                                            [18.0, 32.0],
+                                            [18.0, 34.0],
                                             egui::Label::new(
                                                 RichText::new(format!("{}", i + 1))
                                                     .size(11.5)
                                                     .color(if selected { NEG } else { DIM }),
                                             ),
                                         );
-                                        imgs.paint_icon(ui, &t.champ.name, &t.champ.icon, Vec2::splat(28.0), 4.0, Color32::WHITE);
-                                        ui.allocate_ui_with_layout(Vec2::new(98.0, 32.0), Layout::top_down(Align::Min), |ui| {
+                                        imgs.paint_icon(ui, &t.champ.name, &t.champ.icon, Vec2::splat(32.0), 5.0, Color32::WHITE);
+                                        ui.allocate_ui_with_layout(Vec2::new(98.0, 34.0), Layout::top_down(Align::Min), |ui| {
                                             ui.label(RichText::new(&t.champ.name).size(12.5).strong().color(TEXT));
                                             ui.label(
                                                 RichText::new(format!("{} · picked {:.1}%", short_lane(&t.lane), t.pick_rate))
@@ -286,8 +286,8 @@ fn render_ban_side(
         .show(ui, |ui| {
             ui.set_min_height((ui.available_height() - 4.0).max(160.0));
             ui.horizontal(|ui| {
-                imgs.paint_icon(ui, &t.champ.name, &t.champ.icon, Vec2::splat(42.0), 6.0, Color32::WHITE);
-                ui.add_space(4.0);
+                imgs.paint_icon(ui, &t.champ.name, &t.champ.icon, Vec2::splat(48.0), 8.0, Color32::WHITE);
+                ui.add_space(6.0);
                 ui.vertical(|ui| {
                     ui.label(
                         RichText::new(if sel_idx == 0 {

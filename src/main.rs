@@ -873,12 +873,22 @@ fn main() {
     let work = win32::primary_work_area();
     let w = (win32::PAGE_SIZE.0 as f32).min(work.width() as f32 * 0.9);
     let h = w / (16.0 / 9.0);
+    let mut viewport = ViewportBuilder::default()
+        .with_title(PANEL_TITLE)
+        .with_inner_size([w, h])
+        .with_min_inner_size([640.0, 360.0])
+        .with_visible(always_show);
+    if let Ok(dyn_img) = image::load_from_memory(include_bytes!("../assets/icon.png")) {
+        let rgba = dyn_img.to_rgba8();
+        let (width, height) = rgba.dimensions();
+        viewport = viewport.with_icon(Arc::new(egui::IconData {
+            rgba: rgba.into_raw(),
+            width,
+            height,
+        }));
+    }
     let native_options = eframe::NativeOptions {
-        viewport: ViewportBuilder::default()
-            .with_title(PANEL_TITLE)
-            .with_inner_size([w, h])
-            .with_min_inner_size([640.0, 360.0])
-            .with_visible(always_show),
+        viewport,
         ..Default::default()
     };
 

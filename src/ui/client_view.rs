@@ -235,7 +235,7 @@ pub fn render_client(
                     if let Some(p) = &s.picks {
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                             for b in p.bans.iter().rev() {
-                                imgs.paint_icon(ui, &b.name, &b.icon, Vec2::splat(20.0), 3.0, Color32::from_rgba_unmultiplied(255, 255, 255, 170))
+                                imgs.paint_icon(ui, &b.name, &b.icon, Vec2::splat(22.0), 4.0, Color32::from_rgba_unmultiplied(255, 255, 255, 170))
                                     .on_hover_text(format!("Banned: {}", b.name));
                             }
                             if !p.bans.is_empty() {
@@ -469,11 +469,11 @@ fn paint_ally_slot(ui: &mut Ui, slot: Option<&AllySlotView>, idx: usize, imgs: &
             } else {
                 Color32::WHITE
             };
-            let (rect, resp) = ui.allocate_exact_size(Vec2::splat(38.0), Sense::hover());
+            let (rect, resp) = ui.allocate_exact_size(Vec2::splat(44.0), Sense::hover());
             ui.painter().rect_filled(rect, CornerRadius::same(6), RAISED);
             if !a.champ.icon.is_empty() {
                 let mut sub = ui.new_child(egui::UiBuilder::new().max_rect(rect.shrink(2.0)));
-                imgs.paint_icon(&mut sub, &a.champ.name, &a.champ.icon, Vec2::splat(34.0), 5.0, tint);
+                imgs.paint_icon(&mut sub, &a.champ.name, &a.champ.icon, Vec2::splat(40.0), 5.0, tint);
             } else if a.is_me {
                 ui.painter().text(rect.center(), egui::Align2::CENTER_CENTER, "YOU", egui::FontId::proportional(10.0), GOLD);
             }
@@ -490,7 +490,7 @@ fn paint_ally_slot(ui: &mut Ui, slot: Option<&AllySlotView>, idx: usize, imgs: &
                 format!("{}{}", a.champ.name, if a.tentative { " (hovering)" } else { "" })
             });
         } else {
-            let (rect, _) = ui.allocate_exact_size(Vec2::splat(38.0), Sense::hover());
+            let (rect, _) = ui.allocate_exact_size(Vec2::splat(44.0), Sense::hover());
             ui.painter().rect_filled(rect, CornerRadius::same(6), RAISED);
             ui.painter().rect_stroke(rect, CornerRadius::same(6), Stroke::new(1.0, LINE2), egui::StrokeKind::Inside);
             ui.label(RichText::new(default_lanes[idx]).size(9.5).color(DIM));
@@ -507,13 +507,13 @@ fn paint_enemy_slot(
 ) -> bool {
     let default_lanes = ["TOP", "JG", "MID", "BOT", "SUP"];
     let mut clicked = false;
-    ui.allocate_ui_with_layout(Vec2::new(42.0, 58.0), Layout::top_down(Align::Center), |ui| {
+    ui.allocate_ui_with_layout(Vec2::new(46.0, 64.0), Layout::top_down(Align::Center), |ui| {
         if let Some(e) = slot {
             let border = if selected { GOLD } else { ENEMY };
-            let (rect, resp) = ui.allocate_exact_size(Vec2::splat(38.0), Sense::click());
+            let (rect, resp) = ui.allocate_exact_size(Vec2::splat(44.0), Sense::click());
             ui.painter().rect_filled(rect, CornerRadius::same(6), RAISED);
             let mut sub = ui.new_child(egui::UiBuilder::new().max_rect(rect.shrink(2.0)));
-            imgs.paint_icon(&mut sub, &e.champ.name, &e.champ.icon, Vec2::splat(34.0), 5.0, Color32::WHITE);
+            imgs.paint_icon(&mut sub, &e.champ.name, &e.champ.icon, Vec2::splat(40.0), 5.0, Color32::WHITE);
             ui.painter().rect_stroke(rect, CornerRadius::same(6), Stroke::new(1.5, border), egui::StrokeKind::Inside);
             clicked = resp.clicked();
             let cap = format!("{}{}", short_lane(&e.lane), if e.flex && !e.manual { "?" } else { "" });
@@ -521,7 +521,7 @@ fn paint_enemy_slot(
             ui.label(RichText::new(cap).size(9.5).strong().color(cap_col));
             resp.on_hover_text(format!("{} ({}) · click to set lane", e.champ.name, e.lane));
         } else {
-            let (rect, _) = ui.allocate_exact_size(Vec2::splat(38.0), Sense::hover());
+            let (rect, _) = ui.allocate_exact_size(Vec2::splat(44.0), Sense::hover());
             ui.painter().rect_filled(rect, CornerRadius::same(6), RAISED);
             ui.painter().rect_stroke(rect, CornerRadius::same(6), Stroke::new(1.0, LINE2), egui::StrokeKind::Inside);
             ui.label(RichText::new(default_lanes[idx]).size(9.5).color(DIM));

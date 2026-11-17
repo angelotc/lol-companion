@@ -110,9 +110,9 @@ fn render_player_row(ui: &mut Ui, p: &PlayerView, is_ally: bool, imgs: &mut Imag
                 ui.painter().rect_filled(bar, CornerRadius::ZERO, border_col);
 
                 if let Some(c) = &p.champ {
-                    imgs.paint_icon(ui, &c.name, &c.icon, Vec2::splat(28.0), 4.0, Color32::WHITE);
+                    imgs.paint_icon(ui, &c.name, &c.icon, Vec2::splat(32.0), 5.0, Color32::WHITE);
                 } else {
-                    imgs.paint_icon(ui, "?", "", Vec2::splat(28.0), 4.0, Color32::WHITE);
+                    imgs.paint_icon(ui, "?", "", Vec2::splat(32.0), 5.0, Color32::WHITE);
                 }
 
                 ui.vertical(|ui| {
@@ -247,7 +247,7 @@ fn paint_item_icon(ui: &mut Ui, p: &PartView, sz: f32, imgs: &mut ImageCache) {
 fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
     ui.horizontal(|ui| {
         if let Some(c) = &s.champ {
-            imgs.paint_icon(ui, &c.name, &c.icon, Vec2::splat(28.0), 4.0, Color32::WHITE);
+            imgs.paint_icon(ui, &c.name, &c.icon, Vec2::splat(32.0), 5.0, Color32::WHITE);
         }
         ui.vertical(|ui| {
             let cname = s.champ.as_ref().map_or("", |c| c.name.as_str());
@@ -260,7 +260,7 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
         });
         if let Some(k) = &s.keystone {
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                imgs.paint_icon(ui, &k.name, &k.icon, Vec2::splat(22.0), 11.0, Color32::WHITE)
+                imgs.paint_icon(ui, &k.name, &k.icon, Vec2::splat(26.0), 13.0, Color32::WHITE)
                     .on_hover_text(&k.name);
             });
         }
@@ -285,7 +285,7 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
                 if i > 0 {
                     ui.label(RichText::new("›").size(10.0).color(DIM));
                 }
-                paint_item_icon(ui, p, 24.0, imgs);
+                paint_item_icon(ui, p, 26.0, imgs);
             }
         });
         if let Some(nxt) = &s.next {
@@ -339,10 +339,10 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                             ui.add_space(34.0);
                             for (e, lane) in opp_cols.iter().rev() {
-                                let (r, resp) = ui.allocate_exact_size(Vec2::new(28.0, 14.0), Sense::hover());
-                                let ico_r = egui::Rect::from_center_size(r.center(), Vec2::splat(14.0));
+                                let (r, resp) = ui.allocate_exact_size(Vec2::new(28.0, 18.0), Sense::hover());
+                                let ico_r = egui::Rect::from_center_size(r.center(), Vec2::splat(18.0));
                                 let mut sub = ui.new_child(egui::UiBuilder::new().max_rect(ico_r));
-                                imgs.paint_icon(&mut sub, &e.name, &e.icon, Vec2::splat(14.0), 3.0, Color32::WHITE);
+                                imgs.paint_icon(&mut sub, &e.name, &e.icon, Vec2::splat(18.0), 4.0, Color32::WHITE);
                                 resp.on_hover_text(format!("{} ({lane})", e.name));
                             }
                         });
@@ -351,7 +351,7 @@ fn render_ig_build(ui: &mut Ui, s: &IngameBuildView, imgs: &mut ImageCache) {
                 for o in &sec.options {
                     ui.horizontal(|ui| {
                         for p in &o.parts {
-                            paint_item_icon(ui, p, 22.0, imgs);
+                            paint_item_icon(ui, p, 26.0, imgs);
                         }
                         ui.label(RichText::new(format!("{:.1}%", o.wr)).size(10.5).strong().color(TEXT));
                         if o.yours {
