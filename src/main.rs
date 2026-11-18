@@ -564,12 +564,15 @@ fn spawn_tracker_and_tray(
             let vis = want_game && has_data && placement.is_some() && focused;
             shared.game_shown.store(vis, Ordering::Relaxed);
             if vis && let Some(p) = placement {
-                let mut lp = shared.last_game_place.lock().unwrap();
-                if *lp != Some(p) {
+                let changed = {
+                    let mut lp = shared.last_game_place.lock().unwrap();
+                    let changed = *lp != Some(p);
                     *lp = Some(p);
-                    if gh != 0 {
-                        win32::move_topmost(gh, p);
-                    }
+                    changed
+                };
+                // SetWindowPos waits for the UI thread, which also reads last_game_place.
+                if changed && gh != 0 {
+                    win32::move_topmost(gh, p);
                 }
             }
             if vis != last_overlay_vis && gh != 0 {

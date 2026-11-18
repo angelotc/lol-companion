@@ -106,12 +106,6 @@ fn json_u32(v: &Value) -> Option<u32> {
         .or_else(|| json_f64(v).map(|f| f.max(0.0).round() as u32))
 }
 
-fn games_estimate(stats: &Value) -> u32 {
-    let analysed = stats.get("analysed").and_then(json_f64).unwrap_or(0.0);
-    let pr = stats.get("pr").and_then(json_f64).unwrap_or(0.0);
-    ((analysed * pr) / 100.0).round().max(0.0) as u32
-}
-
 #[derive(Clone)]
 pub struct Lolalytics {
     pub tier: String,
@@ -319,15 +313,15 @@ impl Lolalytics {
         let mut matchups: HashMap<String, HashMap<i32, Pair>> = HashMap::new();
         let mut stats_val: Option<Value> = None;
 
-        // Fetch all 5 enemy lane counter endpoints + build-team concurrently!
         let team_params = [("c", slug), ("lane", lane)];
-        let (c0, c1, c2, c3, c4, team) = tokio::join!(
+        let (c0, c1, c2, c3, c4, team, tier_rows) = tokio::join!(
             self.counters(slug, lane, LANES[0], None),
             self.counters(slug, lane, LANES[1], None),
             self.counters(slug, lane, LANES[2], None),
             self.counters(slug, lane, LANES[3], None),
             self.counters(slug, lane, LANES[4], None),
             self.get_mega("build-team", &team_params),
+            self.tier_list(lane, Some(&self.tier)),
         );
         let counter_results = [
             (LANES[0], c0),
@@ -401,14 +395,21 @@ impl Lolalytics {
             }
         }
 
-        let own_games: u32 = matchups
-            .get(lane)
-            .map(|m| m.values().map(|p| p.games).sum())
-            .unwrap_or(0);
-        let games = {
-            let g = games_estimate(&stats);
-            if g > 0 { g } else if own_games > 0 { own_games } else { 1 }
-        };
+        let games = tier_rows
+            .get(&cid)
+            .map(|row| row.games)
+            .filter(|&games| games > 0)
+            .unwrap_or_else(|| {
+                // A game can appear in several lanes' pairs. Each lane gives its own lower bound.
+                matchups
+                    .values()
+                    .chain(synergies.values())
+                    .map(|pairs| {
+                        pairs.values().fold(0u32, |total, pair| total.saturating_add(pair.games))
+                    })
+                    .max()
+                    .unwrap_or(0)
+            });
 
         Some(ChampStats {
             champion_id: cid,
@@ -428,6 +429,112 @@ impl Lolalytics {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    async fn cached_yorick(
+        tier: &str,
+        tier_list: Value,
+        counter_rows: &[(&str, Value)],
+        team: Value,
+    ) -> ChampStats {
+        static NEXT_CACHE: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let instance = NEXT_CACHE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!(
+            "lol-companion-lolalytics-{}-{instance}",
+            std::process::id(),
+        ));
+        let lola = Lolalytics::with_cache_dir(tier, 14, dir.clone());
+        let seed_cache = |key: &str, label: &str, data: Value| {
+            std::fs::write(lola.cache.path(key, label), data.to_string()).unwrap();
+        };
+
+        for enemy_lane in LANES {
+            let counters = counter_rows
+                .iter()
+                .find(|(lane, _)| *lane == *enemy_lane)
+                .map(|(_, rows)| rows.clone())
+                .unwrap_or_else(|| json!([]));
+            seed_cache(
+                &format!("counter_d_1_14_{tier}_420_all_yorick_support_{enemy_lane}"),
+                "counter_yorick",
+                json!({
+                    "stats": {"cid": 83, "analysed": 4742234, "pr": "0.01", "wr": "62.07", "avgWr": 52.37},
+                    "counters": counters,
+                }),
+            );
+        }
+        seed_cache(
+            &format!("build-team_d_1_14_{tier}_420_all_yorick_support"),
+            "build-team_yorick",
+            team,
+        );
+        seed_cache(&format!("list_d_1_14_{tier}_420_all_support"), "list_", tier_list);
+        if tier != LANE_RATE_TIER {
+            seed_cache(
+                &format!("list_d_1_14_{LANE_RATE_TIER}_420_all_support"),
+                "list_",
+                json!({"cid": {"83": {"games": 29}}}),
+            );
+        }
+
+        let stats = lola.champ_stats("yorick", "support").await;
+        std::fs::remove_dir_all(dir).unwrap();
+        stats.unwrap()
+    }
+
+    #[tokio::test]
+    async fn champ_stats_uses_list_games_for_rare_pick() {
+        let stats = cached_yorick(
+            LANE_RATE_TIER,
+            json!({"cid": {"83": {"games": 29}}}),
+            &[],
+            json!({}),
+        )
+        .await;
+        assert_eq!(stats.games, 29);
+    }
+
+    #[tokio::test]
+    async fn champ_stats_uses_list_for_requested_tier() {
+        let stats = cached_yorick(
+            "diamond_plus",
+            json!({"cid": {"83": {"games": 123}}}),
+            &[],
+            json!({}),
+        )
+        .await;
+        assert_eq!(stats.games, 123);
+    }
+
+    #[tokio::test]
+    async fn champ_stats_falls_back_to_largest_pair_count_by_lane() {
+        let counters = [
+            ("support", json!([{"cid": 89, "n": 3}])),
+            ("jungle", json!([{"cid": 64, "n": 12}, {"cid": 76, "n": 9}])),
+        ];
+        let stats = cached_yorick(
+            LANE_RATE_TIER,
+            json!({}),
+            &counters,
+            json!({"team": {"bottom": [[22, 50, 0, 0, 0, 11], [51, 50, 0, 0, 0, 13]]}}),
+        )
+        .await;
+        assert_eq!(stats.games, 24);
+
+        let stats = cached_yorick(
+            LANE_RATE_TIER,
+            json!({"cid": {"83": {"games": 0}}}),
+            &counters,
+            json!({}),
+        )
+        .await;
+        assert_eq!(stats.games, 21);
+    }
+
+    #[tokio::test]
+    async fn champ_stats_without_list_or_pairs_has_zero_games() {
+        let stats = cached_yorick(LANE_RATE_TIER, json!({}), &[], json!({})).await;
+        assert_eq!(stats.games, 0);
+    }
 
     #[test]
     fn test_qwik_state_decoding() {

@@ -16,8 +16,8 @@ pub struct ExploreUiState {
     pub error: Option<String>,
     pub report: Option<ExploreReportView>,
     pub selected: Option<i32>,
-    tx: mpsc::UnboundedSender<Result<ExploreReportView, String>>,
-    rx: mpsc::UnboundedReceiver<Result<ExploreReportView, String>>,
+    tx: mpsc::UnboundedSender<(String, String, Result<ExploreReportView, String>)>,
+    rx: mpsc::UnboundedReceiver<(String, String, Result<ExploreReportView, String>)>,
     started: bool,
 }
 
@@ -49,7 +49,7 @@ impl ExploreUiState {
         let ctx_c = ctx.clone();
         tokio::spawn(async move {
             let res = ctl_c.explore_report(&role, &tier).await;
-            let _ = tx.send(res);
+            let _ = tx.send((role, tier, res));
             ctx_c.request_repaint();
         });
     }
@@ -69,7 +69,10 @@ impl ExploreUiState {
             self.trigger_load(ctl, ctx);
         }
 
-        while let Ok(res) = self.rx.try_recv() {
+        while let Ok((role, tier, res)) = self.rx.try_recv() {
+            if role != self.role || tier != self.tier {
+                continue;
+            }
             self.loading = false;
             match res {
                 Ok(rep) => {
@@ -181,9 +184,9 @@ pub fn render_explore(
         return;
     }
 
-    let mut tails: Vec<f64> = rep.champs.iter().map(|c| c.tail).collect();
+    let mut tails: Vec<f64> = rep.champs.iter().filter(|c| c.coverage >= 50).map(|c| c.tail).collect();
     tails.sort_by(|a, b| a.total_cmp(b));
-    let med = tails[tails.len() / 2];
+    let med = tails.get(tails.len() / 2).copied().unwrap_or(0.0);
 
     let avail_w = ui.available_width();
     let side_w = (avail_w * 0.28).clamp(288.0, 340.0);
@@ -414,7 +417,7 @@ fn render_scatter(
     for (idx, c) in order.iter().enumerate() {
         let (_, pt_rect) = pt_boxes[idx];
         let on = Some(c.champ.id) == *selected;
-        let good = c.base > 0.0 && c.tail >= med;
+        let good = c.coverage >= 50 && c.base > 0.0 && c.tail >= med;
         let pt_sz = pt_rect.width();
 
         let resp = ui.interact(pt_rect, ui.id().with(("exp_pt", c.champ.id)), Sense::click())
@@ -448,12 +451,13 @@ fn render_scatter(
             .collect::<Vec<_>>()
             .join(", ");
         let mut tip = format!(
-            "{} · blind score {}\nstrength {} · if countered {} · avg matchup {}",
+            "{} · blind score {}\nstrength {} · if countered {} · avg matchup {}\nMatchup coverage: {}%",
             c.champ.name,
             fmt_signed(c.score, 2),
             fmt_signed(c.base, 2),
             fmt_signed(c.tail, 2),
-            fmt_signed(c.mean, 2)
+            fmt_signed(c.mean, 2),
+            c.coverage
         );
         if !w3.is_empty() {
             tip.push_str(&format!("\nworst: {w3}"));
@@ -465,7 +469,7 @@ fn render_scatter(
     let mut want: Vec<(usize, &ExploreChampView)> = order
         .iter()
         .enumerate()
-        .filter(|(_, c)| Some(c.champ.id) == *selected || Some(c.champ.id) == hovered || (c.base > 0.0 && c.tail >= med))
+        .filter(|(_, c)| Some(c.champ.id) == *selected || Some(c.champ.id) == hovered || (c.coverage >= 50 && c.base > 0.0 && c.tail >= med))
         .map(|(i, &c)| (i, c))
         .collect();
     want.sort_by(|a, b| {
@@ -517,6 +521,7 @@ fn render_explore_detail(ui: &mut Ui, d: &ExploreChampView, med: f64, imgs: &mut
     let above_average = d.base > 0.0;
     let safe = d.tail >= med;
     let (verdict, vcol) = match (above_average, safe) {
+        _ if d.coverage < 50 => ("Limited matchup data", MUTED),
         (true, true) => ("Safe to pick blind", POS),
         (true, false) => ("Strong, but wait for their pick", ACCENT),
         (false, true) => ("Safe fallback, below avg strength", MUTED),
@@ -548,6 +553,7 @@ fn render_explore_detail(ui: &mut Ui, d: &ExploreChampView, med: f64, imgs: &mut
                     ui.label(strong(fmt_signed(d.tail, 1)).size(21.0).color(if d.tail < 0.0 { NEG } else { POS }));
                 });
             });
+            ui.label(RichText::new(format!("Matchup coverage: {}%", d.coverage)).size(10.0).color(MUTED));
             let worst: Vec<_> = d.opps.iter().filter(|o| o.games > 0 && o.d < 0.0).take(3).collect();
             if !worst.is_empty() {
                 ui.add_space(8.0);
@@ -563,4 +569,31 @@ fn render_explore_detail(ui: &mut Ui, d: &ExploreChampView, med: f64, imgs: &mut
                 });
             }
         });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::config::Config;
+
+    #[test]
+    fn role_switch_ignores_late_reports_and_errors() {
+        let (ctl, _screen_rx) = Controller::new(Config::default(), None);
+        let ctx = egui::Context::default();
+        let mut st = ExploreUiState { started: true, loading: true, ..Default::default() };
+        let report = |role: &str| ExploreReportView {
+            role: role.into(), tier: "master_plus".into(), tier_label: "Master+".into(), days: 14, champs: vec![],
+        };
+        st.tx.send(("top".into(), "master_plus".into(), Ok(report("top")))).unwrap();
+        st.tx.send(("support".into(), "diamond_plus".into(), Err("old request".into()))).unwrap();
+        st.poll(&ctl, "master_plus", &ctx);
+        assert!(st.loading);
+        assert!(st.report.is_none());
+        assert!(st.error.is_none());
+
+        st.tx.send(("support".into(), "master_plus".into(), Ok(report("support")))).unwrap();
+        st.poll(&ctl, "master_plus", &ctx);
+        assert!(!st.loading);
+        assert_eq!(st.report.as_ref().unwrap().role, "support");
+    }
 }

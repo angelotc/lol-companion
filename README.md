@@ -4,10 +4,7 @@
 
 # LoL Companion
 
-### Your draft, with the numbers behind it.
-
-**Find your best pick**, understand the matchup, and plan your build.<br>
-One native Windows app, from champ select to the final item.
+Draft recommendations and matchup-specific builds for League of Legends on Windows.
 
 [![Download for Windows](https://img.shields.io/badge/Download-Windows-ff8a72?style=for-the-badge&labelColor=211a2e)](https://github.com/angelotc/lol-companion/releases/latest/download/LoLCompanion-win-Setup.exe)&nbsp;&nbsp;
 [![Portable ZIP](https://img.shields.io/badge/Portable-ZIP-c4b5fd?style=for-the-badge&labelColor=211a2e)](https://github.com/angelotc/lol-companion/releases/latest/download/LoLCompanion.zip)&nbsp;&nbsp;
@@ -17,133 +14,107 @@ One native Windows app, from champ select to the final item.
 
 ---
 
-A window that ranks your best picks in champ select, using matchup and synergy stats, your team and
-theirs, and your own record. It is one 16:9 window that shows the blind-pick explorer between games
-and bans, picks and build as the draft moves on; in game, a second window over the game's right edge
-shows your build beside all 10 players.
+Recommendations use:
+
+- **Master+ Lolalytics data** for champion strength, matchups, synergies, and builds.
+- **Your current draft** for picks and bans that fit your team and account for the opponents you know.
+- **Your champion masteries and recent match history** to factor your experience into pick rankings.
 
 ![Champ select, best picks: your best picks top to bottom, every matchup and synergy beside them](docs/views/picks.png)
 
-The screenshots preview the lavender, coral, and plum theme across the native Windows app,
-using draft replays and a simulated match. Lavender marks selections and navigation; coral
-highlights the current draft stage and next purchase. Team colors and positive/negative scores
-keep their familiar meaning.
-
 ## Install
-Download **[LoLCompanion-win-Setup.exe](https://github.com/angelotc/lol-companion/releases/latest/download/LoLCompanion-win-Setup.exe)**
-and run it. It installs for your Windows account (no admin) and updates itself.
 
-Portable instead: [LoLCompanion.zip](https://github.com/angelotc/lol-companion/releases/latest/download/LoLCompanion.zip)
-(unzip, run `LoLCompanion.exe`; no auto-updates).
+- Run the **Windows installer** to install for your account without admin rights and get automatic updates.
+- Extract the **portable ZIP** and run `LoLCompanion.exe`. Update portable copies manually.
 
-Windows may warn that the app is unrecognized (it isn't code-signed): **More info → Run anyway**.
+The app is unsigned. If Windows shows an unrecognized app warning, select **More info → Run anyway**.
 
 ## Use
-The panel is a normal window: it opens with the app and stays open until you close it. It is one
-window for every stage, client-sized (1280×720) on the right edge of your main monitor the first
-time, then wherever you leave it. It keeps its 16:9 shape: drag any edge or corner and it resizes as
-a whole, and everything in it scales with it. Maximized or snapped, it fills the space and zooms to
-the shorter side. Closing it hides it to the tray; a new champ select brings a hidden panel back.
-Between games it shows the blind-pick explorer; in champ select, four views under one tab strip
-(below).
 
-| Key | Does |
+The panel first opens at 1280×720 on the right edge of your main monitor and remembers its placement.
+Drag any edge or corner to resize it at 16:9. Closing it hides it to the tray, and the next champ select
+brings it back.
+
+| Shortcut | Action |
 |---|---|
-| **Ctrl+X** | Toggle the panel (client or panel in front) or the in-game window (in game) |
-| **Ctrl+Shift+L** | Toggle the panel from any window |
+| **Ctrl+X** | Toggle the panel while it or the League client has focus, or toggle the overlay in game. |
+| **Ctrl+Shift+L** | Toggle the panel from any window. |
 
-The **tray icon** (bottom-right) shows/hides the panel, checks for updates, opens settings, turns
-on Start with Windows, and quits.
+Use the tray icon to show or hide the panel, check for updates, open settings, enable Start with Windows, or quit.
 
-### 1 · Champ select
+### Champ select
 
-Your team, the draft win estimate with its main reasons, and the enemy team stay across the top.
-Under them, one view at a time: the step row **follows the draft** (1 while bans last, 2 while your
-lane opponent is unknown, 3 once they're picked, 4 after you lock in); steps that don't apply are
-greyed out. Click another step to look at it; a **DRAFT IS HERE** tag marks where the draft is, and
-the next phase brings you back. The step row also holds the bans and the enemy team's damage split.
-Every view is a table: candidates top to bottom, best first, and beside each one the numbers behind
-its score. Hover a cell for its games; the column under the pointer lights up.
+The header shows both teams and the draft win estimate. The app switches views as the draft advances.
+You can open another available view at any time. Hover a score for its sample size, or click an enemy
+champion to correct a guessed lane. The step row shows bans and the enemy team's damage split.
 
-#### 1 · Ban phase
+#### Ban phase
 
 <img src="docs/views/bans.png" alt="Bans: ban candidates with how your likely picks and your team's hovers do against each">
 
-Enemy champions worth banning (how likely you face it × how much it hurts you), with each one's
-strength, then one column per likely pick of yours and per teammate's hover: how that pick's win
-rate moves against it, shrunk by games and weighted by lane (coral = it beats you). The panel on the
-right explains the top ban: how often it's picked, who it hurts most, and what comes next.
+Bans rank by how often you might face a champion and how much it threatens your likely picks and
+your teammates' hovers. The detail panel explains the top ban.
 
-#### 2 · Blind pick (while your lane opponent is unknown)
+#### Blind pick
 
 <img src="docs/views/blind.png" alt="Blind pick: blind-safe picks with strength, team fit and counter risk">
 
-Picks ranked by strength, fit with your team, and how much they lose if the enemy laner counters
-them: a track from if countered (the worst matchups that make up 15% of their picks) to the average
-matchup, the blind risk that adds up to, the worst counters, and how many matchups have data. Tune
-it in `config.toml` under `[blind]`.
+While your lane opponent is unknown, picks rank by strength, team fit, and counter risk. Each row
+compares the average matchup with the worst matchups that make up 15% of opponent picks. Tune the
+ranking under `[blind]` in `config.toml`.
 
-#### 3 · Best picks
+#### Best picks
 
-The screenshot at the top. Picks ranked against the enemies picked so far and with your team: their
-strength, then one column per enemy (**against**) and teammate (**with**) showing what that matchup
-or duo adds to the score (shrunk by games and weighted by lane), and a **you** column for your own
-games and mastery, so a row's cells add up to its score. Click a pick for its breakdown on the
-right: the raw win-rate change behind every term. After you
-lock in, these stay as they were at lock-in.
+Once your lane opponent is known, picks rank by strength, matchups, synergies, and your experience.
+Each row adds up to its score. Click a pick to see the underlying win-rate changes. The rankings
+freeze when you lock in.
 
-#### 4 · Build (after lock-in)
+#### Build
 
 <img src="docs/views/build.png" alt="Build: rune page, spells, skills and items with their edge vs your lane">
 
-The rune page (most picked or highest win rate), laid out like the client's with the chosen runes
-lit, summoner spells, skill order and items for your champion, each with its Δ vs your lane. Hover
-any rune, chosen or not, for its win rate and Δ. Each item slot shows its top options; hover "+N more" for
-the rest.
+After lock-in, see runes, summoner spells, skill order, and items. Each option's Δ shows how much
+better it performs against this draft than usual, in win-rate points adjusted for sample size. Hover
+an option for details. Hover **+N more** to see additional items for a slot.
 
-### 2 · In game
+### In game
 
 <img src="docs/views/ingame.png" width="592" alt="In game: your build beside all 10 players">
 
-Your build (next item, gold, win rate and Δ vs each enemy lane) beside all 10 players.
+In borderless or windowed mode, an overlay sits along the right edge of the game without taking
+focus. See your gold and remaining item options, with each item's win rate and Δ by enemy lane.
+Alongside the build, see all 10 players' ranks, season records, champion stats, and recent results.
 
-### 3 · Out of game
+### Between games
 
 <img src="docs/views/explore.png" alt="The blind-pick explorer">
 
-The blind-pick explorer, between games (lobby, queue, or with no draft at all): every champion's
-strength vs how much it loses if countered, for any role (your most played by default). Click a
-portrait, or a row in the best blind picks list, for its verdict and worst counters.
-
-- **Before champ select** stats preload in the background for your usual roles (your lobby roles once you queue).
-
-- **Picks** are ranked from the moment champ select opens (blind pick while your lane opponent is unknown). Every term behind a pick's score is in its row.
-- **Rank tier**: stats are from Master+ games.
-- **Enemy lanes** are guessed from play rates; flex picks get a gold lane label with a "?". Click an enemy to set their lane.
-- **Build:** each option shows its Δ: how much better it does against these enemies than usual, in win-rate points, discounted for small samples. Bot lane is measured vs the enemy duo, top/mid vs their laner, jungler (and mid vs the roaming support), jungle vs everyone. The best is tagged **BEST VS LANE**. Hover for each enemy's share.
-- **Their damage** (step row and in game): the enemy team's split of physical, magic and true damage, from each enemy's average damage to champions in its lane. Hover for each enemy's own split.
-- **In game** (Ctrl+X hides it) one window pinned to the game's right edge shows the players and your build side by side; it grows with the game's resolution (`ingame_scale` in the config enlarges it). It never takes focus from the game and needs borderless or windowed mode. Build: each item's win rate and its Δ vs each enemy, one column per lane (enemy icons on top); boots and item slots you've already filled are hidden; hover an item or row for details. Players: rank and season win rate, games/win rate/KDA on the champion they're playing (from their last ~20 games), last 10 results, and tags like "First time" or "3 losses in a row", read from the League client when the game starts.
+The blind-pick explorer plots champion strength against counter risk for any role and defaults to
+your most-played role. Click a champion to see its worst counters. The app preloads stats for
+your usual roles and switches to your selected roles when you queue.
 
 ## Settings
 
 <img src="docs/views/settings.png" width="480" alt="Settings in the plum and lavender theme">
 
-Tray → Settings (or the gear in the panel's title bar). Saved changes apply immediately. They live in `config.toml` (installed copy in `%LOCALAPPDATA%\league-analysis\`), which also holds what the window doesn't cover:
+Open **Settings** from the tray or the title bar gear. Saved changes apply immediately. The installed
+app stores settings and advanced options in `%LOCALAPPDATA%\league-analysis\config.toml`.
 
-| Key | Default | |
+| Key | Default | Purpose |
 |---|---|---|
-| `min_pick_rate` | 1.0 | Min pick rate % to be a candidate. Lower for off-meta picks. |
+| `min_pick_rate` | 1.0 | Minimum candidate pick rate (%). Lower it for off-meta picks. |
 | `comfort_only` | false | Only recommend champions you've played. |
 | `[comfort]` | | `weight` (0 = off), `k`, `history`, `half_life`, `min_games`, `mastery`, `mastery_cap` |
 | `[weights.<role>]` | | Per-role lane weights. |
 | `[build_weights.<role>]` | | Which enemies build Δs are measured against, and their weights. |
 | `build_min_games` | 20 | Ignore an enemy's Δ for an option below this many games. |
-| `ingame_scale` | 1.0 | In-game window size; it already grows with the game's resolution. |
+| `ingame_scale` | 1.0 | Overlay size multiplier, on top of scaling with game resolution. |
 | `[odds]` | | Draft win estimate weights. |
-| `record_games` | false | Save the raw in-game data every `record_every` (15) seconds to `recordings\` in the data folder, one `.jsonl` file per game. Research only; nothing changes on screen. |
+| `record_games` | false | Save raw in-game data to one `.jsonl` per game in `recordings\` every `record_every` seconds (15 by default). |
 
 ## How picks are scored
-One score per candidate, in win-rate points:
+
+Each candidate gets one score in win-rate points.
 
 ```
 score(c) = base + Σ vs + Σ with + you + mastery
@@ -158,9 +129,9 @@ shrink(δ, n, k) = δ × n / (n + k)     k = 500: a 500-game sample counts half
 your games are weighted 0.5^(age / half_life), half_life = 90 days
 ```
 
-- **Δ**: lolalytics' normalized delta: how much better `c` does with/against a champion than
-  both champions' win rates predict.
-- **wr, games, avg_wr**: your role, your tier, last 14 days.
+- **Δ** is the normalized Lolalytics delta. It measures how much better `c` does with or against
+  another champion than their individual win rates predict.
+- **wr, games, avg_wr** use Master+ data for your role over the last 14 days.
 
 | Lane weight | your lane | duo lane (bot/sup) | jungle | other |
 |---|---|---|---|---|
@@ -174,21 +145,23 @@ your games are weighted 0.5^(age / half_life), half_life = 90 days
   `scripts/backtest.py`, which fits `cal_a`/`cal_b` for `[odds]` in the config (the estimate then
   passes through `sigmoid(cal_a · total + cal_b)` instead of the cap).
 
-## APIs
+## Data sources
+
 | API | Used for |
 |---|---|
-| [League Client API](https://developer.riotgames.com/docs/lol#league-client-api) (local, read-only) | Champ select (`/lol-champ-select/v1/session`, pickable champions), game phase, lobby, match history, mastery, patch version. In game: every player's rank, recent games and mastery, the same public profile data the client shows |
-| [Live Client Data API](https://developer.riotgames.com/docs/lol#game-client-api) (`127.0.0.1:2999`) | In game: your champion, items, gold, level, and each player's champion/position. No enemy items or timers. |
-| [lolalytics](https://lolalytics.com) (unofficial, may change) | Win rates, matchups, synergies, builds. Cached 24h. |
-| [op.gg](https://op.gg) (unofficial, may change) | In-game players: each player's season solo queue record on their champion. Cached 6h; `opgg = false` in config turns it off. |
+| [League Client API](https://developer.riotgames.com/docs/lol#league-client-api) (local, read-only) | Draft, lobby, patch, match history, mastery, and public player profiles. |
+| [Live Client Data API](https://developer.riotgames.com/docs/lol#game-client-api) (`127.0.0.1:2999`) | Your items, gold, and level, plus all players' champions and positions. No enemy items or timers are read. |
+| [Lolalytics](https://lolalytics.com) (unofficial) | Win rates, matchups, synergies, and builds. Cached for 24 hours. |
+| [OP.GG](https://op.gg) (unofficial) | Season solo queue records for each player's current champion. Cached for 6 hours. Disable with `opgg = false`. |
 | [Data Dragon](https://ddragon.leagueoflegends.com) + [CommunityDragon](https://raw.communitydragon.org) | Champion, item and rune data and images |
 | GitHub Releases (via [Velopack](https://velopack.io)) | Auto-updates |
 
 Nothing is injected into the client or the game.
 
-## Performance: Python + WebView2 vs. Native Rust
+## Performance
 
-Rewritten from Python + `pywebview` (Edge WebView2) to native Rust (`egui` / `eframe`). Measured on Windows 11 with a 5-second settle and 5-second sample:
+Idle measurements for the original Python app and the current native Rust app on Windows 11 used a
+5-second settle and a 5-second sample.
 
 | Runtime | Processes | Working Set | Private Mem | Idle CPU (% of 1 core) |
 |---|---:|---:|---:|---:|
@@ -196,9 +169,8 @@ Rewritten from Python + `pywebview` (Edge WebView2) to native Rust (`egui` / `ef
 | **Rust (`egui`)** — Out of game *(draft)* | 1 | 126.9 MB | 116.4 MB | 3.43% (`0.21%` total) |
 | **Rust (`egui`)** — In game *(overlay)* | 1 | 107.1 MB | 120.5 MB | 0.00% |
 
-The Rust build ships as a single native executable with zero Edge WebView2 child processes, ~5× lower private memory, and 0% idle CPU overhead while the in-game overlay is open.
-
 ## Develop
+
 ```powershell
 cargo run --release                                               # live
 cargo run -- --record drafts/x.jsonl                              # live + record
@@ -215,7 +187,9 @@ To refresh all seven README screenshots on Windows, run `cargo build`, then
 `powershell -File scripts/capture-readme.ps1`. The script seeds a separate preview data
 folder from your existing cache and captures the app without using your live settings.
 
-Every push to `main` runs `cargo test`, builds the release binary, and publishes version `0.1.<run>` (Velopack installer + update feed) plus the portable zip.
+A push that changes only `README.md` skips the release build. Other pushes to `main` run
+`cargo test`, build the release binary, and publish version `0.1.<run>` with the Velopack
+installer, update feed, and portable ZIP.
 
 | Path | |
 |---|---|

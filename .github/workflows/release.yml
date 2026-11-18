@@ -1,4 +1,4 @@
-# On every push to main: run the tests, build the Rust binary and publish it as the "latest" release.
+# On pushes to main (except README-only changes): test, build and publish the "latest" release.
 # Also builds a Velopack installer + update feed, published as release v0.1.<run_number>.
 # Downloads (stable URLs, from the "latest" release):
 #   https://github.com/angelotc/lol-companion/releases/latest/download/LoLCompanion-win-Setup.exe  (installer, auto-updates)
@@ -8,6 +8,8 @@ name: release
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'README.md'
   workflow_dispatch:
 
 permissions:

@@ -242,6 +242,9 @@ pub fn blind_safety(
         let Some(pair) = pairs.and_then(|m| m.get(&cid)) else {
             continue;
         };
+        if pair.games == 0 {
+            continue;
+        }
         let delta = pair.delta.unwrap_or(pair.wr - s.wr);
         rows.push((shrink(delta, pair.games as f64, k), pr, cid, pair.games));
     }
@@ -691,6 +694,19 @@ mod tests {
         assert!((shrink(10.0, 500.0, 500.0) - 5.0).abs() < 1e-9);
         assert_eq!(shrink(10.0, 0.0, 500.0), 0.0);
         assert!((shrink(10.0, 1e9, 500.0) - 10.0).abs() < 1e-3);
+    }
+
+    #[test]
+    fn zero_game_matchups_do_not_count_toward_blind_coverage() {
+        let mut s = stats(40, 53.0, 28000);
+        s.matchups.insert("support".into(), HashMap::from([
+            (111, Pair::with_delta(51.0, 2000, -2.0)),
+            (412, Pair::with_delta(100.0, 0, 50.0)),
+        ]));
+        let opponents = HashMap::from([(111, 10.0), (412, 10.0)]);
+        let blind = blind_safety(&s, "support", &opponents, 500.0, 0.0, &BlindConfig::default(), 3, -3.0).unwrap();
+        assert_eq!(blind.coverage, 0.5);
+        assert!((blind.tail - (-2.3)).abs() < 1e-9);
     }
 
     #[test]

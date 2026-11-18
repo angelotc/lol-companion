@@ -82,6 +82,8 @@ pub fn role_report(
         .collect();
     let items: Vec<(&ChampStats, f64)> = pool
         .iter()
+        // A population prior is not an observed counter-risk measurement.
+        .filter(|(_, s)| s.matchups.get(role).is_some_and(|pairs| pairs.values().any(|p| p.games > 0)))
         .map(|(&cid, s)| (s, base.get(&cid).copied().unwrap_or(0.0)))
         .collect();
     let ranked = rank_blind(&items, role, pool_pr, k, blind_cfg);
@@ -101,4 +103,34 @@ pub fn role_report(
             }
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::config::Config;
+    use crate::domain::scoring::Pair;
+
+    #[test]
+    fn report_excludes_champions_without_observed_role_matchups() {
+        let mut yorick = ChampStats {
+            champion_id: 83, lane: "support".into(), wr: 62.07, games: 29,
+            avg_wr: Some(52.37), matchups: HashMap::new(), synergies: HashMap::new(),
+        };
+        // A zero-game row also cannot supply evidence of blind-pick safety.
+        yorick.matchups.insert("support".into(), HashMap::from([(111, Pair::new(50.0, 0))]));
+        let janna = ChampStats {
+            champion_id: 40, lane: "support".into(), wr: 53.81, games: 28000,
+            avg_wr: Some(52.37),
+            matchups: HashMap::from([("support".into(), HashMap::from([(111, Pair::with_delta(52.0, 2000, -1.0))]))]),
+            synergies: HashMap::new(),
+        };
+        let pool = HashMap::from([(83, yorick), (40, janna)]);
+        let opponents = HashMap::from([(111, 13.0)]);
+        let cfg = Config::default();
+        let report = role_report(&pool, &opponents, "support", &cfg.weights_for("support"), cfg.k, &cfg.blind);
+        assert_eq!(report.len(), 1);
+        assert_eq!(report[0].id, 40);
+        assert_eq!(report[0].coverage, 1.0);
+    }
 }
