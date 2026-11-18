@@ -147,6 +147,34 @@ your games are weighted 0.5^(age / half_life), half_life = 90 days
 
 ## Data sources
 
+```mermaid
+flowchart LR
+    subgraph Local["User's Computer"]
+        App["LoL Companion"]
+        LCU["League Client API (LCU, localhost)"]
+        Live["Live Client Data API (127.0.0.1:2999)"]
+        Cache[("Local Disk Cache")]
+        DB[("SQLite DB")]
+
+        LCU -->|"Draft, lobby, mastery, history"| App
+        Live -->|"Live gold, items, players"| App
+        App <-->|"Drafts & match history"| DB
+        Cache <--> App
+    end
+
+    subgraph External["External APIs"]
+        Lola["Lolalytics"]
+        Opgg["OP.GG"]
+        DDragon["Data Dragon & CommunityDragon"]
+        GH["GitHub Releases"]
+    end
+
+    Lola -->|"Win rates, matchups, builds (24h)"| Cache
+    Opgg -->|"Season records (6h)"| Cache
+    DDragon -->|"Champion, item & rune assets"| Cache
+    GH -->|"Auto-updates"| App
+```
+
 | API | Used for |
 |---|---|
 | [League Client API](https://developer.riotgames.com/docs/lol#league-client-api) (local, read-only) | Draft, lobby, patch, match history, mastery, and public player profiles. |
