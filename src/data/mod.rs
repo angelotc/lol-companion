@@ -8,3 +8,4 @@ pub mod lolalytics;
 pub mod opgg;
 pub mod players;
 pub mod store;
+pub mod stream;

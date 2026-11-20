@@ -52,3 +52,9 @@ lockfile = 'C:\Riot Games\League of Legends\lockfile'
 # tail = 0.15    # they pick from the worst 15% of your matchups (weighted by pick rate)
 # weight = 1.0   # how much the counter risk counts against champion strength
 comfort_only = false
+
+[stream]
+enabled = false
+endpoint = ""
+api_key = ""
+auto_copy_link = false

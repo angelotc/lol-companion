@@ -341,6 +341,8 @@ pub struct ClientScreen {
     pub build: Option<BuildView>,
     pub explore: bool,
     pub updated_hms: String,
+    pub live_url: Option<String>,
+    pub auto_copy_live_url: bool,
 }
 
 #[derive(Debug, Clone)]

@@ -712,10 +712,13 @@ async fn run_simulate(ctl: Arc<Controller>, cli: Cli) {
     let role = cli.role.clone().unwrap_or_else(|| "support".into());
     let allies: Vec<Slot> = parse_ids(&cli.allies)
         .into_iter()
-        .map(|c| Slot {
+        .enumerate()
+        .map(|(idx, c)| Slot {
+            cell_id: idx as i32,
             champion_id: c,
             position: String::new(),
             tentative: false,
+            locked: true,
             is_me: false,
         })
         .collect();

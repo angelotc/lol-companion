@@ -7,7 +7,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tokio::sync::watch;
 use tracing::{info, warn};
 
-use crate::domain::config::{Config, data_dir, load_ui_settings, save_ui_settings};
+use crate::domain::config::{Config, StreamConfig, data_dir, load_ui_settings, save_ui_settings};
 use crate::domain::lcu::LcuCreds;
 use crate::domain::live::{LiveGame, parse_live};
 use crate::domain::players::PlayerStats;
@@ -19,6 +19,7 @@ use crate::data::live::{GameRecorder, LiveClient};
 use crate::data::opgg::OpGG;
 use crate::data::players::{PlayerClient, game_refs, load_all, region};
 use crate::data::store::Store;
+use crate::data::stream::{LiveStreamer, StreamDraftPayload};
 
 use super::recommender::{BuildEvaluation, Evaluation, Recommender};
 use super::views::{
@@ -79,11 +80,13 @@ struct InnerState {
     live: Option<LiveGame>,
     last_role: String,
     recorder: GameRecorder,
+    live_url: Option<String>,
 }
 
 pub struct Controller {
     pub store: Option<Arc<Store>>,
     pub rec: Mutex<Option<Arc<Recommender>>>,
+    pub streamer: Arc<LiveStreamer>,
     state: Mutex<InnerState>,
     live_client: tokio::sync::Mutex<Option<LiveClient>>,
     screen_tx: watch::Sender<ScreenUpdate>,
@@ -106,12 +109,15 @@ impl Controller {
             build: None,
             explore: false,
             updated_hms: current_hms(),
+            live_url: None,
+            auto_copy_live_url: cfg.stream.auto_copy_link,
         });
         let (screen_tx, screen_rx) = watch::channel(init_screen);
         let rec_every = cfg.record_every;
         let ctl = Arc::new(Self {
             store,
             rec: Mutex::new(None),
+            streamer: Arc::new(LiveStreamer::new()),
             state: Mutex::new(InnerState {
                 cfg,
                 session: Session::default(),
@@ -137,6 +143,7 @@ impl Controller {
                 live: None,
                 last_role: String::new(),
                 recorder: GameRecorder::new(data_dir().join("recordings"), rec_every),
+                live_url: None,
             }),
             live_client: tokio::sync::Mutex::new(None),
             screen_tx,
@@ -310,6 +317,8 @@ impl Controller {
             build: None,
             explore,
             updated_hms: current_hms(),
+            live_url: st.live_url.clone(),
+            auto_copy_live_url: st.cfg.stream.auto_copy_link,
         }));
     }
 
@@ -431,6 +440,7 @@ impl Controller {
                     String::new()
                 };
                 let explore = rec.is_some();
+                let auto_copy_live_url = st.cfg.stream.auto_copy_link;
                 drop(st);
                 self.emit(ScreenUpdate::Client(ClientScreen {
                     header: header_view(None, &tier, days),
@@ -443,6 +453,8 @@ impl Controller {
                     build: None,
                     explore,
                     updated_hms: current_hms(),
+                    live_url: None,
+                    auto_copy_live_url,
                 }));
                 return;
             }
@@ -453,10 +465,12 @@ impl Controller {
             let enemy_lanes = st.session.enemy_lanes.clone();
             let cfg = st.cfg.clone();
             let build_cache = st.build_cache.clone();
-            (stage, tier, days, draft, frozen, pickable, enemy_lanes, cfg, build_cache)
+            let live_url = st.live_url.clone();
+            (stage, tier, days, draft, frozen, pickable, enemy_lanes, cfg, build_cache, live_url)
         };
 
-        let (stage, tier, days, draft, frozen, pickable, enemy_lanes, cfg, build_cache) = snap;
+        let (stage, tier, days, draft, frozen, pickable, enemy_lanes, cfg, build_cache, live_url) = snap;
+        let auto_copy_live_url = cfg.stream.auto_copy_link;
         let Some(rec) = rec else {
             return;
         };
@@ -472,6 +486,8 @@ impl Controller {
                 build: None,
                 explore: false,
                 updated_hms: current_hms(),
+                live_url,
+                auto_copy_live_url,
             }));
             return;
         };
@@ -490,6 +506,8 @@ impl Controller {
                 build: None,
                 explore: false,
                 updated_hms: current_hms(),
+                live_url,
+                auto_copy_live_url,
             }));
             return;
         }
@@ -564,6 +582,8 @@ impl Controller {
             build,
             explore: false,
             updated_hms: current_hms(),
+            live_url,
+            auto_copy_live_url,
         }));
     }
 
@@ -814,7 +834,17 @@ impl Controller {
         if events.is_empty() {
             return;
         }
-        let (stage, do_preload, do_sync, sync_delay, draft_started, locked_in, draft_ended) = {
+        let (
+            stage,
+            do_preload,
+            do_sync,
+            sync_delay,
+            draft_started,
+            locked_in,
+            draft_ended,
+            stream_start,
+            stream_end,
+        ) = {
             let mut st = self.state.lock().unwrap();
             let stage = st.session.stage();
             let has_phase = events.contains(&Event::Phase);
@@ -823,11 +853,27 @@ impl Controller {
             let do_sync = has_phase && matches!(stage, Stage::Idle | Stage::Lobby | Stage::Postgame);
             let sync_delay = if stage == Stage::Postgame { 5.0 } else { 0.0 };
             let draft_started = events.contains(&Event::DraftStarted);
+            let draft_ended = events.contains(&Event::DraftEnded);
             if draft_started {
                 st.user_hidden = false;
                 st.preload_msg.clear();
                 st.last_odds = None;
+                st.live_url = None;
             }
+            if draft_ended {
+                st.live_url = None;
+            }
+            let stream_ready = st.cfg.stream.enabled && !st.cfg.stream.endpoint.trim().is_empty();
+            let stream_start = if draft_started && stream_ready {
+                Some(st.cfg.stream.clone())
+            } else {
+                None
+            };
+            let stream_end = if draft_ended && st.cfg.stream.enabled {
+                Some(st.cfg.stream.clone())
+            } else {
+                None
+            };
             if has_phase {
                 if stage != Stage::Ingame {
                     st.players = None;
@@ -841,19 +887,25 @@ impl Controller {
                 sync_delay,
                 draft_started,
                 events.contains(&Event::LockedIn),
-                events.contains(&Event::DraftEnded),
+                draft_ended,
+                stream_start,
+                stream_end,
             )
         };
 
+        if let Some(stream_cfg) = stream_start {
+            let tier = self.tier();
+            self.spawn_stream_start(stream_cfg, tier);
+        }
+
         if draft_started && let Some(store) = &self.store {
-            let (role, tier) = {
+            let tier = self.tier();
+            let role = {
                 let st = self.state.lock().unwrap();
-                let r = st
-                    .session
+                st.session
                     .draft
                     .as_ref()
-                    .and_then(|d| Recommender::role_for(d));
-                (r, self.tier())
+                    .and_then(|d| Recommender::role_for(d))
             };
             if let Ok(did) = store.start_draft(role.as_deref(), &tier) {
                 self.state.lock().unwrap().draft_id = Some(did);
@@ -876,6 +928,7 @@ impl Controller {
         self.render(Arc::clone(self)).await;
 
         if events.contains(&Event::DraftChanged) {
+            self.spawn_stream_push();
             let (did, odds) = {
                 let st = self.state.lock().unwrap();
                 (st.draft_id, st.last_odds.clone())
@@ -925,6 +978,9 @@ impl Controller {
         }
 
         if draft_ended {
+            if let Some(stream_cfg) = stream_end {
+                self.spawn_stream_end(stream_cfg);
+            }
             let (did, ev) = {
                 let mut st = self.state.lock().unwrap();
                 let res = (st.draft_id, st.last_eval.clone());
@@ -943,6 +999,73 @@ impl Controller {
                 let _ = store.update_draft(did, Some(now), None, None);
             }
         }
+    }
+
+    fn current_stream_payload(&self) -> Option<(StreamConfig, StreamDraftPayload)> {
+        let tier = self.tier();
+        let st = self.state.lock().unwrap();
+        if !st.cfg.stream.enabled || st.cfg.stream.endpoint.trim().is_empty() {
+            return None;
+        }
+        let stage = st.session.stage();
+        if !stage.is_draft() {
+            return None;
+        }
+        let draft = st.session.draft.as_ref()?;
+        let payload = StreamDraftPayload::from_draft(stage, &tier, draft, &st.session.enemy_lanes);
+        Some((st.cfg.stream.clone(), payload))
+    }
+
+    fn spawn_stream_start(self: &Arc<Self>, stream_cfg: StreamConfig, tier: String) {
+        let ctl = Arc::clone(self);
+        tokio::spawn(async move {
+            match ctl.streamer.start_room(&stream_cfg, &tier).await {
+                Ok(url) => {
+                    let still_in_draft = {
+                        let mut st = ctl.state.lock().unwrap();
+                        if st.session.stage().is_draft() {
+                            st.live_url = Some(url);
+                            true
+                        } else {
+                            false
+                        }
+                    };
+                    if still_in_draft {
+                        if let Some((cfg, payload)) = ctl.current_stream_payload() {
+                            if let Err(e) = ctl.streamer.push_state(&cfg, &payload).await {
+                                warn!("stream initial push_state failed: {e}");
+                            }
+                        }
+                        ctl.render(Arc::clone(&ctl)).await;
+                    } else if let Err(e) = ctl.streamer.end_room(&stream_cfg).await {
+                        warn!("stream end_room after late start failed: {e}");
+                    }
+                }
+                Err(e) => {
+                    warn!("stream start_room failed: {e}");
+                }
+            }
+        });
+    }
+
+    fn spawn_stream_push(self: &Arc<Self>) {
+        if let Some((cfg, payload)) = self.current_stream_payload() {
+            let streamer = Arc::clone(&self.streamer);
+            tokio::spawn(async move {
+                if let Err(e) = streamer.push_state(&cfg, &payload).await {
+                    warn!("stream push_state failed: {e}");
+                }
+            });
+        }
+    }
+
+    fn spawn_stream_end(self: &Arc<Self>, stream_cfg: StreamConfig) {
+        let streamer = Arc::clone(&self.streamer);
+        tokio::spawn(async move {
+            if let Err(e) = streamer.end_room(&stream_cfg).await {
+                warn!("stream end_room failed: {e}");
+            }
+        });
     }
 
     fn start_sync(self: Arc<Self>, delay_secs: f64) {
@@ -1134,6 +1257,7 @@ impl Controller {
             .unwrap()
             .session
             .set_enemy_lane(champion_id, lane);
+        self.spawn_stream_push();
         self.render(Arc::clone(self)).await;
     }
 

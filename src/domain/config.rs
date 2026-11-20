@@ -216,6 +216,26 @@ pub fn default_build_weights(role: &str) -> HashMap<String, f64> {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
+pub struct StreamConfig {
+    pub enabled: bool,
+    pub endpoint: String,
+    pub api_key: String,
+    pub auto_copy_link: bool,
+}
+
+impl Default for StreamConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            endpoint: String::new(),
+            api_key: String::new(),
+            auto_copy_link: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Config {
     pub min_pick_rate: f64,
     pub tier: String,
@@ -240,6 +260,7 @@ pub struct Config {
     pub record_games: bool,
     pub record_every: f64,
     pub opgg: bool,
+    pub stream: StreamConfig,
 }
 
 impl Default for Config {
@@ -268,6 +289,7 @@ impl Default for Config {
             record_games: false,
             record_every: 15.0,
             opgg: true,
+            stream: StreamConfig::default(),
         }
     }
 }

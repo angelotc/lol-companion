@@ -1,5 +1,6 @@
 use egui::{Align, Color32, CornerRadius, Layout, RichText, Sense, Stroke, Ui, Vec2};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use crate::domain::scoring::LANES;
 use crate::engine::controller::Controller;
@@ -24,6 +25,8 @@ pub struct ClientUiState {
     pub chosen_tab: Option<DraftTab>,
     pub last_auto: Option<DraftTab>,
     pub lane_picker_enemy: Option<i32>,
+    pub copied_until: Option<Instant>,
+    pub last_auto_copied_url: Option<String>,
     pub picks: PicksUiState,
     pub build: BuildUiState,
     pub explore: ExploreUiState,
@@ -35,6 +38,8 @@ impl Default for ClientUiState {
             chosen_tab: None,
             last_auto: None,
             lane_picker_enemy: None,
+            copied_until: None,
+            last_auto_copied_url: None,
             picks: PicksUiState::default(),
             build: BuildUiState::default(),
             explore: ExploreUiState::default(),
@@ -111,6 +116,44 @@ pub fn render_client(
                                 .size(10.5)
                                 .color(MUTED),
                         );
+                    }
+
+                    if let Some(url) = &s.live_url {
+                        if s.auto_copy_live_url
+                            && st.last_auto_copied_url.as_deref() != Some(url.as_str())
+                        {
+                            ui.ctx().copy_text(url.clone());
+                            st.last_auto_copied_url = Some(url.clone());
+                            st.copied_until = Some(Instant::now() + Duration::from_secs(2));
+                        }
+                        let copied = st.copied_until.is_some_and(|t| Instant::now() < t);
+                        if copied {
+                            ui.ctx().request_repaint_after(Duration::from_millis(250));
+                        }
+                        ui.add_space(6.0);
+                        let (label, txt_col, border_col) = if copied {
+                            ("Copied!", POS, POS)
+                        } else {
+                            ("Copy Live Link", ACCENT, ACCENT)
+                        };
+                        let btn = egui::Button::new(
+                            RichText::new(label).size(10.5).strong().color(txt_col),
+                        )
+                        .fill(RAISED)
+                        .stroke(Stroke::new(1.0, border_col))
+                        .corner_radius(CornerRadius::same(10));
+                        if ui
+                            .add(btn)
+                            .on_hover_cursor(egui::CursorIcon::PointingHand)
+                            .on_hover_text(url)
+                            .clicked()
+                        {
+                            ui.ctx().copy_text(url.clone());
+                            st.copied_until = Some(Instant::now() + Duration::from_secs(2));
+                        }
+                    } else {
+                        st.copied_until = None;
+                        st.last_auto_copied_url = None;
                     }
 
                     if TIERS.len() > 1 {
